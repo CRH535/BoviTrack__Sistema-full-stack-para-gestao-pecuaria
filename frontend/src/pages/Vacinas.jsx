@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import useMensagem from "../hooks/useMensagem";
+import ColecaoRegistros from "../components/ui/ColecaoRegistros";
+import FormularioCadastro from "../components/ui/FormularioCadastro";
+import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import IconeImagem from "../components/IconeImagem";
 import VoltarInicio from "../components/VoltarInicio";
+
+const CAMPOS_BUSCA = ["nome", "descricao"];
 
 function Vacinas() {
   const [vacinas, setVacinas] = useState([]);
@@ -10,29 +15,39 @@ function Vacinas() {
   const [descricao, setDescricao] = useState("");
 
   const [editandoId, setEditandoId] = useState(null);
-  const [mensagem, setMensagem] = useState("");
+  const [mensagem, setMensagem, erroMensagem, limparErro] = useMensagem();
   const [processando, setProcessando] = useState(false);
   const [carregandoLista, setCarregandoLista] = useState(true);
   const [erroLista, setErroLista] = useState(false);
 
-  useEffect(() => {
-    carregarVacinas();
-  }, []);
-
-  async function carregarVacinas() {
+  const carregarVacinas = useCallback(
+    () =>
+      api
+        .getAll("/vacinas")
+        .then((resposta) => {
+          setVacinas(resposta.data);
+        })
+        .catch(() => {
+          setErroLista(true);
+          console.error("Falha em uma operação de vacinas");
+          setMensagem("Erro ao carregar vacinas", true);
+        })
+        .finally(() => {
+          setCarregandoLista(false);
+        }),
+    [setMensagem],
+  );
+  function recarregarVacinas() {
+    limparErro();
     setCarregandoLista(true);
     setErroLista(false);
-    try {
-      const resposta = await api.getAll("/vacinas");
-      setVacinas(resposta.data);
-    } catch {
-      setErroLista(true);
-      console.error("Falha em uma operação de vacinas");
-      setMensagem("Erro ao carregar vacinas");
-    } finally {
-      setCarregandoLista(false);
-    }
+
+    return carregarVacinas();
   }
+
+  useEffect(() => {
+    carregarVacinas();
+  }, [carregarVacinas]);
 
   function limparFormulario() {
     setNome("");
@@ -60,11 +75,14 @@ function Vacinas() {
       }
 
       limparFormulario();
-      carregarVacinas();
+      recarregarVacinas();
     } catch (erro) {
       console.error("Falha em uma operação de vacinas");
 
-      setMensagem(erro.response?.data?.mensagem || "Erro ao salvar vacina");
+      setMensagem(
+        erro.response?.data?.mensagem || "Erro ao salvar vacina",
+        true,
+      );
     } finally {
       setProcessando(false);
     }
@@ -96,7 +114,10 @@ function Vacinas() {
     } catch (erro) {
       console.error("Falha em uma operação de vacinas");
 
-      setMensagem(erro.response?.data?.mensagem || "Erro ao excluir vacina");
+      setMensagem(
+        erro.response?.data?.mensagem || "Erro ao excluir vacina",
+        true,
+      );
     } finally {
       setProcessando(false);
     }
@@ -114,79 +135,128 @@ function Vacinas() {
       </header>
 
       {processando && <p role="status">Salvando registros...</p>}
-      {mensagem && <p className="notice" role="status">{mensagem}</p>}
+      {mensagem && !erroLista && (
+        <p
+          className={`notice${erroMensagem ? " notice-error" : ""}`}
+          role={erroMensagem ? "alert" : "status"}
+        >
+          {mensagem}
+        </p>
+      )}
 
-      <form className="panel data-form" onSubmit={salvarVacina}>
-        <fieldset className="form-fields" disabled={processando || carregandoLista}>
-        <div>
-          <label htmlFor="vacinas-campo-1">Nome</label>
-          <br />
+      <FormularioCadastro titulo="Cadastrar vacina" editando={editandoId}>
+        <form className="panel data-form" onSubmit={salvarVacina}>
+          <fieldset
+            className="form-fields"
+            disabled={processando || carregandoLista}
+          >
+            <div>
+              <label htmlFor="vacinas-campo-1">Nome</label>
+              <br />
 
-          <input id="vacinas-campo-1" required
-            type="text"
-            value={nome}
-            maxLength="100"
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </div>
+              <input
+                id="vacinas-campo-1"
+                required
+                type="text"
+                value={nome}
+                maxLength="100"
+                onChange={(e) => setNome(e.target.value)}
+              />
+            </div>
 
-        <div>
-          <label htmlFor="vacinas-campo-2">Descrição</label>
-          <br />
+            <div>
+              <label htmlFor="vacinas-campo-2">Descrição</label>
+              <br />
 
-          <input id="vacinas-campo-2"
-            type="text"
-            value={descricao}
-            maxLength="255"
-            onChange={(e) => setDescricao(e.target.value)}
-          />
-        </div>
+              <input
+                id="vacinas-campo-2"
+                type="text"
+                value={descricao}
+                maxLength="255"
+                onChange={(e) => setDescricao(e.target.value)}
+              />
+            </div>
 
-        <br />
+            <br />
 
-        <button type="submit">
-          {editandoId ? "Salvar alterações" : "Cadastrar"}
-        </button>
+            <button type="submit">
+              {editandoId ? "Salvar alterações" : "Cadastrar"}
+            </button>
 
-        {editandoId && (
-          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
-            Cancelar
-          </button>
-        )}
-      </fieldset>
-      </form>
+            {editandoId && (
+              <button
+                disabled={processando}
+                className="button-secondary"
+                type="button"
+                onClick={limparFormulario}
+              >
+                Cancelar
+              </button>
+            )}
+          </fieldset>
+        </form>
+      </FormularioCadastro>
 
       {carregandoLista && <p role="status">Carregando registros...</p>}
-      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarVacinas}>Tentar novamente</button></div>}
+      {erroLista && (
+        <div className="notice notice-error" role="alert">
+          Não foi possível carregar os registros.{" "}
+          <button
+            disabled={processando}
+            type="button"
+            onClick={recarregarVacinas}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       <div className="section-heading">
-        <div><span className="eyebrow">Catálogo</span><h2>Vacinas cadastradas</h2></div>
-        <span className="count-badge">{carregandoLista || erroLista ? "—" : vacinas.length}</span>
+        <div>
+          <span className="eyebrow">Catálogo</span>
+          <h2>Vacinas cadastradas</h2>
+        </div>
+        <span className="count-badge">
+          {carregandoLista || erroLista ? "—" : vacinas.length}
+        </span>
       </div>
 
-      {!carregandoLista && !erroLista && vacinas.length === 0 && <div className="empty-state"><p>Nenhuma vacina cadastrada.</p></div>}
+      <ColecaoRegistros
+        itens={vacinas}
+        campos={CAMPOS_BUSCA}
+        className=""
+        oculto={carregandoLista || erroLista}
+      >
+        {(vacina) => (
+          <article className="record-card" key={vacina.id}>
+            <span className="record-icon" aria-hidden="true">
+              <IconeImagem nome="vacinas" className="record-icon-image" />
+            </span>
+            <h3>{vacina.nome}</h3>
+            <p>{vacina.descricao || "-"}</p>
 
-      <div hidden={carregandoLista || erroLista} className="record-grid">
-      {vacinas.map((vacina) => (
-        <article className="record-card" key={vacina.id}>
-          <span className="record-icon" aria-hidden="true">
-            <IconeImagem nome="vacinas" className="record-icon-image" />
-          </span>
-          <h3>{vacina.nome}</h3>
-          <p>{vacina.descricao || "-"}</p>
+            <div className="record-actions">
+              <button
+                disabled={processando}
+                className="button-secondary"
+                type="button"
+                onClick={() => editarVacina(vacina)}
+              >
+                Editar
+              </button>
 
-          <div className="record-actions">
-          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarVacina(vacina)}>
-            Editar
-          </button>
-
-          <button disabled={processando} className="button-danger" type="button" onClick={() => excluirVacina(vacina.id)}>
-            Excluir
-          </button>
-          </div>
-        </article>
-      ))}
-      </div>
+              <button
+                disabled={processando}
+                className="button-danger"
+                type="button"
+                onClick={() => excluirVacina(vacina.id)}
+              >
+                Excluir
+              </button>
+            </div>
+          </article>
+        )}
+      </ColecaoRegistros>
     </div>
   );
 }

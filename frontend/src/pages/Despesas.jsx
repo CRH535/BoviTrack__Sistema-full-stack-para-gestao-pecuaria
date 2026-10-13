@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import useMensagem from "../hooks/useMensagem";
+import ColecaoRegistros from "../components/ui/ColecaoRegistros";
+import FormularioCadastro from "../components/ui/FormularioCadastro";
+import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import IconeImagem from "../components/IconeImagem";
 import VoltarInicio from "../components/VoltarInicio";
@@ -14,6 +17,13 @@ function formatarDataSemFuso(data) {
   return `${partes[3]}/${partes[2]}/${partes[1]}`;
 }
 
+const CAMPOS_BUSCA = [
+  "descricao",
+  "categoria",
+  "propriedade",
+  "forma_pagamento",
+];
+
 function Despesas() {
   const [despesas, setDespesas] = useState([]);
   const [propriedades, setPropriedades] = useState([]);
@@ -26,39 +36,53 @@ function Despesas() {
   const [propriedadeId, setPropriedadeId] = useState("");
 
   const [editandoId, setEditandoId] = useState(null);
-  const [mensagem, setMensagem] = useState("");
+  const [mensagem, setMensagem, erroMensagem, limparErro] = useMensagem();
   const [processando, setProcessando] = useState(false);
   const [carregandoLista, setCarregandoLista] = useState(true);
   const [erroLista, setErroLista] = useState(false);
 
+  const carregarDespesas = useCallback(
+    () =>
+      api
+        .getAll("/despesas")
+        .then((resposta) => {
+          setDespesas(resposta.data);
+        })
+        .catch(() => {
+          setErroLista(true);
+          console.error("Falha em uma operação de despesas");
+          setMensagem("Erro ao carregar despesas", true);
+        })
+        .finally(() => {
+          setCarregandoLista(false);
+        }),
+    [setMensagem],
+  );
+  function recarregarDespesas() {
+    limparErro();
+    setCarregandoLista(true);
+    setErroLista(false);
+
+    return carregarDespesas();
+  }
+
+  const carregarPropriedades = useCallback(
+    () =>
+      api
+        .getAll("/propriedades")
+        .then((resposta) => {
+          setPropriedades(resposta.data);
+        })
+        .catch(() => {
+          console.error("Falha em uma operação de despesas");
+        }),
+    [],
+  );
+
   useEffect(() => {
     carregarDespesas();
     carregarPropriedades();
-  }, []);
-
-  async function carregarDespesas() {
-    setCarregandoLista(true);
-    setErroLista(false);
-    try {
-      const resposta = await api.getAll("/despesas");
-      setDespesas(resposta.data);
-    } catch {
-      setErroLista(true);
-      console.error("Falha em uma operação de despesas");
-      setMensagem("Erro ao carregar despesas");
-    } finally {
-      setCarregandoLista(false);
-    }
-  }
-
-  async function carregarPropriedades() {
-    try {
-      const resposta = await api.getAll("/propriedades");
-      setPropriedades(resposta.data);
-    } catch {
-      console.error("Falha em uma operação de despesas");
-    }
-  }
+  }, [carregarDespesas, carregarPropriedades]);
 
   function limparFormulario() {
     setDescricao("");
@@ -94,11 +118,14 @@ function Despesas() {
       }
 
       limparFormulario();
-      carregarDespesas();
+      recarregarDespesas();
     } catch (erro) {
       console.error("Falha em uma operação de despesas");
 
-      setMensagem(erro.response?.data?.mensagem || "Erro ao salvar despesa");
+      setMensagem(
+        erro.response?.data?.mensagem || "Erro ao salvar despesa",
+        true,
+      );
     } finally {
       setProcessando(false);
     }
@@ -134,7 +161,10 @@ function Despesas() {
     } catch (erro) {
       console.error("Falha em uma operação de despesas");
 
-      setMensagem(erro.response?.data?.mensagem || "Erro ao excluir despesa");
+      setMensagem(
+        erro.response?.data?.mensagem || "Erro ao excluir despesa",
+        true,
+      );
     } finally {
       setProcessando(false);
     }
@@ -152,143 +182,207 @@ function Despesas() {
       </header>
 
       {processando && <p role="status">Salvando registros...</p>}
-      {mensagem && <p className="notice" role="status">{mensagem}</p>}
+      {mensagem && !erroLista && (
+        <p
+          className={`notice${erroMensagem ? " notice-error" : ""}`}
+          role={erroMensagem ? "alert" : "status"}
+        >
+          {mensagem}
+        </p>
+      )}
 
-      <form className="panel data-form" onSubmit={salvarDespesa}>
-        <fieldset className="form-fields" disabled={processando || carregandoLista}>
-        <div>
-          <label htmlFor="despesas-campo-1">Descrição</label>
-          <br />
-
-          <input id="despesas-campo-1" required
-            type="text"
-            value={descricao}
-            maxLength="150"
-            onChange={(e) => setDescricao(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="despesas-campo-2">Categoria</label>
-          <br />
-
-          <input id="despesas-campo-2" required
-            type="text"
-            value={categoria}
-            maxLength="100"
-            onChange={(e) => setCategoria(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="despesas-campo-3">Forma de pagamento</label>
-          <br />
-
-          <input id="despesas-campo-3"
-            type="text"
-            maxLength="100"
-            value={formaPagamento}
-            onChange={(e) => setFormaPagamento(e.target.value)}
-            placeholder="Ex.: Pix, dinheiro, cartão..."
-          />
-        </div>
-
-        <div>
-          <label htmlFor="despesas-campo-4">Valor</label>
-          <br />
-
-          <input id="despesas-campo-4" required
-            type="number"
-            min="0.01" max="99999999.99" step="0.01"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="despesas-campo-5">Data</label>
-          <br />
-
-          <input id="despesas-campo-5" required
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="despesas-campo-6">Propriedade</label>
-          <br />
-
-          <select id="despesas-campo-6" required
-            value={propriedadeId}
-            onChange={(e) => setPropriedadeId(e.target.value)}
+      <FormularioCadastro titulo="Nova despesa" editando={editandoId}>
+        <form className="panel data-form" onSubmit={salvarDespesa}>
+          <fieldset
+            className="form-fields"
+            disabled={processando || carregandoLista}
           >
-            <option value="">Selecione</option>
+            <div>
+              <label htmlFor="despesas-campo-1">Descrição</label>
+              <br />
 
-            {propriedades.map((propriedade) => (
-              <option key={propriedade.id} value={propriedade.id}>
-                {propriedade.nome}
-              </option>
-            ))}
-          </select>
-        </div>
+              <input
+                id="despesas-campo-1"
+                required
+                type="text"
+                value={descricao}
+                maxLength="150"
+                onChange={(e) => setDescricao(e.target.value)}
+              />
+            </div>
 
-        <br />
+            <div>
+              <label htmlFor="despesas-campo-2">Categoria</label>
+              <br />
 
-        <button type="submit">
-          {editandoId ? "Salvar alterações" : "Cadastrar"}
-        </button>
+              <input
+                id="despesas-campo-2"
+                required
+                type="text"
+                value={categoria}
+                maxLength="100"
+                onChange={(e) => setCategoria(e.target.value)}
+              />
+            </div>
 
-        {editandoId && (
-          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
-            Cancelar
-          </button>
-        )}
-      </fieldset>
-      </form>
+            <div>
+              <label htmlFor="despesas-campo-3">Forma de pagamento</label>
+              <br />
+
+              <input
+                id="despesas-campo-3"
+                type="text"
+                maxLength="100"
+                value={formaPagamento}
+                onChange={(e) => setFormaPagamento(e.target.value)}
+                placeholder="Ex.: Pix, dinheiro, cartão..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="despesas-campo-4">Valor</label>
+              <br />
+
+              <input
+                id="despesas-campo-4"
+                required
+                type="number"
+                min="0.01"
+                max="99999999.99"
+                step="0.01"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="despesas-campo-5">Data</label>
+              <br />
+
+              <input
+                id="despesas-campo-5"
+                required
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="despesas-campo-6">Propriedade</label>
+              <br />
+
+              <select
+                id="despesas-campo-6"
+                required
+                value={propriedadeId}
+                onChange={(e) => setPropriedadeId(e.target.value)}
+              >
+                <option value="">Selecione</option>
+
+                {propriedades.map((propriedade) => (
+                  <option key={propriedade.id} value={propriedade.id}>
+                    {propriedade.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <br />
+
+            <button type="submit">
+              {editandoId ? "Salvar alterações" : "Cadastrar"}
+            </button>
+
+            {editandoId && (
+              <button
+                disabled={processando}
+                className="button-secondary"
+                type="button"
+                onClick={limparFormulario}
+              >
+                Cancelar
+              </button>
+            )}
+          </fieldset>
+        </form>
+      </FormularioCadastro>
 
       {carregandoLista && <p role="status">Carregando registros...</p>}
-      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarDespesas}>Tentar novamente</button></div>}
+      {erroLista && (
+        <div className="notice notice-error" role="alert">
+          Não foi possível carregar os registros.{" "}
+          <button
+            disabled={processando}
+            type="button"
+            onClick={recarregarDespesas}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       <div className="section-heading">
-        <div><span className="eyebrow">Histórico</span><h2>Despesas cadastradas</h2></div>
-        <span className="count-badge">{carregandoLista || erroLista ? "—" : despesas.length}</span>
+        <div>
+          <span className="eyebrow">Histórico</span>
+          <h2>Despesas cadastradas</h2>
+        </div>
+        <span className="count-badge">
+          {carregandoLista || erroLista ? "—" : despesas.length}
+        </span>
       </div>
 
-      {!carregandoLista && !erroLista && despesas.length === 0 && <div className="empty-state"><p>Nenhuma despesa cadastrada.</p></div>}
+      <ColecaoRegistros
+        itens={despesas}
+        campos={CAMPOS_BUSCA}
+        className="expense-grid"
+        oculto={carregandoLista || erroLista}
+      >
+        {(despesa) => (
+          <article className="record-card expense-card" key={despesa.id}>
+            <span className="record-icon" aria-hidden="true">
+              <IconeImagem nome="despesas" className="record-icon-image" />
+            </span>
+            <span className="tag-badge">{despesa.categoria}</span>
+            <h3>{despesa.descricao}</h3>
 
-      <div hidden={carregandoLista || erroLista} className="record-grid expense-grid">
-      {despesas.map((despesa) => (
-        <article className="record-card expense-card" key={despesa.id}>
-          <span className="record-icon" aria-hidden="true">
-            <IconeImagem nome="despesas" className="record-icon-image" />
-          </span>
-          <span className="tag-badge">{despesa.categoria}</span>
-          <h3>{despesa.descricao}</h3>
+            <p>
+              Forma de pagamento: {despesa.forma_pagamento || "Não informada"}
+            </p>
 
-          <p>
-            Forma de pagamento: {despesa.forma_pagamento || "Não informada"}
-          </p>
+            <strong className="expense-value">
+              R${" "}
+              {Number(despesa.valor).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+              })}
+            </strong>
 
-          <strong className="expense-value">R$ {Number(despesa.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+            <p>Data: {formatarDataSemFuso(despesa.data)}</p>
 
-          <p>Data: {formatarDataSemFuso(despesa.data)}</p>
+            <p>Propriedade: {despesa.propriedade || despesa.propriedade_id}</p>
 
-          <p>Propriedade: {despesa.propriedade || despesa.propriedade_id}</p>
+            <div className="record-actions">
+              <button
+                disabled={processando}
+                className="button-secondary"
+                type="button"
+                onClick={() => editarDespesa(despesa)}
+              >
+                Editar
+              </button>
 
-          <div className="record-actions">
-          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarDespesa(despesa)}>
-            Editar
-          </button>
-
-          <button disabled={processando} className="button-danger" type="button" onClick={() => excluirDespesa(despesa.id)}>
-            Excluir
-          </button>
-          </div>
-        </article>
-      ))}
-      </div>
+              <button
+                disabled={processando}
+                className="button-danger"
+                type="button"
+                onClick={() => excluirDespesa(despesa.id)}
+              >
+                Excluir
+              </button>
+            </div>
+          </article>
+        )}
+      </ColecaoRegistros>
     </div>
   );
 }

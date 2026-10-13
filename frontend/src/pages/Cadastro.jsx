@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import api from "../services/api";
 import PasswordInput from "../components/PasswordInput";
+import Marca from "../components/Marca";
 
 function Cadastro() {
   const [nome, setNome] = useState("");
@@ -73,76 +74,89 @@ function Cadastro() {
     <main className="login-page">
       <section className="auth-visual" aria-hidden="true">
         <div className="auth-visual-content">
-          <span className="auth-brand"><strong>BOVI</strong>TRACK</span>
+          <Marca className="auth-brand" />
           <div>
             <span className="auth-kicker">Comece hoje</span>
             <h1>Organize seu rebanho. Simplifique sua gestão.</h1>
-            <p>Acompanhe animais, lotes, vacinações e despesas com mais clareza.</p>
+            <p>
+              Acompanhe animais, lotes, vacinações e despesas com mais clareza.
+            </p>
           </div>
         </div>
       </section>
 
       <section className="auth-panel">
         <div className="login-card register-card">
-        <span className="auth-mobile-brand"><strong>BOVI</strong>TRACK</span>
-        <span className="auth-kicker">Novo no BoviTrack?</span>
-        <h1>Crie sua conta</h1>
-        <p>Crie sua conta e mantenha as informações da sua propriedade organizadas.</p>
+          <Marca className="auth-mobile-brand" />
+          <span className="auth-kicker">Novo no BoviTrack?</span>
+          <h1>Crie sua conta</h1>
+          <p>
+            Crie sua conta e mantenha as informações da sua propriedade
+            organizadas.
+          </p>
 
-        {mensagem && <p className="form-message" role="alert">{mensagem}</p>}
+          {mensagem && (
+            <p className="form-message" role="alert">
+              {mensagem}
+            </p>
+          )}
 
-        <form onSubmit={criarConta}>
-          <label htmlFor="cadastro-nome">Nome</label>
-          <input
-            id="cadastro-nome"
-            type="text"
-            value={nome}
-            onChange={(evento) => setNome(evento.target.value)}
-            autoComplete="name"
-            maxLength="120"
-            required
-          />
+          <form onSubmit={criarConta}>
+            <label htmlFor="cadastro-nome">Nome</label>
+            <input
+              id="cadastro-nome"
+              type="text"
+              value={nome}
+              onChange={(evento) => setNome(evento.target.value)}
+              autoComplete="name"
+              maxLength="120"
+              required
+            />
 
-          <label htmlFor="cadastro-email">Email</label>
-          <input
-            id="cadastro-email"
-            type="email"
-            value={email}
-            onChange={(evento) => setEmail(evento.target.value)}
-            autoComplete="email"
-            maxLength="255"
-            required
-          />
+            <label htmlFor="cadastro-email">Email</label>
+            <input
+              id="cadastro-email"
+              type="email"
+              value={email}
+              onChange={(evento) => setEmail(evento.target.value)}
+              autoComplete="email"
+              maxLength="255"
+              required
+            />
 
-          <label htmlFor="cadastro-senha">Senha</label>
-          <PasswordInput
-            id="cadastro-senha"
-            value={senha}
-            onChange={(evento) => setSenha(evento.target.value)}
-            autoComplete="new-password"
-            minLength="8"
-            required
-          />
+            <label htmlFor="cadastro-senha">Senha</label>
+            <PasswordInput
+              id="cadastro-senha"
+              value={senha}
+              onChange={(evento) => setSenha(evento.target.value)}
+              autoComplete="new-password"
+              minLength="8"
+              required
+            />
 
-          <label htmlFor="cadastro-confirmar-senha">Confirmar senha</label>
-          <PasswordInput
-            id="cadastro-confirmar-senha"
-            rotulo="confirmar senha"
-            value={confirmarSenha}
-            onChange={(evento) => setConfirmarSenha(evento.target.value)}
-            autoComplete="new-password"
-            minLength="8"
-            required
-          />
+            <label htmlFor="cadastro-confirmar-senha">Confirmar senha</label>
+            <PasswordInput
+              id="cadastro-confirmar-senha"
+              rotulo="confirmar senha"
+              value={confirmarSenha}
+              onChange={(evento) => setConfirmarSenha(evento.target.value)}
+              autoComplete="new-password"
+              minLength="8"
+              required
+            />
 
-          <button type="submit" disabled={enviando || carregando}>
-            {carregando ? "Verificando sessão..." : enviando ? "Criando conta..." : "Criar conta"}
-          </button>
-        </form>
+            <button type="submit" disabled={enviando || carregando}>
+              {carregando
+                ? "Verificando sessão..."
+                : enviando
+                  ? "Criando conta..."
+                  : "Criar conta"}
+            </button>
+          </form>
 
-        <p className="auth-switch">
-          Já possui uma conta? <Link to="/login">Entrar</Link>
-        </p>
+          <p className="auth-switch">
+            Já possui uma conta? <Link to="/login">Entrar</Link>
+          </p>
         </div>
       </section>
     </main>
