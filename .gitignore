@@ -13,5 +13,7 @@ node_modules/
 !.env.example
 test-results/
 playwright-report/
+outputs/ui-audit/
+.codex/ui-*.cjs
 # Backups automáticos do grafo; os arquivos atuais permanecem versionados.
 graphify-out/????-??-??/

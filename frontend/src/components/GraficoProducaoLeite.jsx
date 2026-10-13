@@ -1,6 +1,7 @@
 import { formatarDataSemFuso } from "../utils/datas";
+import { useState } from "react";
+import useLarguraGrafico from "./useLarguraGrafico";
 
-const largura = 720;
 const altura = 250;
 const margem = { topo: 24, direita: 24, base: 45, esquerda: 52 };
 
@@ -12,9 +13,14 @@ function formatarLitros(valor) {
 }
 
 function GraficoProducaoLeite({ dados }) {
+  const [ref, largura] = useLarguraGrafico(dados.length > 0);
+  const [selecionado, setSelecionado] = useState(null);
+  const pontoSelecionado = dados.find(
+    (item) => item.data === selecionado?.data,
+  );
   if (!dados.length) {
     return (
-      <div className="empty-state milk-chart-empty">
+      <div ref={ref} className="empty-state milk-chart-empty">
         <p>Registre produções para visualizar a evolução.</p>
       </div>
     );
@@ -23,22 +29,29 @@ function GraficoProducaoLeite({ dados }) {
   const larguraUtil = largura - margem.esquerda - margem.direita;
   const alturaUtil = altura - margem.topo - margem.base;
   const maiorValor = Math.max(...dados.map((item) => item.total_litros), 1);
+  const dias = dados.map((item) =>
+    Date.parse(`${String(item.data).slice(0, 10)}T00:00:00Z`),
+  );
+  const primeiroDia = Math.min(...dias);
+  const intervaloDias = Math.max(...dias) - primeiroDia;
   const posicaoX = (indice) =>
-    dados.length === 1
+    intervaloDias === 0
       ? margem.esquerda + larguraUtil / 2
-      : margem.esquerda + (indice / (dados.length - 1)) * larguraUtil;
+      : margem.esquerda +
+        ((dias[indice] - primeiroDia) / intervaloDias) * larguraUtil;
   const posicaoY = (valor) =>
     margem.topo + alturaUtil - (Number(valor) / maiorValor) * alturaUtil;
   const pontos = dados
     .map((item, indice) => `${posicaoX(indice)},${posicaoY(item.total_litros)}`)
     .join(" ");
-  const area = `${margem.esquerda},${margem.topo + alturaUtil} ${pontos} ${
-    margem.esquerda + larguraUtil
-  },${margem.topo + alturaUtil}`;
-  const intervaloRotulos = Math.max(1, Math.ceil(dados.length / 6));
+  const area = `${posicaoX(0)},${margem.topo + alturaUtil} ${pontos} ${posicaoX(dados.length - 1)},${margem.topo + alturaUtil}`;
+  const intervaloRotulos = Math.max(
+    1,
+    Math.ceil(dados.length / Math.max(2, Math.floor(largura / 100))),
+  );
 
   return (
-    <div className="milk-chart-wrapper">
+    <div ref={ref} className="milk-chart-wrapper">
       <svg
         className="milk-chart"
         viewBox={`0 0 ${largura} ${altura}`}
@@ -74,7 +87,9 @@ function GraficoProducaoLeite({ dados }) {
           const mostrarRotulo =
             indice === 0 ||
             indice === dados.length - 1 ||
-            indice % intervaloRotulos === 0;
+            (indice % intervaloRotulos === 0 &&
+              posicaoX(dados.length - 1) - posicaoX(indice) > 60 &&
+              posicaoX(indice) - posicaoX(0) > 60);
 
           return (
             <g key={item.data}>
@@ -83,17 +98,21 @@ function GraficoProducaoLeite({ dados }) {
                 cy={posicaoY(item.total_litros)}
                 r="4"
                 className="milk-chart-point"
+                tabIndex="0"
+                aria-label={`${formatarDataSemFuso(item.data)}: ${formatarLitros(item.total_litros)} L`}
+                onFocus={() => setSelecionado(item)}
+                onBlur={() => setSelecionado(null)}
+                onMouseEnter={() => setSelecionado(item)}
+                onMouseLeave={() => setSelecionado(null)}
+                onClick={() => setSelecionado(item)}
               >
                 <title>
-                  {formatarDataSemFuso(item.data)}: {formatarLitros(item.total_litros)} L
+                  {formatarDataSemFuso(item.data)}:{" "}
+                  {formatarLitros(item.total_litros)} L
                 </title>
               </circle>
               {mostrarRotulo && (
-                <text
-                  x={posicaoX(indice)}
-                  y={altura - 17}
-                  textAnchor="middle"
-                >
+                <text x={posicaoX(indice)} y={altura - 17} textAnchor="middle">
                   {formatarDataSemFuso(item.data).slice(0, 5)}
                 </text>
               )}
@@ -111,6 +130,16 @@ function GraficoProducaoLeite({ dados }) {
           Litros
         </text>
       </svg>
+      <div className="chart-tooltip" aria-live="polite">
+        {pontoSelecionado ? (
+          <>
+            <strong>{formatarLitros(pontoSelecionado.total_litros)} L</strong>
+            <span>{formatarDataSemFuso(pontoSelecionado.data)}</span>
+          </>
+        ) : (
+          <span>Toque ou foque um ponto para ver a produção.</span>
+        )}
+      </div>
     </div>
   );
 }
