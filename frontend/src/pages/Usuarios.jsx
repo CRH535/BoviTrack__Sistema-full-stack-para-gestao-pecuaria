@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import Button from "../components/ui/Button";
+import useMensagem from "../hooks/useMensagem";
+import { useCallback, useEffect, useState } from "react";
 import ConfirmacaoExclusao from "../components/ConfirmacaoExclusao";
 import VoltarInicio from "../components/VoltarInicio";
 import api from "../services/api";
@@ -18,7 +20,7 @@ function Usuarios() {
   const [formulario, setFormulario] = useState(formularioInicial);
   const [modo, setModo] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
-  const [mensagem, setMensagem] = useState("");
+  const [mensagem, setMensagem, erroMensagem, limparErro] = useMensagem();
   const [salvando, setSalvando] = useState(false);
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -26,23 +28,36 @@ function Usuarios() {
   const [carregandoImpacto, setCarregandoImpacto] = useState(false);
   const [erroImpacto, setErroImpacto] = useState("");
 
-  useEffect(() => {
-    carregarUsuarios();
-  }, []);
-
-  async function carregarUsuarios() {
+  const carregarUsuarios = useCallback(
+    () =>
+      api
+        .getAll("/usuarios")
+        .then((resposta) => {
+          setUsuarios(resposta.data);
+        })
+        .catch((erro) => {
+          setErroLista(true);
+          setMensagem(
+            erro.response?.data?.mensagem || "Erro ao carregar usuários",
+            true,
+          );
+        })
+        .finally(() => {
+          setCarregando(false);
+        }),
+    [setMensagem],
+  );
+  function recarregarUsuarios() {
+    limparErro();
     setCarregando(true);
     setErroLista(false);
-    try {
-      const resposta = await api.getAll("/usuarios");
-      setUsuarios(resposta.data);
-    } catch (erro) {
-      setErroLista(true);
-      setMensagem(erro.response?.data?.mensagem || "Erro ao carregar usuários");
-    } finally {
-      setCarregando(false);
-    }
+
+    return carregarUsuarios();
   }
+
+  useEffect(() => {
+    carregarUsuarios();
+  }, [carregarUsuarios]);
 
   function atualizarCampo(evento) {
     const { name, value } = evento.target;
@@ -116,9 +131,12 @@ function Usuarios() {
       }
 
       fecharFormulario();
-      await carregarUsuarios();
+      await recarregarUsuarios();
     } catch (erro) {
-      setMensagem(erro.response?.data?.mensagem || "Erro ao salvar usuário");
+      setMensagem(
+        erro.response?.data?.mensagem || "Erro ao salvar usuário",
+        true,
+      );
     } finally {
       setSalvando(false);
     }
@@ -137,10 +155,11 @@ function Usuarios() {
         ativo: !usuario.ativo,
       });
       setMensagem(resposta.data.mensagem);
-      await carregarUsuarios();
+      await recarregarUsuarios();
     } catch (erro) {
       setMensagem(
         erro.response?.data?.mensagem || "Erro ao alterar situação do usuário",
+        true,
       );
     }
   }
@@ -207,89 +226,113 @@ function Usuarios() {
 
         <div className="page-header-actions">
           {!modo && (
-            <button type="button" onClick={abrirNovoUsuario}>
-              + Novo usuário
-            </button>
+            <Button startIcon="mais" type="button" onClick={abrirNovoUsuario}>
+              Novo usuário
+            </Button>
           )}
           <VoltarInicio />
         </div>
       </header>
 
-      {mensagem && <p className="notice user-message">{mensagem}</p>}
+      {mensagem && (
+        <p
+          className={`notice user-message${erroMensagem ? " notice-error" : ""}`}
+          role={erroMensagem ? "alert" : "status"}
+        >
+          {mensagem}
+        </p>
+      )}
 
       {modo && (
         <form className="panel user-form" onSubmit={salvarUsuario}>
           <fieldset className="form-fields" disabled={salvando}>
-          <h2>{modo === "novo" ? "Novo usuário" : "Editar usuário"}</h2>
+            <h2>{modo === "novo" ? "Novo usuário" : "Editar usuário"}</h2>
 
-          <label htmlFor="usuario-nome">Nome</label>
-          <input
-            id="usuario-nome"
-            name="nome"
-            type="text"
-            value={formulario.nome}
-            onChange={atualizarCampo}
-            maxLength="120"
-            required
-          />
+            <label htmlFor="usuario-nome">Nome</label>
+            <input
+              id="usuario-nome"
+              name="nome"
+              type="text"
+              value={formulario.nome}
+              onChange={atualizarCampo}
+              maxLength="120"
+              required
+            />
 
-          <label htmlFor="usuario-email">Email</label>
-          <input
-            id="usuario-email"
-            name="email"
-            type="email"
-            value={formulario.email}
-            onChange={atualizarCampo}
-            maxLength="255"
-            required
-          />
+            <label htmlFor="usuario-email">Email</label>
+            <input
+              id="usuario-email"
+              name="email"
+              type="email"
+              value={formulario.email}
+              onChange={atualizarCampo}
+              maxLength="255"
+              required
+            />
 
-          {modo === "novo" && (
-            <>
-              <label htmlFor="usuario-senha">Senha</label>
-              <PasswordInput
-                id="usuario-senha"
-                name="senha"
-                value={formulario.senha}
-                onChange={atualizarCampo}
-                minLength="8"
-                autoComplete="new-password"
-                required
-              />
+            {modo === "novo" && (
+              <>
+                <label htmlFor="usuario-senha">Senha</label>
+                <PasswordInput
+                  id="usuario-senha"
+                  name="senha"
+                  value={formulario.senha}
+                  onChange={atualizarCampo}
+                  minLength="8"
+                  autoComplete="new-password"
+                  required
+                />
 
-              <label htmlFor="usuario-confirmar-senha">Confirmar senha</label>
-              <PasswordInput
-                id="usuario-confirmar-senha"
-                name="confirmarSenha"
-                rotulo="confirmar senha"
-                value={formulario.confirmarSenha}
-                onChange={atualizarCampo}
-                minLength="8"
-                autoComplete="new-password"
-                required
-              />
-            </>
-          )}
+                <label htmlFor="usuario-confirmar-senha">Confirmar senha</label>
+                <PasswordInput
+                  id="usuario-confirmar-senha"
+                  name="confirmarSenha"
+                  rotulo="confirmar senha"
+                  value={formulario.confirmarSenha}
+                  onChange={atualizarCampo}
+                  minLength="8"
+                  autoComplete="new-password"
+                  required
+                />
+              </>
+            )}
 
-          <div className="form-actions">
-            <button type="submit" disabled={salvando}>
-              {salvando ? "Salvando..." : "Salvar"}
-            </button>
-            <button className="button-secondary" type="button" onClick={fecharFormulario}>
-              Cancelar
-            </button>
-          </div>
-        </fieldset></form>
+            <div className="form-actions">
+              <Button startIcon="salvar" loading={salvando} type="submit" disabled={salvando}>
+                {salvando ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button startIcon="fechar"
+                className="button-secondary"
+                type="button"
+                onClick={fecharFormulario}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </fieldset>
+        </form>
       )}
 
       <div className="section-heading">
-        <div><span className="eyebrow">Contas</span><h2>Usuários cadastrados</h2></div>
-        <span className="count-badge">{carregando || erroLista ? "\u2014" : usuarios.length}</span>
+        <div>
+          <span className="eyebrow">Contas</span>
+          <h2>Usuários cadastrados</h2>
+        </div>
+        <span className="count-badge">
+          {carregando || erroLista ? "\u2014" : usuarios.length}
+        </span>
       </div>
 
       {carregando && <p role="status">Carregando contas...</p>}
-      {erroLista && <button type="button" onClick={carregarUsuarios}>Tentar novamente</button>}
-      <div hidden={carregando || erroLista} className="panel users-table-wrapper">
+      {erroLista && (
+        <Button startIcon="atualizar" type="button" onClick={recarregarUsuarios}>
+          Tentar novamente
+        </Button>
+      )}
+      <div
+        hidden={carregando || erroLista}
+        className="panel users-table-wrapper"
+      >
         <table className="users-table">
           <thead>
             <tr>
@@ -303,27 +346,39 @@ function Usuarios() {
           <tbody>
             {usuarios.map((usuario) => (
               <tr key={usuario.id}>
-                <td>{usuario.nome}</td>
-                <td>{usuario.email}</td>
-                <td>{usuario.perfil === "admin" ? "Admin" : "Usuário"}</td>
-                <td>{usuario.ativo ? "Ativo" : "Inativo"}</td>
-                <td className="user-actions">
-                  <button className="button-secondary button-small" type="button" onClick={() => abrirEdicao(usuario)}>
+                <td data-label="Nome">{usuario.nome}</td>
+                <td data-label="Email">{usuario.email}</td>
+                <td data-label="Perfil">
+                  {usuario.perfil === "admin" ? "Admin" : "Usuário"}
+                </td>
+                <td data-label="Situação">
+                  {usuario.ativo ? "Ativo" : "Inativo"}
+                </td>
+                <td className="user-actions" data-label="Ações">
+                  <Button startIcon="editar"
+                    className="button-secondary button-small"
+                    type="button"
+                    onClick={() => abrirEdicao(usuario)}
+                  >
                     Editar
-                  </button>
+                  </Button>
 
                   {usuario.perfil === "usuario" && (
                     <>
-                      <button className="button-small" type="button" onClick={() => alterarSituacao(usuario)}>
+                      <Button startIcon="bloqueio"
+                        className="button-small"
+                        type="button"
+                        onClick={() => alterarSituacao(usuario)}
+                      >
                         {usuario.ativo ? "Desativar" : "Ativar"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button startIcon="excluir"
                         className="button-danger button-small"
                         type="button"
                         onClick={() => abrirExclusaoUsuario(usuario)}
                       >
                         Excluir usuário
-                      </button>
+                      </Button>
                     </>
                   )}
                 </td>
@@ -333,7 +388,9 @@ function Usuarios() {
         </table>
       </div>
 
-      {!carregando && !erroLista && usuarios.length === 0 && <p>Nenhum usuário cadastrado.</p>}
+      {!carregando && !erroLista && usuarios.length === 0 && (
+        <p>Nenhum usuário cadastrado.</p>
+      )}
 
       <ConfirmacaoExclusao
         aberto={Boolean(usuarioParaExcluir)}

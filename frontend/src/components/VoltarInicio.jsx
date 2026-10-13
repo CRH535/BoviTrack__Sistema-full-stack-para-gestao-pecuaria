@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Icone from "./Icone";
 
 function VoltarInicio({ className = "" }) {
   return (
@@ -7,7 +8,7 @@ function VoltarInicio({ className = "" }) {
       to="/"
       aria-label="Voltar ao Dashboard Inicial"
     >
-      <span className="back-home-icon" aria-hidden="true">←</span>
+      <Icone nome="voltar" className="back-home-icon" />
       Voltar ao Início
     </Link>
   );

@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { useEffect, useState } from "react";
 import ConfirmacaoExclusao from "./ConfirmacaoExclusao";
 import GraficoPeso from "./GraficoPeso";
@@ -147,11 +148,11 @@ function ControlePesagens({ animal, onAtualizarAnimal, refreshKey = 0 }) {
     <section className="management-section weighing-section">
       <div className="section-heading management-heading">
         <div><span className="eyebrow">Crescimento individual</span><h2>Pesagens e desempenho</h2></div>
-        <button disabled={processando || carregando} type="button" onClick={novo}>{pesagens.length ? "Nova pesagem" : "Registrar primeira pesagem"}</button>
+        <Button startIcon="pesagem" disabled={processando || carregando} type="button" onClick={novo}>{pesagens.length ? "Nova pesagem" : "Registrar primeira pesagem"}</Button>
       </div>
       {carregando && <p role="status">Carregando manejo do animal...</p>}
       {mensagem && <p className="notice" role="status">{mensagem}</p>}
-      {erro && <div className="notice notice-error" role="alert">{erro} <button type="button" onClick={() => { setErro(""); setCarregando(true); setTentativa((atual) => atual + 1); }}>Tentar novamente</button></div>}
+      {erro && <div className="notice notice-error" role="alert">{erro} <Button startIcon="atualizar" type="button" onClick={() => { setErro(""); setCarregando(true); setTentativa((atual) => atual + 1); }}>Tentar novamente</Button></div>}
 
       {formulario && (
         <form className="panel data-form management-form" onSubmit={salvar}><fieldset className="form-fields" disabled={processando || carregando}>
@@ -162,7 +163,7 @@ function ControlePesagens({ animal, onAtualizarAnimal, refreshKey = 0 }) {
           <div><label htmlFor="controlepesagens-campo-4">Método</label><select id="controlepesagens-campo-4" value={dados.metodo} onChange={(e) => alterar("metodo", e.target.value)}><option value="">Não informado</option>{METODOS.map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}</select></div>
           <div><label htmlFor="controlepesagens-campo-5">Lote na pesagem</label><select id="controlepesagens-campo-5" value={dados.lote_id} onChange={(e) => alterar("lote_id", e.target.value)}><option value="">Não informado</option>{lotes.map((lote) => <option key={lote.id} value={lote.id}>{lote.nome}</option>)}</select></div>
           <div className="management-wide-field"><label htmlFor="controlepesagens-campo-6">Observações</label><textarea id="controlepesagens-campo-6" maxLength="500" value={dados.observacao} onChange={(e) => alterar("observacao", e.target.value)} /></div>
-          <div className="form-actions management-form-actions"><button disabled={processando || carregando} type="submit">{processando ? "Salvando..." : "Salvar pesagem"}</button><button disabled={processando || carregando} className="button-secondary" type="button" onClick={() => setFormulario(false)}>Cancelar</button></div>
+          <div className="form-actions management-form-actions"><Button startIcon="salvar" loading={processando} disabled={processando || carregando} type="submit">{processando ? "Salvando..." : "Salvar pesagem"}</Button><Button startIcon="fechar" disabled={processando || carregando} className="button-secondary" type="button" onClick={() => setFormulario(false)}>Cancelar</Button></div>
         </fieldset></form>
       )}
 
@@ -193,7 +194,7 @@ function ControlePesagens({ animal, onAtualizarAnimal, refreshKey = 0 }) {
               <div><strong>{ROTULOS[item.tipo_pesagem] || item.tipo_pesagem}</strong><span>{item.metodo ? ROTULOS[item.metodo] : "Método não informado"}{item.lote ? ` • ${item.lote}` : ""}</span></div>
               <div><strong>Variação</strong><span>{item.variacao_kg == null ? "—" : `${item.variacao_kg >= 0 ? "+" : ""}${kg(item.variacao_kg)}`}</span></div>
               <p>{item.observacao || "Sem observações"}</p>
-              <div className="record-actions"><button disabled={processando || carregando} className="button-secondary button-small" type="button" onClick={() => editar(item)}>Editar</button><button disabled={processando || carregando} className="button-danger button-small" type="button" onClick={() => setExcluir(item)}>Excluir</button></div>
+              <div className="record-actions"><Button startIcon="editar" disabled={processando || carregando} className="button-secondary button-small" type="button" onClick={() => editar(item)}>Editar</Button><Button startIcon="excluir" disabled={processando || carregando} className="button-danger button-small" type="button" onClick={() => setExcluir(item)}>Excluir</Button></div>
             </article>
           ))}
         </div>

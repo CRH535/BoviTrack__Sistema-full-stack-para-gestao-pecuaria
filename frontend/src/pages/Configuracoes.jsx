@@ -1,3 +1,5 @@
+import Button from "../components/ui/Button";
+import Icone from "../components/Icone";
 import IconeConfiguracoes from "../components/IconeConfiguracoes";
 import VoltarInicio from "../components/VoltarInicio";
 import { usePreferences } from "../preferences/usePreferences";
@@ -6,16 +8,19 @@ import { useTutorial } from "../tutorial/useTutorial";
 const temas = [
   {
     value: "light",
+    icon: "sol",
     label: "Claro",
     description: "Interface clara e leve.",
   },
   {
     value: "dark",
+    icon: "lua",
     label: "Escuro",
     description: "Superfícies escuras e confortáveis.",
   },
   {
     value: "system",
+    icon: "sistema",
     label: "Sistema",
     description: "Acompanha este dispositivo.",
   },
@@ -39,7 +44,10 @@ function Configuracoes() {
         <VoltarInicio />
       </header>
 
-      <section className="panel settings-section" aria-labelledby="aparencia-titulo">
+      <section
+        className="panel settings-section"
+        aria-labelledby="aparencia-titulo"
+      >
         <div className="settings-section-heading">
           <div>
             <span className="settings-section-icon" aria-hidden="true">
@@ -68,7 +76,10 @@ function Configuracoes() {
                   onChange={() => setTheme(tema.value)}
                 />
 
-                <span className={`theme-preview theme-preview--${tema.value}`} aria-hidden="true">
+                <span
+                  className={`theme-preview theme-preview--${tema.value}`}
+                  aria-hidden="true"
+                >
                   <span className="theme-preview-sidebar" />
                   <span className="theme-preview-content">
                     <span />
@@ -77,47 +88,62 @@ function Configuracoes() {
                 </span>
 
                 <span className="theme-option-copy">
-                  <strong>{tema.label}</strong>
+                  <strong><Icone nome={tema.icon} />{tema.label}</strong>
                   <small>{tema.description}</small>
                 </span>
 
-                <span className="theme-selection-indicator" aria-hidden="true" />
+                <span
+                  className="theme-selection-indicator"
+                  aria-hidden="true"
+                />
               </label>
             ))}
           </div>
         </fieldset>
 
         <p className="settings-status" aria-live="polite">
-          Tema aplicado agora: <strong>{resolvedTheme === "dark" ? "Escuro" : "Claro"}</strong>
+          Tema aplicado agora:{" "}
+          <strong>{resolvedTheme === "dark" ? "Escuro" : "Claro"}</strong>
           {theme === "system" ? " (definido pelo sistema)." : "."}
         </p>
       </section>
 
-      <section className="panel settings-section" aria-labelledby="tutorial-titulo">
+      <section
+        className="panel settings-section"
+        aria-labelledby="tutorial-titulo"
+      >
         <div className="settings-section-heading">
           <div>
-            <span className="settings-section-icon" aria-hidden="true">?</span>
+            <span className="settings-section-icon" aria-hidden="true">
+              <Icone nome="ajuda" />
+            </span>
             <div>
               <h2 id="tutorial-titulo">Tutorial do BoviTrack</h2>
-              <p>Veja novamente o guia rápido das principais funções do sistema.</p>
+              <p>
+                Veja novamente o guia rápido das principais funções do sistema.
+              </p>
             </div>
           </div>
         </div>
-        <button
+        <Button startIcon="tutorial"
           className="tutorial-settings-action"
           type="button"
           onClick={restartTutorial}
           disabled={tutorialActive}
         >
           Refazer tutorial
-        </button>
+        </Button>
       </section>
 
-      <section className="panel settings-section settings-future" aria-labelledby="preferencias-titulo">
-        <h2 id="preferencias-titulo">Preferências</h2>
+      <section
+        className="panel settings-section settings-future"
+        aria-labelledby="preferencias-titulo"
+      >
+        <h2 id="preferencias-titulo">Neste dispositivo</h2>
         <p>
-          Suas escolhas visuais ficam salvas somente neste navegador. Outras preferências
-          locais poderão ser organizadas aqui futuramente.
+          O tema escolhido e o progresso do tutorial ficam salvos neste
+          navegador. Você pode ajustar a aparência ou refazer o guia a qualquer
+          momento.
         </p>
       </section>
     </div>

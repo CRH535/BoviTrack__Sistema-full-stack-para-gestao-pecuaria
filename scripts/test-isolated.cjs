@@ -38,7 +38,7 @@ function run(relativeFile, cwd = "backend", args = []) {
 async function main() {
   if (mode === "offline") {
     for (const file of ["security-hardening", "calf-management", "clima", "deletion-impact", "backend-regressions"]) run(`tests/${file}.js`);
-    run("--test", "frontend", ["tests/api.test.js"]);
+    run("--test", "frontend", ["tests/api.test.js", "tests/financas.test.js"]);
     return;
   }
   const admin = new Client({ connectionString: adminUrl.href, ssl: false });

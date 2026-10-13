@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import Button from "./ui/Button";
 import api from "../services/api";
 import ClimaPropriedade from "./ClimaPropriedade";
 
@@ -45,7 +46,7 @@ function ClimaDashboard() {
           </label>
         )}
         <ClimaPropriedade key={selecionada.id} propriedade={selecionada} compacto />
-        <Link className="weather-details-link" to={`/propriedades?clima=${selecionada.id}`}>Ver previsão completa nas propriedades →</Link>
+        <Button as={Link} endIcon="seta" className="weather-details-link" to={`/propriedades?clima=${selecionada.id}`}>Ver previsão completa nas propriedades</Button>
       </>}
     </section>
   );

@@ -1,0 +1,177 @@
+/* Única escala para ícones; as cores seguem os tokens e o estado do controle. */
+:root {
+  --icon-button: 18px;
+  --icon-small: 16px;
+  --icon-nav: 20px;
+  --icon-card: 24px;
+  --icon-title: 28px;
+  --icon-empty: 36px;
+}
+:where(.app-image-icon) {
+  display: inline-block;
+  width: var(--icon-nav);
+  height: var(--icon-nav);
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+:where(.ui-button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.ui-button-icon {
+  display: inline-flex;
+  width: var(--icon-button);
+  height: var(--icon-button);
+  flex-shrink: 0;
+}
+.ui-button-icon > svg {
+  width: 100%;
+  height: 100%;
+}
+.ui-help-link.ui-button,
+.weather-details-link.ui-button {
+  display: flex;
+  justify-content: flex-start;
+  white-space: normal;
+}
+.ui-table-actions .icon-button {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+.icon-button.button-secondary {
+  color: var(--accent-text);
+}
+.icon-button.button-danger {
+  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--danger-soft);
+}
+.icon-button.button-danger:hover:not(:disabled) {
+  color: var(--danger-hover);
+  border-color: var(--danger-hover-border);
+  background: var(--danger-hover-soft);
+}
+@media (max-width: 640px) {
+  .ui-table-actions .icon-button {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}
+@media (max-width: 430px) {
+  /* O botão já ocupa 100% no mobile; o título precisa estar em outra linha. */
+  .milk-section-heading {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.ui-button > .app-image-icon,
+.icon-button > .app-image-icon,
+.password-field .password-toggle > .app-image-icon,
+.button-icon-image {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  margin: 0;
+}
+.button-small > .app-image-icon,
+.ui-table-actions .app-image-icon,
+.ui-sort > .app-image-icon {
+  width: var(--icon-small);
+  height: var(--icon-small);
+}
+.nav-icon-image {
+  width: var(--icon-nav);
+  height: var(--icon-nav);
+  flex-basis: var(--icon-nav);
+}
+.ui-card-heading h2 .app-image-icon,
+.ui-kpi-icon .app-image-icon,
+.ui-action-icon .app-image-icon,
+.record-icon-image {
+  width: var(--icon-card);
+  height: var(--icon-card);
+}
+.title-icon-image {
+  width: var(--icon-title);
+  height: var(--icon-title);
+  flex-basis: var(--icon-title);
+}
+.topbar-search .app-image-icon {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  flex-basis: var(--icon-button);
+}
+.title-settings-icon {
+  width: var(--icon-title);
+  height: var(--icon-title);
+}
+.settings-section-icon .app-image-icon {
+  width: var(--icon-card);
+  height: var(--icon-card);
+}
+.theme-option-copy strong {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.theme-option-copy strong .app-image-icon {
+  width: var(--icon-small);
+  height: var(--icon-small);
+}
+.ui-empty-icon .app-image-icon {
+  width: var(--icon-empty);
+  height: var(--icon-empty);
+}
+.ui-search-field {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+.ui-search-field > .app-image-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  width: var(--icon-button);
+  height: var(--icon-button);
+  color: var(--text-muted);
+}
+.ui-search-field input {
+  padding-left: 38px;
+}
+.ui-timeline-item > .app-image-icon {
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--icon-small);
+  height: var(--icon-small);
+  color: var(--accent-text);
+}
+.ui-timeline-item time {
+  grid-column: 1;
+  grid-row: 1;
+  padding-left: 22px;
+}
+.ui-timeline-item > span {
+  grid-column: 2;
+}
+.ui-timeline-item {
+  grid-template-columns: 108px minmax(0, 1fr);
+  white-space: normal;
+}
+.icon-spinner {
+  animation: icon-spin 900ms linear infinite;
+}
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-spinner {
+    animation: none;
+  }
+}

@@ -1,9 +1,14 @@
+import Button from "../components/ui/Button";
+import { Link } from "react-router-dom";
+import PainelFinanceiro from "../components/financas/PainelFinanceiro";
+import Lancamentos from "../components/financas/Lancamentos";
+import { filtrarDespesas } from "../utils/financas";
+import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmacaoExclusao from "../components/ConfirmacaoExclusao";
 import IconeImagem from "../components/IconeImagem";
-import VoltarInicio from "../components/VoltarInicio";
+
 import api from "../services/api";
-import { formatarDataSemFuso } from "../utils/datas";
 
 const CATEGORIAS_SUGERIDAS = [
   "Venda de animais",
@@ -15,8 +20,19 @@ const CATEGORIAS_SUGERIDAS = [
   "Outros",
 ];
 
-const FORMAS_RECEBIMENTO = ["Pix", "Dinheiro", "Transferência", "Boleto", "Cartão", "Outro"];
-const RESUMO_INICIAL = { receita_total: 0, despesas_totais: 0, lucro_liquido: 0 };
+const FORMAS_RECEBIMENTO = [
+  "Pix",
+  "Dinheiro",
+  "Transferência",
+  "Boleto",
+  "Cartão",
+  "Outro",
+];
+const RESUMO_INICIAL = {
+  receita_total: 0,
+  despesas_totais: 0,
+  lucro_liquido: 0,
+};
 const FILTROS_INICIAIS = {
   propriedade_id: "",
   periodo: "mes",
@@ -25,15 +41,9 @@ const FILTROS_INICIAIS = {
   data_fim: "",
 };
 
-function formatarMoeda(valor) {
-  return Number(valor || 0).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
 function Lucros() {
   const [receitas, setReceitas] = useState([]);
+  const [despesas, setDespesas] = useState();
   const [propriedades, setPropriedades] = useState([]);
   const [resumo, setResumo] = useState(RESUMO_INICIAL);
   const [formulario, setFormulario] = useState({
@@ -94,26 +104,51 @@ function Lucros() {
       }
     }
     carregarDados();
-    return () => { ativo = false; };
+    return () => {
+      ativo = false;
+    };
   }, [parametrosAtuais, refreshKey]);
 
   useEffect(() => {
     let ativo = true;
-    api.getAll("/propriedades")
+    api
+      .getAll("/propriedades")
       .then((resposta) => {
         if (ativo) setPropriedades(resposta.data);
       })
       .catch(() => {
         if (ativo) setErro("Erro ao carregar propriedades");
       });
-    return () => { ativo = false; };
+    return () => {
+      ativo = false;
+    };
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    api
+      .getAll("/despesas", { signal: controller.signal })
+      .then((r) => {
+        if (!controller.signal.aborted) setDespesas(r.data);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setDespesas(null);
+      });
+    return () => controller.abort();
+  }, [refreshKey]);
+  const despesasFiltradas = useMemo(
+    () => (despesas ? filtrarDespesas(despesas, filtrosAplicados) : despesas),
+    [despesas, filtrosAplicados],
+  );
+
   const categoriasDisponiveis = useMemo(
-    () => Array.from(new Set([
-      ...CATEGORIAS_SUGERIDAS,
-      ...receitas.map((receita) => receita.categoria).filter(Boolean),
-    ])),
+    () =>
+      Array.from(
+        new Set([
+          ...CATEGORIAS_SUGERIDAS,
+          ...receitas.map((receita) => receita.categoria).filter(Boolean),
+        ]),
+      ),
     [receitas],
   );
 
@@ -199,7 +234,10 @@ function Lucros() {
   function aplicarFiltros(evento) {
     evento.preventDefault();
     setMensagem("");
-    if (filtros.periodo === "personalizado" && filtros.data_inicio > filtros.data_fim) {
+    if (
+      filtros.periodo === "personalizado" &&
+      filtros.data_inicio > filtros.data_fim
+    ) {
       setErro("A data inicial não pode ser posterior à data final.");
       return;
     }
@@ -214,87 +252,79 @@ function Lucros() {
           <span className="eyebrow">Resultado financeiro</span>
           <h1 className="icon-title">
             <IconeImagem nome="producao" className="title-icon-image" />
-            Lucros
+            Produção e resultados
           </h1>
-          <p>Registre receitas e acompanhe o resultado da atividade pecuária.</p>
+          <p>
+            Registre receitas e acompanhe o resultado da atividade pecuária.
+          </p>
         </div>
-        <VoltarInicio />
+        <div className="page-header-actions">
+          <Button as={Link} startIcon="producao" className="button-link button-primary" to="/producao">
+            Registrar produção
+          </Button>
+          <Button as={Link} startIcon="despesas" className="button-link" to="/despesas?novo=1">
+            Nova despesa
+          </Button>
+        </div>
       </header>
 
-      {mensagem && <p className="notice" role="status">{mensagem}</p>}
-      {erro && <div className="notice notice-error" role="alert">{erro} <button type="button" onClick={() => { setErro(""); setCarregando(true); setRefreshKey((atual) => atual + 1); }}>Tentar novamente</button></div>}
+      {mensagem && (
+        <p className="notice" role="status">
+          {mensagem}
+        </p>
+      )}
+      {erro && (
+        <div className="notice notice-error" role="alert">
+          {erro}{" "}
+          <Button startIcon="atualizar"
+            type="button"
+            onClick={() => {
+              setErro("");
+              setCarregando(true);
+              setRefreshKey((atual) => atual + 1);
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      )}
 
-      {carregando && <p role="status">Carregando receitas e resumo financeiro...</p>}
-      <section hidden={carregando || Boolean(erro)} className="profit-summary-grid" aria-label="Resumo financeiro">
-        <article className="stat-card stat-card-finance">
-          <div><span>Receita total</span><strong>{formatarMoeda(resumo.receita_total)}</strong><small>Entradas no período</small></div>
-        </article>
-        <article className="stat-card stat-card-finance">
-          <div><span>Despesas totais</span><strong>{formatarMoeda(resumo.despesas_totais)}</strong><small>Custos no mesmo período</small></div>
-        </article>
-        <article className="stat-card stat-card-finance">
-          <div><span>Lucro líquido</span><strong className={Number(resumo.lucro_liquido) < 0 ? "profit-negative" : ""}>{formatarMoeda(resumo.lucro_liquido)}</strong><small>Receitas menos despesas</small></div>
-        </article>
-      </section>
-
-      <form className="panel data-form revenue-form" onSubmit={salvarReceita}>
-        <fieldset className="form-fields" disabled={salvando || processandoExclusao || carregando}>
-        <div>
-          <label htmlFor="receita-descricao">Descrição</label>
-          <input id="receita-descricao" maxLength="150" required value={formulario.descricao} onChange={(e) => alterarFormulario("descricao", e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="receita-categoria">Categoria</label>
-          <input id="receita-categoria" list="categorias-receita" maxLength="100" required value={formulario.categoria} onChange={(e) => alterarFormulario("categoria", e.target.value)} placeholder="Selecione ou digite" />
-          <datalist id="categorias-receita">{CATEGORIAS_SUGERIDAS.map((item) => <option key={item} value={item} />)}</datalist>
-        </div>
-        <div>
-          <label htmlFor="receita-valor">Valor</label>
-          <input id="receita-valor" type="number" min="0.01" max="999999999999.99" step="0.01" required value={formulario.valor} onChange={(e) => alterarFormulario("valor", e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="receita-data">Data</label>
-          <input id="receita-data" type="date" required value={formulario.data} onChange={(e) => alterarFormulario("data", e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="receita-propriedade">Propriedade</label>
-          <select id="receita-propriedade" required value={formulario.propriedade_id} onChange={(e) => alterarFormulario("propriedade_id", e.target.value)}>
-            <option value="">Selecione</option>
-            {propriedades.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="receita-forma">Forma de recebimento</label>
-          <input id="receita-forma" list="formas-recebimento" maxLength="100" value={formulario.forma_recebimento} onChange={(e) => alterarFormulario("forma_recebimento", e.target.value)} placeholder="Ex.: Pix ou dinheiro" />
-          <datalist id="formas-recebimento">{FORMAS_RECEBIMENTO.map((item) => <option key={item} value={item} />)}</datalist>
-        </div>
-        <div className="revenue-observation-field">
-          <label htmlFor="receita-observacao">Observação (opcional)</label>
-          <textarea id="receita-observacao" maxLength="500" value={formulario.observacao} onChange={(e) => alterarFormulario("observacao", e.target.value)} />
-        </div>
-        <div className="form-actions revenue-form-actions">
-          <button type="submit">{salvando ? "Salvando..." : editandoId ? "Salvar alterações" : "Cadastrar receita"}</button>
-          {editandoId && <button className="button-secondary" type="button" onClick={limparFormulario}>Cancelar</button>}
-        </div>
-        </fieldset>
-      </form>
-
-      <div className="section-heading">
-        <div><span className="eyebrow">Consulta financeira</span><h2>Receitas cadastradas</h2></div>
-        <span className="count-badge">{receitas.length}</span>
-      </div>
-
-      <form className="panel management-filters revenue-filters" onSubmit={aplicarFiltros}>
+      {carregando && (
+        <p role="status">Carregando receitas e resumo financeiro...</p>
+      )}
+      <form
+        className="panel management-filters revenue-filters"
+        onSubmit={aplicarFiltros}
+      >
         <div>
           <label htmlFor="filtro-receita-propriedade">Propriedade</label>
-          <select id="filtro-receita-propriedade" value={filtros.propriedade_id} onChange={(e) => setFiltros((atual) => ({ ...atual, propriedade_id: e.target.value }))}>
+          <select
+            id="filtro-receita-propriedade"
+            value={filtros.propriedade_id}
+            onChange={(e) =>
+              setFiltros((atual) => ({
+                ...atual,
+                propriedade_id: e.target.value,
+              }))
+            }
+          >
             <option value="">Todas</option>
-            {propriedades.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
+            {propriedades.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.nome}
+              </option>
+            ))}
           </select>
         </div>
         <div>
           <label htmlFor="filtro-receita-periodo">Período</label>
-          <select id="filtro-receita-periodo" value={filtros.periodo} onChange={(e) => setFiltros((atual) => ({ ...atual, periodo: e.target.value }))}>
+          <select
+            id="filtro-receita-periodo"
+            value={filtros.periodo}
+            onChange={(e) =>
+              setFiltros((atual) => ({ ...atual, periodo: e.target.value }))
+            }
+          >
             <option value="hoje">Hoje</option>
             <option value="semana">Esta semana</option>
             <option value="mes">Este mês</option>
@@ -305,39 +335,200 @@ function Lucros() {
         </div>
         <div>
           <label htmlFor="filtro-receita-categoria">Categoria</label>
-          <select id="filtro-receita-categoria" value={filtros.categoria} onChange={(e) => setFiltros((atual) => ({ ...atual, categoria: e.target.value }))}>
+          <select
+            id="filtro-receita-categoria"
+            value={filtros.categoria}
+            onChange={(e) =>
+              setFiltros((atual) => ({ ...atual, categoria: e.target.value }))
+            }
+          >
             <option value="">Todas</option>
-            {categoriasDisponiveis.map((item) => <option key={item} value={item}>{item}</option>)}
+            {categoriasDisponiveis.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
           </select>
         </div>
         {filtros.periodo === "personalizado" && (
           <>
-            <div><label htmlFor="filtro-receita-inicio">Data inicial</label><input id="filtro-receita-inicio" type="date" required value={filtros.data_inicio} onChange={(e) => setFiltros((atual) => ({ ...atual, data_inicio: e.target.value }))} /></div>
-            <div><label htmlFor="filtro-receita-fim">Data final</label><input id="filtro-receita-fim" type="date" required value={filtros.data_fim} onChange={(e) => setFiltros((atual) => ({ ...atual, data_fim: e.target.value }))} /></div>
+            <div>
+              <label htmlFor="filtro-receita-inicio">Data inicial</label>
+              <input
+                id="filtro-receita-inicio"
+                type="date"
+                required
+                value={filtros.data_inicio}
+                onChange={(e) =>
+                  setFiltros((atual) => ({
+                    ...atual,
+                    data_inicio: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="filtro-receita-fim">Data final</label>
+              <input
+                id="filtro-receita-fim"
+                type="date"
+                required
+                value={filtros.data_fim}
+                onChange={(e) =>
+                  setFiltros((atual) => ({
+                    ...atual,
+                    data_fim: e.target.value,
+                  }))
+                }
+              />
+            </div>
           </>
         )}
-        <button type="submit">Aplicar filtros</button>
+        <Button startIcon="filtro" loading={salvando} type="submit">Aplicar filtros</Button>
       </form>
+      {!carregando && !erro && (
+        <PainelFinanceiro
+          resumo={resumo}
+          receitas={receitas}
+          despesas={despesasFiltradas}
+          categoria={filtrosAplicados.categoria}
+        />
+      )}
 
-      {!carregando && !erro && !receitas.length && <div className="empty-state"><p>Nenhuma receita encontrada para os filtros selecionados.</p></div>}
-      <div hidden={carregando || Boolean(erro)} className="record-grid revenue-grid">
-        {receitas.map((receita) => (
-          <article className="record-card revenue-card" key={receita.id}>
-            <span className="record-icon" aria-hidden="true"><IconeImagem nome="producao" className="record-icon-image" /></span>
-            <span className="tag-badge">{receita.categoria}</span>
-            <h3>{receita.descricao}</h3>
-            <strong className="expense-value">{formatarMoeda(receita.valor)}</strong>
-            <p>Data: {formatarDataSemFuso(receita.data)}</p>
-            <p>Propriedade: {receita.propriedade}</p>
-            <p>Recebimento: {receita.forma_recebimento || "Não informado"}</p>
-            {receita.observacao && <p>Observação: {receita.observacao}</p>}
-            <div className="record-actions">
-              <button className="button-secondary" type="button" onClick={() => editarReceita(receita)}>Editar</button>
-              <button className="button-danger" type="button" onClick={() => setReceitaParaExcluir(receita)}>Excluir</button>
+      <FormularioCadastro titulo="Nova receita" editando={editandoId}>
+        <form className="panel data-form revenue-form" onSubmit={salvarReceita}>
+          <fieldset
+            className="form-fields"
+            disabled={salvando || processandoExclusao || carregando}
+          >
+            <div>
+              <label htmlFor="receita-descricao">Descrição</label>
+              <input
+                id="receita-descricao"
+                maxLength="150"
+                required
+                value={formulario.descricao}
+                onChange={(e) => alterarFormulario("descricao", e.target.value)}
+              />
             </div>
-          </article>
-        ))}
-      </div>
+            <div>
+              <label htmlFor="receita-categoria">Categoria</label>
+              <input
+                id="receita-categoria"
+                list="categorias-receita"
+                maxLength="100"
+                required
+                value={formulario.categoria}
+                onChange={(e) => alterarFormulario("categoria", e.target.value)}
+                placeholder="Selecione ou digite"
+              />
+              <datalist id="categorias-receita">
+                {CATEGORIAS_SUGERIDAS.map((item) => (
+                  <option key={item} value={item} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label htmlFor="receita-valor">Valor</label>
+              <input
+                id="receita-valor"
+                type="number"
+                min="0.01"
+                max="999999999999.99"
+                step="0.01"
+                required
+                value={formulario.valor}
+                onChange={(e) => alterarFormulario("valor", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="receita-data">Data</label>
+              <input
+                id="receita-data"
+                type="date"
+                required
+                value={formulario.data}
+                onChange={(e) => alterarFormulario("data", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="receita-propriedade">Propriedade</label>
+              <select
+                id="receita-propriedade"
+                required
+                value={formulario.propriedade_id}
+                onChange={(e) =>
+                  alterarFormulario("propriedade_id", e.target.value)
+                }
+              >
+                <option value="">Selecione</option>
+                {propriedades.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="receita-forma">Forma de recebimento</label>
+              <input
+                id="receita-forma"
+                list="formas-recebimento"
+                maxLength="100"
+                value={formulario.forma_recebimento}
+                onChange={(e) =>
+                  alterarFormulario("forma_recebimento", e.target.value)
+                }
+                placeholder="Ex.: Pix ou dinheiro"
+              />
+              <datalist id="formas-recebimento">
+                {FORMAS_RECEBIMENTO.map((item) => (
+                  <option key={item} value={item} />
+                ))}
+              </datalist>
+            </div>
+            <div className="revenue-observation-field">
+              <label htmlFor="receita-observacao">Observação (opcional)</label>
+              <textarea
+                id="receita-observacao"
+                maxLength="500"
+                value={formulario.observacao}
+                onChange={(e) =>
+                  alterarFormulario("observacao", e.target.value)
+                }
+              />
+            </div>
+            <div className="form-actions revenue-form-actions">
+              <Button startIcon={editandoId ? "salvar" : "mais"} loading={salvando} type="submit">
+                {salvando
+                  ? "Salvando..."
+                  : editandoId
+                    ? "Salvar alterações"
+                    : "Cadastrar receita"}
+              </Button>
+              {editandoId && (
+                <Button startIcon="fechar"
+                  className="button-secondary"
+                  type="button"
+                  onClick={limparFormulario}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          </fieldset>
+        </form>
+      </FormularioCadastro>
+
+      {!carregando && !erro && (
+        <Lancamentos
+          receitas={receitas}
+          despesas={despesasFiltradas}
+          onEditar={editarReceita}
+          onExcluir={setReceitaParaExcluir}
+          processando={salvando || processandoExclusao}
+        />
+      )}
 
       <ConfirmacaoExclusao
         aberto={Boolean(receitaParaExcluir)}

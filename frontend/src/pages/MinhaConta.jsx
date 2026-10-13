@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
@@ -148,9 +149,9 @@ function MinhaConta() {
               </div>
             </dl>
 
-            <button type="button" onClick={() => setEditando(true)}>
+            <Button startIcon="editar" type="button" onClick={() => setEditando(true)}>
               Editar informações
-            </button>
+            </Button>
           </>
         )}
 
@@ -179,17 +180,17 @@ function MinhaConta() {
               />
             </div>
             <div className="form-actions">
-              <button type="submit" disabled={salvando}>
+              <Button startIcon="salvar" loading={salvando} type="submit" disabled={salvando}>
                 {salvando ? "Salvando..." : "Salvar alterações"}
-              </button>
-              <button
+              </Button>
+              <Button startIcon="fechar"
                 className="button-secondary"
                 type="button"
                 onClick={cancelarEdicao}
                 disabled={salvando}
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </form>
         )}
@@ -206,13 +207,13 @@ function MinhaConta() {
         </div>
 
         {usuario.perfil === "usuario" ? (
-          <button
+          <Button startIcon="excluir"
             className="button-danger"
             type="button"
             onClick={abrirExclusaoDaConta}
           >
             Excluir minha conta
-          </button>
+          </Button>
         ) : (
           <span className="protected-account-badge">
             Conta administrativa protegida

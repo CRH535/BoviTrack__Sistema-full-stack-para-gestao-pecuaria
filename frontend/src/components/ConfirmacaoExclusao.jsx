@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { useEffect, useId, useRef, useState } from "react";
 
 function ConfirmacaoExclusao({
@@ -124,7 +125,7 @@ function ConfirmacaoExclusao({
           )}
 
           <div className="confirmation-actions">
-            <button
+            <Button startIcon="fechar"
               className="button-secondary"
               type="button"
               onClick={cancelar}
@@ -132,14 +133,14 @@ function ConfirmacaoExclusao({
               autoFocus={!confirmacaoExigida}
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button startIcon="excluir" loading={processando}
               className="button-danger"
               type="submit"
               disabled={!confirmacaoValida || processando}
             >
               {processando ? rotuloProcessando : rotuloConfirmar}
-            </button>
+            </Button>
           </div>
         </form>
       </dialog>

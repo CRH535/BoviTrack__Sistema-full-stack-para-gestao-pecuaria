@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -212,14 +213,14 @@ function TutorialOverlay({
           >
             <div className="tutorial-progress-row">
               <span>Etapa {stepIndex + 1} de {totalSteps}</span>
-              <button
+              <Button startIcon="fechar"
                 className="tutorial-exit-link"
                 type="button"
                 onClick={onExit}
                 aria-label="Sair do tutorial"
               >
                 Sair do tutorial
-              </button>
+              </Button>
             </div>
             <div className="tutorial-progress" aria-hidden="true">
               <span style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }} />
@@ -230,32 +231,32 @@ function TutorialOverlay({
             <div className="tutorial-tooltip-actions">
               <div>
                 {stepIndex > 0 && (
-                  <button
+                  <Button startIcon="voltar"
                     className="tutorial-button tutorial-button--ghost"
                     type="button"
                     onClick={onPrevious}
                   >
                     Voltar
-                  </button>
+                  </Button>
                 )}
                 {stepIndex < totalSteps - 1 && (
-                  <button
+                  <Button startIcon="avancar"
                     className="tutorial-button tutorial-button--ghost"
                     type="button"
                     onClick={onSkip}
                   >
                     Pular etapa
-                  </button>
+                  </Button>
                 )}
               </div>
-              <button
+              <Button startIcon={stepIndex === totalSteps - 1 ? "concluir" : "avancar"}
                 className="tutorial-button tutorial-button--primary"
                 type="button"
                 onClick={onNext}
                 data-tour-primary="true"
               >
                 {stepIndex === totalSteps - 1 ? "Concluir tutorial" : "Próximo"}
-              </button>
+              </Button>
             </div>
           </section>
         </>
@@ -263,8 +264,8 @@ function TutorialOverlay({
         <section ref={tooltipRef} className="tutorial-loading" role="dialog" aria-modal="true" aria-label="Etapa indisponível">
           <span className="tutorial-loading-spinner" aria-hidden="true" />
           <p role="status">Preparando esta etapa. Se ela não aparecer, você pode continuar.</p>
-          <button type="button" onClick={onExit}>Sair do tutorial</button>
-          <button type="button" onClick={onNext} data-tour-primary="true">{stepIndex === totalSteps - 1 ? "Concluir tutorial" : "Pular etapa"}</button>
+          <Button startIcon="fechar" type="button" onClick={onExit}>Sair do tutorial</Button>
+          <Button startIcon={stepIndex === totalSteps - 1 ? "concluir" : "avancar"} type="button" onClick={onNext} data-tour-primary="true">{stepIndex === totalSteps - 1 ? "Concluir tutorial" : "Pular etapa"}</Button>
         </section>
       )}
     </div>,

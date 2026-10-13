@@ -1,65 +1,65 @@
-# Graph Report - BoviTrack__Sistema-full-stack-para-gestao-pecuaria  (2026-10-12)
+# Graph Report - BoviTrack__Sistema-full-stack-para-gestao-pecuaria  (2026-10-13)
 
 ## Corpus Check
-- 164 files · ~208,477 words
+- 207 files · ~237,925 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1212 nodes · 2044 edges · 98 communities (88 shown, 7 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 120 edges (avg confidence: 0.86)
+- 1376 nodes · 2466 edges · 115 communities (105 shown, 6 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 121 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1341d018`
+- Built from commit: `723ccd0e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- PreferencesProvider.jsx
+- Configuracoes.jsx
 - app.js
 - migrate-to-supabase.js
 - scripts
 - desmamasRoutes.js
 - devDependencies
 - React + Vite template
-- FichaAnimal
+- ControleLeiteiro
 - authRoutes.js
 - security-hardening.js
 - App.jsx
-- Propriedades.jsx
+- api
 - AuthContext.jsx
 - usuariosRoutes.js
-- formatarDataSemFuso
-- Desmamas.jsx
-- registrarEvento
+- BoviTrack — Reformulação Visual
+- Button
+- csrf.js
 - validacoes.js
-- producoesLeiteirasRoutes.js
-- auth-permissions.js
+- icons.test.js
+- Button.jsx
 - sessoes.js
-- Lucros.jsx
+- auth-permissions.js
 - Lotes
 - backend-regressions.js
 - What You Must Do When Invoked
-- rateLimit.js
+- registrarErro
 - calf-management.js
 - impactoExclusao.js
 - graphify reference: extra exports and benchmark
 - migrate-auth.js
-- ambiente.js
+- ListaAnimais.jsx
 - Animais
 - Lucros
 - Usuarios
-- MinhaConta
-- pool.js
+- usuarios.js
+- milk-production.js
 - vacinasRoutes.js
 - Despesas
 - Vacinacoes
-- migrate-animal-lots.js
-- Propriedades
+- receitas.js
+- vacinacoesRoutes.js
 - Vacinas
 - check-database.js
 - BoviTrack
-- migrate-milk-production.js
+- receitasRoutes.js
 - migrate-users.js
 - migrate-expenses.js
 - BOVITRACK — RELATÓRIO DE EVOLUÇÃO
@@ -91,48 +91,64 @@
 - extraction-spec.md
 - Q: Como adicionar o proprietário das propriedades somente para administradores no BoviTrack?
 - tests/clima.js
-- receitasRoutes.js
-- milk-production.js
-- Q: Quais componentes e estilos causam overflow e sobreposição no Dashboard do BoviTrack?
-- api.js
+- formatarDataSemFuso
 - calf-management-integration.js
-- server.js
-- erros.js
-- contextoRequisicao.js
+- Q: Quais componentes e estilos causam overflow e sobreposição no Dashboard do BoviTrack?
+- FichaAnimal
+- pool.js
+- Propriedades
+- Lucros.jsx
+- limitesRequisicao.js
 - Q: Onde estão os campos de senha de Login, Cadastro e usuários?
 - test-isolated.cjs
 - converterId
 - Migração do BoviTrack para o Supabase
 - backend/package.json
-- propriedadesRoutes.js
+- migrate-animal-lots.js
 - Segurança do banco em produção
 - test-isolation.cjs
 - bovitrack.spec.js
+- backend-regressions-integration.js
 - Data API desativada
 - playwright.config.js
+- migrate-animals.js
+- server.js
+- migrate-milk-production.js
+- api.js
+- migrate-refresh-sessions.js
+- Continuidade da reformulação visual
+- ui-interactions.spec.js
+- navigation-images.spec.js
+- icon-search.spec.js
+- BOVITRACK_ICONOGRAFIA.md
+- final-flows.spec.js
+- contextoRequisicao.js
+- propriedadesRoutes.js
+- ListaAnimais
+- migrate-calf-management.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `scripts` - 29 edges
-2. `registrarErro()` - 27 edges
-3. `converterId()` - 23 edges
-4. `formatarDataSemFuso()` - 23 edges
-5. `api` - 21 edges
-6. `BOVITRACK — RELATÓRIO DE EVOLUÇÃO` - 19 edges
-7. `validarCamposPermitidos()` - 18 edges
-8. `FichaAnimal()` - 18 edges
-9. `useAuth()` - 17 edges
-10. `BoviTrack` - 17 edges
+1. `Button()` - 37 edges
+2. `scripts` - 29 edges
+3. `formatarDataSemFuso()` - 28 edges
+4. `registrarErro()` - 27 edges
+5. `api` - 26 edges
+6. `Icone()` - 24 edges
+7. `converterId()` - 23 edges
+8. `BOVITRACK — RELATÓRIO DE EVOLUÇÃO` - 19 edges
+9. `validarCamposPermitidos()` - 18 edges
+10. `useAuth()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Gestão pecuária de animais, lotes, vacinações e despesas` --conceptually_related_to--> `Migração do BoviTrack para o Supabase`  [INFERRED]
   frontend/index.html → backend/MIGRACAO_SUPABASE.md
 - `Frontend limitado a VITE_API_URL` --conceptually_related_to--> `BoviTrack HTML entry`  [INFERRED]
   backend/database/SEGURANCA_PRODUCAO.md → frontend/index.html
+- `sair()` --indirect_call--> `finalizarLogoutVisual()`  [INFERRED]
+  frontend/src/components/LayoutApp.jsx → frontend/src/auth/AuthContext.jsx
 - `Migração do BoviTrack para o Supabase` --conceptually_related_to--> `Segurança do banco em produção`  [INFERRED]
   backend/MIGRACAO_SUPABASE.md → backend/database/SEGURANCA_PRODUCAO.md
 - `TLS verify-full com CA confiável` --semantically_similar_to--> `TLS verify-full no runtime`  [INFERRED] [semantically similar]
-  backend/MIGRACAO_SUPABASE.md → backend/database/SEGURANCA_PRODUCAO.md
-- `Supabase Auth, Data API e RLS fora do fluxo` --semantically_similar_to--> `Data API desativada`  [INFERRED] [semantically similar]
   backend/MIGRACAO_SUPABASE.md → backend/database/SEGURANCA_PRODUCAO.md
 
 ## Import Cycles
@@ -143,15 +159,15 @@
 - **Runtime serverless seguro do banco** — backend_database_seguranca_producao_runtime_least_privilege, backend_database_seguranca_producao_transaction_pooler_runtime, backend_database_seguranca_producao_tls_verify_full, backend_database_seguranca_producao_data_api_desativada, backend_database_seguranca_producao_post_deploy_verification [EXTRACTED 1.00]
 - **Superfície de runtime do frontend BoviTrack** — frontend_readme_react_vite_template, frontend_index_bovitrack_html_entry, backend_database_seguranca_producao_frontend_public_config [INFERRED 0.75]
 
-## Communities (98 total, 7 thin omitted)
+## Communities (115 total, 6 thin omitted)
 
-### Community 0 - "PreferencesProvider.jsx"
-Cohesion: 0.07
-Nodes (36): App(), BlackHoleTransition(), PARTICULAS, obterElementosFocaveis(), TutorialDialog(), controlarTeclado(), elementoEstaVisivel(), obterElementosFocaveis() (+28 more)
+### Community 0 - "Configuracoes.jsx"
+Cohesion: 0.06
+Nodes (39): App(), Configuracoes, IconeConfiguracoes(), BlackHoleTransition(), PARTICULAS, obterElementosFocaveis(), TutorialDialog(), controlarTeclado() (+31 more)
 
 ### Community 1 - "app.js"
-Cohesion: 0.09
-Nodes (21): animaisRoutes, { autenticar }, authRoutes, climaRoutes, { contextoRequisicao }, cors, { criarConfiguracaoCors }, dashboardRoutes (+13 more)
+Cohesion: 0.08
+Nodes (24): animaisRoutes, { autenticar }, authRoutes, climaRoutes, { contextoRequisicao }, cors, { criarConfiguracaoCors }, dashboardRoutes (+16 more)
 
 ### Community 2 - "migrate-to-supabase.js"
 Cohesion: 0.06
@@ -180,16 +196,16 @@ Nodes (25): {
 }, express, pool, { registrarErro }, router, { sincronizarPesoAtual }, { validarParametroId } (+17 more)
 
 ### Community 5 - "devDependencies"
-Cohesion: 0.05
-Nodes (42): axios, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, dependencies, axios, react (+34 more)
+Cohesion: 0.04
+Nodes (46): axios, @babel/parser, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, dependencies, axios (+38 more)
 
 ### Community 6 - "React + Vite template"
 Cohesion: 0.18
 Nodes (11): Frontend limitado a VITE_API_URL, Gestão pecuária de animais, lotes, vacinações e despesas, BoviTrack HTML entry, Ponto de montagem React root, Inicialização antecipada de tema, HMR e regras ESLint, @vitejs/plugin-react com Oxc, @vitejs/plugin-react-swc com SWC (+3 more)
 
-### Community 7 - "FichaAnimal"
-Cohesion: 0.08
-Nodes (29): ControleDesmama(), abrirConclusao(), cancelar(), carregar(), concluir(), planejar(), salvar(), ControlePesagens() (+21 more)
+### Community 7 - "ControleLeiteiro"
+Cohesion: 0.09
+Nodes (27): ControleDesmama(), abrirConclusao(), cancelar(), carregar(), concluir(), planejar(), salvar(), ControleLeiteiro() (+19 more)
 
 ### Community 8 - "authRoutes.js"
 Cohesion: 0.12
@@ -205,53 +221,43 @@ Nodes (21): { autenticar }, bcrypt, { consumirLimite }, {
 }, emailNormalizado(), express, limitarCadastro, limitarLoginConta (+13 more)
 
 ### Community 9 - "security-hardening.js"
-Cohesion: 0.11
-Nodes (15): { app }, assert, { consumirLimite }, {
-  converterId,
-  normalizarDataCalendario,
-  normalizarPaginacao,
-  validarCamposPermitidos,
-}, { criarConfiguracaoPorUrl }, {
-  encerrarTodasSessoes,
-  lerRefreshToken,
-  renovarSessaoRefresh,
-  verificarTokenAcesso,
-}, { exigirAutenticacaoRecente }, fs (+7 more)
+Cohesion: 0.09
+Nodes (20): configuracao, dotenv, duracaoEmSegundos(), DURACOES, validarAmbiente(), { app }, assert, { consumirLimite } (+12 more)
 
 ### Community 10 - "App.jsx"
-Cohesion: 0.14
-Nodes (13): Cadastro, itensMenu, Layout(), Login, MinhaConta, AdminRoute(), ProtectedRoute(), useAuth() (+5 more)
+Cohesion: 0.07
+Nodes (27): Animais, Cadastro, Dashboard, Despesas, Login, Lotes, MinhaConta, Propriedades (+19 more)
 
-### Community 11 - "Propriedades.jsx"
-Cohesion: 0.18
-Nodes (11): Animais, Configuracoes, Despesas, Lotes, Propriedades, Vacinas, IconeConfiguracoes(), IconeImagem() (+3 more)
+### Community 11 - "api"
+Cohesion: 0.29
+Nodes (12): Icone(), ColecaoRegistros(), FormularioCadastro(), VoltarInicio(), useMensagem(), CAMPOS_BUSCA, CAMPOS_BUSCA, CAMPOS_BUSCA (+4 more)
 
 ### Community 12 - "AuthContext.jsx"
-Cohesion: 0.17
-Nodes (20): sair(), AuthContext, AuthProvider(), avisarOutrasAbas(), finalizarLogoutVisual(), login(), logout(), logoutTodosDispositivos() (+12 more)
+Cohesion: 0.20
+Nodes (18): AuthProvider(), avisarOutrasAbas(), finalizarLogoutVisual(), login(), logout(), logoutTodosDispositivos(), restaurarSessao(), lerStorage() (+10 more)
 
 ### Community 13 - "usuariosRoutes.js"
 Cohesion: 0.12
 Nodes (18): autenticar(), exigirAutenticacaoRecente(), pool, { registrarErro }, somenteAdmin(), { verificarTokenAcesso }, { alterarAtivoUsuario, excluirUsuarioComDados }, express (+10 more)
 
-### Community 14 - "formatarDataSemFuso"
-Cohesion: 0.12
-Nodes (20): FichaAnimal, Vacinacoes, ROTULOS_TIPO, STATUS, TIPOS, METODOS, RESUMO_VAZIO, ROTULOS (+12 more)
+### Community 14 - "BoviTrack — Reformulação Visual"
+Cohesion: 0.13
+Nodes (14): Acessibilidade, BoviTrack — Reformulação Visual, Componentes criados, Dados e comportamento, Design System, Evidências locais, Melhorias dark mode, Melhorias mobile (+6 more)
 
-### Community 15 - "Desmamas.jsx"
+### Community 15 - "Button"
 Cohesion: 0.11
-Nodes (11): Desmamas, Pesagens, RegistroFichaNotice(), Desmamas(), ROTULOS_STATUS, ROTULOS_TIPO, STATUS, TIPOS (+3 more)
+Nodes (12): Desmamas, Pesagens, RegistroFichaNotice(), Button(), Desmamas(), ROTULOS_STATUS, ROTULOS_TIPO, STATUS (+4 more)
 
-### Community 16 - "registrarEvento"
-Cohesion: 0.22
-Nodes (12): criarConfiguracaoCors(), normalizarOrigem(), obterOrigensPermitidas(), { criarUsuarioComum }, { registrarEvento, registrarErro }, responderCriacaoUsuario(), {
+### Community 16 - "csrf.js"
+Cohesion: 0.42
+Nodes (7): criarConfiguracaoCors(), normalizarOrigem(), obterOrigensPermitidas(), {
   normalizarOrigem,
   obterOrigensPermitidas,
-}, origemDoReferer() (+4 more)
+}, origemDoReferer(), protegerContraCsrf(), { registrarEvento }
 
 ### Community 17 - "validacoes.js"
-Cohesion: 0.11
-Nodes (27): {
+Cohesion: 0.15
+Nodes (19): {
   converterId,
   idOpcionalInformado,
   normalizarDataNascimento,
@@ -262,49 +268,48 @@ Nodes (27): {
   normalizarTextoObrigatorio,
   normalizarTextoOpcional,
   normalizarNumeroFinito,
-}, express, normalizarDadosAnimal(), pool, { registrarErro }, router, { validarParametroId }, express (+19 more)
+}, express, normalizarDadosAnimal(), pool, { registrarErro }, router, { validarParametroId }, ESTADOS_BR (+11 more)
 
-### Community 18 - "producoesLeiteirasRoutes.js"
-Cohesion: 0.22
-Nodes (8): { buscarAnimalPermitido }, {
-  converterId,
-  normalizarDataCalendario,
-  normalizarProducaoLeiteira,
-  normalizarPaginacao,
-  responderPagina,
-}, express, pool, { registrarErro }, router, { validarParametroId }, normalizarPaginacao()
+### Community 18 - "icons.test.js"
+Cohesion: 0.18
+Nodes (7): check(), exactPath(), names, registry, root, sourceFiles, sourceRoot
 
-### Community 19 - "auth-permissions.js"
-Cohesion: 0.33
-Nodes (8): { app, pool }, assert, bcrypt, confirmar(), executar(), criarConjunto(), login(), requisitar()
+### Community 19 - "Button.jsx"
+Cohesion: 0.15
+Nodes (8): AppErrorBoundary, colunas, Lancamentos(), aliases, caminhos, IconButton(), Paginacao(), TabelaResponsiva()
 
 ### Community 20 - "sessoes.js"
 Cohesion: 0.21
-Nodes (13): {
+Nodes (14): {
   audience,
   expiracaoAcesso,
   issuer,
-}, criarSessaoRefresh(), criarTokenAcesso(), crypto, definirCookieRefresh(), duracaoEmMilissegundos(), encerrarTodasSessoes(), gerarIdentificadorSessao() (+5 more)
+}, criarSessaoRefresh(), criarTokenAcesso(), crypto, definirCookieRefresh(), duracaoEmMilissegundos(), encerrarTodasSessoes(), gerarIdentificadorSessao() (+6 more)
 
-### Community 21 - "Lucros.jsx"
-Cohesion: 0.13
-Nodes (13): Lucros, Usuarios, ConfirmacaoExclusao(), descreverRegistro(), detalhesResumo(), formatarData(), ResumoImpactoExclusao(), ROTULOS_RESUMO (+5 more)
+### Community 21 - "auth-permissions.js"
+Cohesion: 0.33
+Nodes (8): { app, pool }, assert, bcrypt, confirmar(), executar(), criarConjunto(), login(), requisitar()
 
 ### Community 22 - "Lotes"
-Cohesion: 0.24
-Nodes (8): Lotes(), adicionarAnimalAoLote(), carregarAnimaisDoLote(), carregarLotes(), gerenciarAnimais(), limparFormulario(), removerAnimalDoLote(), salvarLote()
+Cohesion: 0.31
+Nodes (8): Lotes(), adicionarAnimalAoLote(), carregarAnimaisDoLote(), gerenciarAnimais(), limparFormulario(), recarregarLotes(), removerAnimalDoLote(), salvarLote()
 
 ### Community 23 - "backend-regressions.js"
-Cohesion: 0.07
-Nodes (43): encerrarSessaoRefresh(), hashToken(), alterarAtivoUsuario(), bcrypt, criarErroValidacao(), criarUsuarioComum(), { excluirUsuarioComDados }, pool (+35 more)
+Cohesion: 0.21
+Nodes (11): encerrarSessaoRefresh(), { alterarAtivoUsuario, criarUsuarioComum }, assert, bancoFake(), {
+  converterId, normalizarNumeroFinito, normalizarPaginacao,
+  normalizarEstado, normalizarPesagem, normalizarProducaoLeiteira,
+  normalizarDesmama,
+  dataHojeNoFuso,
+}, { encerrarSessaoRefresh }, express, pool (+3 more)
 
 ### Community 24 - "What You Must Do When Invoked"
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
-### Community 25 - "rateLimit.js"
-Cohesion: 0.31
-Nodes (7): { consumirLimite }, limitarRequisicoes(), { registrarErro, registrarEvento }, consumirLimite(), crypto, hashChave(), pool
+### Community 25 - "registrarErro"
+Cohesion: 0.21
+Nodes (13): { criarUsuarioComum }, { registrarEvento, registrarErro }, responderCriacaoUsuario(), { consumirLimite }, limitarRequisicoes(), { registrarErro, registrarEvento }, express, pool (+5 more)
 
 ### Community 26 - "calf-management.js"
 Cohesion: 0.32
@@ -330,49 +335,53 @@ Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only
 Cohesion: 0.25
 Nodes (8): bcrypt, email, executar(), fs, lerMigracao(), nome, path, pool
 
-### Community 30 - "ambiente.js"
-Cohesion: 0.40
-Nodes (5): configuracao, dotenv, duracaoEmSegundos(), DURACOES, validarAmbiente()
+### Community 30 - "ListaAnimais.jsx"
+Cohesion: 0.15
+Nodes (17): Producao, colunas, colunas, ClimaDashboard(), DashboardConteudo(), moeda(), GraficoFinanceiro(), moeda() (+9 more)
 
 ### Community 31 - "Animais"
-Cohesion: 0.28
-Nodes (6): Animais(), carregarAnimais(), limparFormulario(), salvarAnimal(), formatarDataSemFuso(), obterDataAtualLocal()
+Cohesion: 0.38
+Nodes (5): Animais(), limparFormulario(), recarregarAnimais(), salvarAnimal(), obterDataAtualLocal()
 
 ### Community 32 - "Lucros"
-Cohesion: 0.25
-Nodes (4): formatarMoeda(), Lucros(), limparFormulario(), salvarReceita()
+Cohesion: 0.21
+Nodes (5): Lucros(), limparFormulario(), salvarReceita(), agruparFinancas(), filtrarDespesas()
 
 ### Community 33 - "Usuarios"
 Cohesion: 0.25
-Nodes (7): Usuarios(), alterarSituacao(), carregarUsuarios(), excluirUsuario(), fecharExclusaoUsuario(), fecharFormulario(), salvarUsuario()
+Nodes (7): Usuarios(), alterarSituacao(), excluirUsuario(), fecharExclusaoUsuario(), fecharFormulario(), recarregarUsuarios(), salvarUsuario()
 
-### Community 35 - "pool.js"
-Cohesion: 0.11
-Nodes (16): { criarConfiguracaoBanco }, pool, { Pool, types }, { registrarErro }, express, pool, { registrarErro, registrarEvento }, router (+8 more)
+### Community 34 - "usuarios.js"
+Cohesion: 0.33
+Nodes (8): alterarAtivoUsuario(), bcrypt, criarErroValidacao(), criarUsuarioComum(), { excluirUsuarioComDados }, pool, { validarCamposPermitidos }, validarSenha()
+
+### Community 35 - "milk-production.js"
+Cohesion: 0.33
+Nodes (8): { app, pool }, assert, confirmar(), dataNoFuso(), executar(), login(), requisitar(), somarDias()
 
 ### Community 36 - "vacinasRoutes.js"
 Cohesion: 0.25
 Nodes (7): express, { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarTextoOpcional }, pool, { registrarErro }, router, { validarParametroId }, responderPagina()
 
 ### Community 37 - "Despesas"
-Cohesion: 0.32
-Nodes (5): Despesas(), carregarDespesas(), limparFormulario(), salvarDespesa(), formatarDataSemFuso()
+Cohesion: 0.38
+Nodes (5): Despesas(), limparFormulario(), recarregarDespesas(), salvarDespesa(), formatarDataSemFuso()
 
 ### Community 38 - "Vacinacoes"
-Cohesion: 0.32
-Nodes (4): Vacinacoes(), carregarVacinacoes(), limparFormulario(), salvarVacinacao()
+Cohesion: 0.47
+Nodes (4): Vacinacoes(), limparFormulario(), recarregarVacinacoes(), salvarVacinacao()
 
-### Community 39 - "migrate-animal-lots.js"
-Cohesion: 0.08
-Nodes (12): fs, path, pool, fs, path, pool, fs, path (+4 more)
+### Community 39 - "receitas.js"
+Cohesion: 0.29
+Nodes (10): { app, pool }, assert, bcrypt, confirmar(), { dataHojeNoFuso }, executar(), limpar(), login() (+2 more)
 
-### Community 40 - "Propriedades"
-Cohesion: 0.36
-Nodes (6): Propriedades(), carregarPropriedades(), excluirPropriedade(), fecharExclusao(), limparFormulario(), salvarPropriedade()
+### Community 40 - "vacinacoesRoutes.js"
+Cohesion: 0.25
+Nodes (8): express, normalizarDadosVacinacao(), { normalizarPaginacao, responderPagina, validarCamposPermitidos, converterId, normalizarDataCalendario, normalizarTextoOpcional }, pool, { registrarErro }, router, { validarParametroId }, normalizarTextoOpcional()
 
 ### Community 41 - "Vacinas"
 Cohesion: 0.47
-Nodes (4): Vacinas(), carregarVacinas(), limparFormulario(), salvarVacina()
+Nodes (4): Vacinas(), limparFormulario(), recarregarVacinas(), salvarVacina()
 
 ### Community 42 - "check-database.js"
 Cohesion: 0.40
@@ -382,9 +391,9 @@ Nodes (5): executar(), pool, TABELAS, TABELAS_COM_SEQUENCE, verificar()
 Cohesion: 0.06
 Nodes (32): 1. Obter o código e instalar dependências, 2. Preparar um PostgreSQL local vazio, 3. Iniciar o backend, 4. Iniciar o frontend, API, Arquitetura, Autoria e contribuição, Backend (+24 more)
 
-### Community 44 - "migrate-milk-production.js"
-Cohesion: 0.40
-Nodes (3): fs, path, pool
+### Community 44 - "receitasRoutes.js"
+Cohesion: 0.11
+Nodes (22): express, normalizarDadosDespesa(), { normalizarFormaPagamento, normalizarPaginacao, responderPagina, validarCamposPermitidos, converterId, normalizarDataCalendario, normalizarTextoObrigatorio, normalizarNumeroFinito }, pool, { registrarErro }, router, { validarParametroId }, construirFiltro() (+14 more)
 
 ### Community 45 - "migrate-users.js"
 Cohesion: 0.40
@@ -494,42 +503,37 @@ Nodes (4): Answer, Outcome, Q: Como adicionar o proprietário das propriedades s
 Cohesion: 0.08
 Nodes (31): climaService, criarConsultarClima(), { ErroClima }, pool, { registrarErro }, { consultarClima }, express, router (+23 more)
 
-### Community 79 - "receitasRoutes.js"
-Cohesion: 0.16
-Nodes (14): construirFiltro(), {
-  converterId,
-  normalizarDataCalendario,
-  normalizarNumeroFinito,
-  normalizarPaginacao,
-  normalizarTextoObrigatorio,
-  normalizarTextoOpcional,
-  responderPagina,
-  validarCamposPermitidos,
-}, express, normalizarFiltros(), normalizarReceita(), PERIODOS, pool, { registrarErro } (+6 more)
+### Community 79 - "formatarDataSemFuso"
+Cohesion: 0.11
+Nodes (26): FichaAnimal, ResumoAnimal(), VacinacaoAnimal(), ROTULOS_TIPO, STATUS, TIPOS, RESUMO_INICIAL, ROTULOS_TURNO (+18 more)
 
-### Community 80 - "milk-production.js"
-Cohesion: 0.33
-Nodes (8): { app, pool }, assert, confirmar(), dataNoFuso(), executar(), login(), requisitar(), somarDias()
+### Community 80 - "calf-management-integration.js"
+Cohesion: 0.32
+Nodes (6): { app, pool }, assert, confirmar(), emails, executar(), requisitar()
 
 ### Community 81 - "Q: Quais componentes e estilos causam overflow e sobreposição no Dashboard do BoviTrack?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Quais componentes e estilos causam overflow e sobreposição no Dashboard do BoviTrack?, Source Nodes
 
-### Community 82 - "api.js"
-Cohesion: 0.22
-Nodes (11): Dashboard, ClimaDashboard(), ClimaPropriedade(), resumoInicial, api, API_URL, CHAVES_AUTH_LEGADAS, ROTAS_SEM_RENOVACAO (+3 more)
+### Community 82 - "FichaAnimal"
+Cohesion: 0.67
+Nodes (3): FichaAnimal(), atualizarAnimal(), atualizarManejo()
 
-### Community 83 - "calf-management-integration.js"
-Cohesion: 0.32
-Nodes (6): { app, pool }, assert, confirmar(), emails, executar(), requisitar()
+### Community 83 - "pool.js"
+Cohesion: 0.25
+Nodes (5): { criarConfiguracaoBanco }, pool, { Pool, types }, { registrarErro }, pool
 
-### Community 84 - "server.js"
+### Community 84 - "Propriedades"
+Cohesion: 0.36
+Nodes (6): Propriedades(), excluirPropriedade(), fecharExclusao(), limparFormulario(), recarregarPropriedades(), salvarPropriedade()
+
+### Community 85 - "Lucros.jsx"
+Cohesion: 0.16
+Nodes (11): Lucros, ConfirmacaoExclusao(), descreverRegistro(), detalhesResumo(), formatarData(), ResumoImpactoExclusao(), ROTULOS_RESUMO, CATEGORIAS_SUGERIDAS (+3 more)
+
+### Community 86 - "limitesRequisicao.js"
 Cohesion: 0.50
-Nodes (3): app, pool, { app, pool }
-
-### Community 85 - "erros.js"
-Cohesion: 0.50
-Nodes (3): { registrarErro }, rotaNaoEncontrada(), tratarErros()
+Nodes (4): consumirLimite(), crypto, hashChave(), pool
 
 ### Community 87 - "Q: Onde estão os campos de senha de Login, Cadastro e usuários?"
 Cohesion: 0.40
@@ -540,8 +544,8 @@ Cohesion: 0.17
 Nodes (12): adminUrl, bcrypt, { Client }, crypto, databaseUrl, env, main(), path (+4 more)
 
 ### Community 89 - "converterId"
-Cohesion: 0.22
-Nodes (11): { converterId }, validarParametroId(), express, normalizarDadosDespesa(), { normalizarFormaPagamento, normalizarPaginacao, responderPagina, validarCamposPermitidos, converterId, normalizarDataCalendario, normalizarTextoObrigatorio, normalizarNumeroFinito }, pool, { registrarErro }, router (+3 more)
+Cohesion: 0.14
+Nodes (17): { converterId }, validarParametroId(), { converterId, normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarTextoOpcional }, express, pool, { registrarErro }, router, { validarParametroId } (+9 more)
 
 ### Community 90 - "Migração do BoviTrack para o Supabase"
 Cohesion: 0.28
@@ -551,12 +555,9 @@ Nodes (6): Migration 012: parentesco e indices, Migração do BoviTrack para o S
 Cohesion: 0.22
 Nodes (8): author, description, keywords, license, main, name, type, version
 
-### Community 92 - "propriedadesRoutes.js"
-Cohesion: 0.22
-Nodes (7): {
-  excluirPropriedadeComDados,
-  obterImpactoExclusaoPropriedade,
-}, express, { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarNumeroFinito, normalizarEstado }, pool, { registrarErro, registrarEvento }, router, { validarParametroId }
+### Community 92 - "migrate-animal-lots.js"
+Cohesion: 0.40
+Nodes (3): fs, path, pool
 
 ### Community 93 - "Segurança do banco em produção"
 Cohesion: 0.20
@@ -567,32 +568,95 @@ Cohesion: 0.25
 Nodes (7): ./frontend/playwright.config.js, assert, configResult, path, result, root, { spawnSync }
 
 ### Community 95 - "bovitrack.spec.js"
-Cohesion: 0.33
-Nodes (5): db, dismissTutorial(), login(), { Pool }, require
+Cohesion: 0.28
+Nodes (7): abrirMenu(), db, dismissTutorial(), login(), navegar(), { Pool }, require
+
+### Community 96 - "backend-regressions-integration.js"
+Cohesion: 0.22
+Nodes (13): { alterarAtivoUsuario }, { app, pool }, assert, bcrypt, configuracaoUrl, confirmar(), { encerrarSessaoRefresh, renovarSessaoRefresh, hashToken }, esperarLocks() (+5 more)
 
 ### Community 97 - "Data API desativada"
 Cohesion: 0.50
 Nodes (4): Data API desativada, Backend com pg e JWT, Supabase Auth, Data API e RLS fora do fluxo, Supabase como PostgreSQL hospedado
 
+### Community 99 - "migrate-animals.js"
+Cohesion: 0.40
+Nodes (3): fs, path, pool
+
+### Community 100 - "server.js"
+Cohesion: 0.50
+Nodes (3): app, pool, { app, pool }
+
+### Community 101 - "migrate-milk-production.js"
+Cohesion: 0.40
+Nodes (3): fs, path, pool
+
+### Community 102 - "api.js"
+Cohesion: 0.29
+Nodes (7): ClimaPropriedade(), API_URL, CHAVES_AUTH_LEGADAS, ROTAS_SEM_RENOVACAO, CONDICOES, descreverClima(), formatarMedida()
+
+### Community 103 - "migrate-refresh-sessions.js"
+Cohesion: 0.40
+Nodes (3): fs, path, pool
+
+### Community 104 - "Continuidade da reformulação visual"
+Cohesion: 0.22
+Nodes (8): Ajuste posterior: iconografia (13/10/2026), Ambiente de testes, Concluído, Continuidade da reformulação visual, Decisões de design, Escopo e branch, Etapa atual, Próximas etapas
+
+### Community 105 - "ui-interactions.spec.js"
+Cohesion: 0.33
+Nodes (3): db, { Pool }, require
+
+### Community 106 - "navigation-images.spec.js"
+Cohesion: 0.12
+Nodes (11): db, { Pool }, require, db, items, { Pool }, require, db (+3 more)
+
+### Community 108 - "icon-search.spec.js"
+Cohesion: 0.50
+Nodes (3): db, { Pool }, require
+
+### Community 109 - "BOVITRACK_ICONOGRAFIA.md"
+Cohesion: 0.22
+Nodes (8): Arquivos principais, Causa raiz confirmada, Correções, Pendências e entrega, Resultados finais, Sistema utilizado e assets, Validação reproduzível, Ícones adicionados
+
+### Community 110 - "final-flows.spec.js"
+Cohesion: 0.33
+Nodes (3): db, { Pool }, require
+
+### Community 112 - "propriedadesRoutes.js"
+Cohesion: 0.22
+Nodes (7): {
+  excluirPropriedadeComDados,
+  obterImpactoExclusaoPropriedade,
+}, express, { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarNumeroFinito, normalizarEstado }, pool, { registrarErro, registrarEvento }, router, { validarParametroId }
+
+### Community 113 - "ListaAnimais"
+Cohesion: 1.00
+Nodes (3): ListaAnimais(), limpar(), pesquisar()
+
+### Community 115 - "migrate-calf-management.js"
+Cohesion: 0.40
+Nodes (3): fs, path, pool
+
 ## Knowledge Gaps
-- **528 isolated node(s):** `express`, `cors`, `helmet`, `{ criarConfiguracaoCors }`, `{ autenticar }` (+523 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 637 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **594 isolated node(s):** `express`, `cors`, `helmet`, `{ criarConfiguracaoCors }`, `{ autenticar }` (+589 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 720 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `registrarErro()` connect `pool.js` to `converterId`, `migrate-to-supabase.js`, `desmamasRoutes.js`, `vacinasRoutes.js`, `authRoutes.js`, `usuariosRoutes.js`, `tests/clima.js`, `receitasRoutes.js`, `registrarEvento`, `validacoes.js`, `producoesLeiteirasRoutes.js`, `erros.js`, `rateLimit.js`, `propriedadesRoutes.js`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
-- **Why does `formatarDataSemFuso()` connect `formatarDataSemFuso` to `Lucros`, `Vacinacoes`, `FichaAnimal`, `Desmamas.jsx`, `api.js`, `Lucros.jsx`?**
+- **Why does `registrarErro()` connect `registrarErro` to `app.js`, `migrate-to-supabase.js`, `desmamasRoutes.js`, `vacinasRoutes.js`, `authRoutes.js`, `vacinacoesRoutes.js`, `receitasRoutes.js`, `usuariosRoutes.js`, `tests/clima.js`, `propriedadesRoutes.js`, `validacoes.js`, `pool.js`, `converterId`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `criarConfiguracaoPorUrl()` connect `migrate-to-supabase.js` to `security-hardening.js`?**
+- **Why does `Button()` connect `Button` to `Configuracoes.jsx`, `api.js`, `App.jsx`, `api`, `formatarDataSemFuso`, `Button.jsx`, `Lucros.jsx`, `ListaAnimais.jsx`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Why does `Propriedades()` connect `Propriedades` to `App.jsx`, `api`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `express`, `cors`, `helmet` to the rest of the system?**
-  _528 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `PreferencesProvider.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.06775510204081632 - nodes in this community are weakly interconnected._
+  _594 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Configuracoes.jsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.06168831168831169 - nodes in this community are weakly interconnected._
 - **Should `app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08307692307692308 - nodes in this community are weakly interconnected._
 - **Should `migrate-to-supabase.js` be split into smaller, more focused modules?**
   _Cohesion score 0.06386066763425254 - nodes in this community are weakly interconnected._
