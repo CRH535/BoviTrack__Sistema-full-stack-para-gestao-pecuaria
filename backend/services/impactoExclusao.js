@@ -1,4 +1,5 @@
 const pool = require("../database/pool");
+const { converterId } = require("../utils/validacoes");
 
 function criarErroHttp(mensagem, status = 400) {
   const erro = new Error(mensagem);
@@ -7,7 +8,7 @@ function criarErroHttp(mensagem, status = 400) {
 }
 
 function normalizarId(valor, entidade) {
-  const id = Number(valor);
+  const id = converterId(valor);
 
   if (!Number.isInteger(id) || id <= 0) {
     throw criarErroHttp(`${entidade} inválido`);

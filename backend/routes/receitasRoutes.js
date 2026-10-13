@@ -23,7 +23,7 @@ function normalizarReceita(dados) {
   const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria", 100);
   const valor = normalizarNumeroFinito(dados.valor, "Valor", {
     minimo: 0.01,
-    maximo: 1e12,
+    maximo: 999999999999.99,
   });
   const data = normalizarDataCalendario(dados.data, "Data");
   const propriedadeId = converterId(dados.propriedade_id);
@@ -141,14 +141,20 @@ function construirFiltro(aliasTabela, filtros, usuario, { incluirCategoria = tru
     adicionar(filtros.categoria, `${aliasTabela}.categoria = ?`);
   }
 
+  let hoje;
+  if (["hoje", "semana", "mes", "ano"].includes(filtros.periodo)) {
+    valores.push(process.env.APP_TIMEZONE || "America/Sao_Paulo");
+    hoje = `(CURRENT_TIMESTAMP AT TIME ZONE $${valores.length})::date`;
+  }
+
   if (filtros.periodo === "hoje") {
-    condicoes.push(`${aliasTabela}.data = CURRENT_DATE`);
+    condicoes.push(`${aliasTabela}.data = ${hoje}`);
   } else if (filtros.periodo === "semana") {
-    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('week', CURRENT_DATE)::date AND CURRENT_DATE`);
+    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('week', ${hoje})::date AND ${hoje}`);
   } else if (filtros.periodo === "mes") {
-    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('month', CURRENT_DATE)::date AND CURRENT_DATE`);
+    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('month', ${hoje})::date AND ${hoje}`);
   } else if (filtros.periodo === "ano") {
-    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('year', CURRENT_DATE)::date AND CURRENT_DATE`);
+    condicoes.push(`${aliasTabela}.data BETWEEN DATE_TRUNC('year', ${hoje})::date AND ${hoje}`);
   } else if (filtros.periodo === "personalizado") {
     adicionar(filtros.dataInicio, `${aliasTabela}.data >= ?`);
     adicionar(filtros.dataFim, `${aliasTabela}.data <= ?`);
@@ -311,6 +317,12 @@ router.get("/receitas/:id", async (req, res) => {
 
 router.put("/receitas/:id", async (req, res) => {
   try {
+    const atual = await pool.query(
+      `SELECT r.id FROM receitas r JOIN propriedades p ON p.id = r.propriedade_id
+        WHERE r.id = $1 AND ($2 = 'admin' OR p.usuario_id = $3)`,
+      [req.params.id, req.usuario.perfil, req.usuario.id],
+    );
+    if (!atual.rows[0]) return res.status(404).json({ mensagem: "Receita não encontrada" });
     const campos = validarCamposPermitidos(req.body, [
       "descricao",
       "categoria",

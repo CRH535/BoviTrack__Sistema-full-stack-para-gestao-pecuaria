@@ -11,7 +11,7 @@ function normalizarDadosDespesa(dados) {
   const descricao = normalizarTextoObrigatorio(dados.descricao, "Descrição", 150);
   const categoria = normalizarTextoObrigatorio(dados.categoria, "Categoria", 100);
   const formaPagamento = normalizarFormaPagamento(dados.forma_pagamento);
-  const valor = normalizarNumeroFinito(dados.valor, "Valor", { minimo: 0.01, maximo: 1e12 });
+  const valor = normalizarNumeroFinito(dados.valor, "Valor", { minimo: 0.01, maximo: 99999999.99 });
   const data = normalizarDataCalendario(dados.data, "Data");
   const propriedadeId = converterId(dados.propriedade_id);
   const erro = descricao.erro || categoria.erro || formaPagamento.erro || valor.erro || data.erro ||
@@ -145,6 +145,12 @@ router.get("/despesas/:id", async (req, res) => {
 
 router.put("/despesas/:id", async (req, res) => {
   try {
+    const atual = await pool.query(
+      `SELECT d.id FROM despesas d JOIN propriedades p ON p.id = d.propriedade_id
+        WHERE d.id = $1 AND ($2 = 'admin' OR p.usuario_id = $3)`,
+      [req.params.id, req.usuario.perfil, req.usuario.id],
+    );
+    if (!atual.rows[0]) return res.status(404).json({ mensagem: "Despesa não encontrada" });
     const campos = validarCamposPermitidos(req.body, ["descricao", "categoria", "forma_pagamento", "valor", "data", "propriedade_id"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
     const { id } = req.params;
@@ -289,38 +295,15 @@ router.get("/propriedades/:id/despesas", async (req, res) => {
       });
     }
 
-    if (valor_minimo !== undefined && !Number.isFinite(Number(valor_minimo))) {
-      return res.status(400).json({
-        mensagem: "Valor mínimo inválido",
-      });
+    const valorMinimo = valor_minimo === undefined
+      ? { valor: null } : normalizarNumeroFinito(valor_minimo, "Valor minimo", { minimo: 0, maximo: 99999999.99 });
+    const valorMaximo = valor_maximo === undefined
+      ? { valor: null } : normalizarNumeroFinito(valor_maximo, "Valor maximo", { minimo: 0, maximo: 99999999.99 });
+    if (valorMinimo.erro || valorMaximo.erro) {
+      return res.status(400).json({ mensagem: valorMinimo.erro || valorMaximo.erro });
     }
-
-    if (valor_maximo !== undefined && !Number.isFinite(Number(valor_maximo))) {
-      return res.status(400).json({
-        mensagem: "Valor máximo inválido",
-      });
-    }
-
-    if (valor_minimo && Number(valor_minimo) < 0) {
-      return res.status(400).json({
-        mensagem: "O valor mínimo não pode ser negativo",
-      });
-    }
-
-    if (valor_maximo && Number(valor_maximo) < 0) {
-      return res.status(400).json({
-        mensagem: "O valor máximo não pode ser negativo",
-      });
-    }
-
-    if (
-      valor_minimo &&
-      valor_maximo &&
-      Number(valor_minimo) > Number(valor_maximo)
-    ) {
-      return res.status(400).json({
-        mensagem: "O valor mínimo não pode ser maior que o valor máximo",
-      });
+    if (valorMinimo.valor !== null && valorMaximo.valor !== null && valorMinimo.valor > valorMaximo.valor) {
+      return res.status(400).json({ mensagem: "O valor minimo nao pode ser maior que o valor maximo" });
     }
 
     const dataInicioValidada = data_inicio
@@ -359,23 +342,24 @@ router.get("/propriedades/:id/despesas", async (req, res) => {
     }
 
     const valores = [id];
+    if (periodo !== "todos") valores.push(process.env.APP_TIMEZONE || "America/Sao_Paulo");
     let filtro = "";
 
     if (periodo === "hoje") {
-      filtro += " AND data = CURRENT_DATE";
+      filtro += " AND data = (CURRENT_TIMESTAMP AT TIME ZONE $2)::date";
     }
 
     if (periodo === "semana") {
       filtro += `
-                AND data BETWEEN CURRENT_DATE - INTERVAL '7 days'
-                AND CURRENT_DATE
+                AND data BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE $2)::date - INTERVAL '7 days'
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
             `;
     }
 
     if (periodo === "mes") {
       filtro += `
-                AND data BETWEEN DATE_TRUNC('month', CURRENT_DATE)
-                AND CURRENT_DATE
+                AND data BETWEEN DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE $2)::date)
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
             `;
     }
 
@@ -386,18 +370,18 @@ router.get("/propriedades/:id/despesas", async (req, res) => {
       valores.push(categoria.trim());
     }
 
-    if (valor_minimo) {
+    if (valorMinimo.valor !== null) {
       const parametro = valores.length + 1;
 
       filtro += ` AND valor >= $${parametro}`;
-      valores.push(Number(valor_minimo));
+      valores.push(valorMinimo.valor);
     }
 
-    if (valor_maximo) {
+    if (valorMaximo.valor !== null) {
       const parametro = valores.length + 1;
 
       filtro += ` AND valor <= $${parametro}`;
-      valores.push(Number(valor_maximo));
+      valores.push(valorMaximo.valor);
     }
 
     if (data_inicio) {
@@ -475,38 +459,15 @@ router.get("/propriedades/:id/despesas/resumo", async (req, res) => {
       });
     }
 
-    if (valor_minimo !== undefined && !Number.isFinite(Number(valor_minimo))) {
-      return res.status(400).json({
-        mensagem: "Valor mínimo inválido",
-      });
+    const valorMinimo = valor_minimo === undefined
+      ? { valor: null } : normalizarNumeroFinito(valor_minimo, "Valor minimo", { minimo: 0, maximo: 99999999.99 });
+    const valorMaximo = valor_maximo === undefined
+      ? { valor: null } : normalizarNumeroFinito(valor_maximo, "Valor maximo", { minimo: 0, maximo: 99999999.99 });
+    if (valorMinimo.erro || valorMaximo.erro) {
+      return res.status(400).json({ mensagem: valorMinimo.erro || valorMaximo.erro });
     }
-
-    if (valor_maximo !== undefined && !Number.isFinite(Number(valor_maximo))) {
-      return res.status(400).json({
-        mensagem: "Valor máximo inválido",
-      });
-    }
-
-    if (valor_minimo && Number(valor_minimo) < 0) {
-      return res.status(400).json({
-        mensagem: "O valor mínimo não pode ser negativo",
-      });
-    }
-
-    if (valor_maximo && Number(valor_maximo) < 0) {
-      return res.status(400).json({
-        mensagem: "O valor máximo não pode ser negativo",
-      });
-    }
-
-    if (
-      valor_minimo &&
-      valor_maximo &&
-      Number(valor_minimo) > Number(valor_maximo)
-    ) {
-      return res.status(400).json({
-        mensagem: "O valor mínimo não pode ser maior que o valor máximo",
-      });
+    if (valorMinimo.valor !== null && valorMaximo.valor !== null && valorMinimo.valor > valorMaximo.valor) {
+      return res.status(400).json({ mensagem: "O valor minimo nao pode ser maior que o valor maximo" });
     }
 
     const dataInicioValidada = data_inicio
@@ -545,23 +506,24 @@ router.get("/propriedades/:id/despesas/resumo", async (req, res) => {
     }
 
     const valores = [id];
+    if (periodo !== "todos") valores.push(process.env.APP_TIMEZONE || "America/Sao_Paulo");
     let filtro = "";
 
     if (periodo === "hoje") {
-      filtro += " AND data = CURRENT_DATE";
+      filtro += " AND data = (CURRENT_TIMESTAMP AT TIME ZONE $2)::date";
     }
 
     if (periodo === "semana") {
       filtro += `
-                AND data BETWEEN CURRENT_DATE - INTERVAL '7 days'
-                AND CURRENT_DATE
+                AND data BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE $2)::date - INTERVAL '7 days'
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
             `;
     }
 
     if (periodo === "mes") {
       filtro += `
-                AND data BETWEEN DATE_TRUNC('month', CURRENT_DATE)
-                AND CURRENT_DATE
+                AND data BETWEEN DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE $2)::date)
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
             `;
     }
 
@@ -572,18 +534,18 @@ router.get("/propriedades/:id/despesas/resumo", async (req, res) => {
       valores.push(categoria.trim());
     }
 
-    if (valor_minimo) {
+    if (valorMinimo.valor !== null) {
       const parametro = valores.length + 1;
 
       filtro += ` AND valor >= $${parametro}`;
-      valores.push(Number(valor_minimo));
+      valores.push(valorMinimo.valor);
     }
 
-    if (valor_maximo) {
+    if (valorMaximo.valor !== null) {
       const parametro = valores.length + 1;
 
       filtro += ` AND valor <= $${parametro}`;
-      valores.push(Number(valor_maximo));
+      valores.push(valorMaximo.valor);
     }
 
     if (data_inicio) {

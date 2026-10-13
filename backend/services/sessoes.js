@@ -137,6 +137,15 @@ async function criarSessaoRefresh(pool, usuarioId) {
 
   try {
     await cliente.query("BEGIN");
+    const usuarioAtivo = await cliente.query(
+      "SELECT id FROM usuarios WHERE id = $1 AND ativo = TRUE FOR SHARE",
+      [usuarioId],
+    );
+    if (!usuarioAtivo.rows[0]) {
+      const erro = new Error("Usuário desativado. Entre em contato com o administrador");
+      erro.status = 403;
+      throw erro;
+    }
     await cliente.query(
       "DELETE FROM sessoes_refresh WHERE expires_at <= CURRENT_TIMESTAMP",
     );
@@ -267,12 +276,39 @@ async function renovarSessaoRefresh(pool, tokenAtual) {
 
 async function encerrarSessaoRefresh(pool, token) {
   if (typeof token !== "string" || !token) return;
-  await pool.query(
-    `UPDATE sessoes_refresh
-        SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'LOGOUT'
-      WHERE token_hash = $1 AND revoked_at IS NULL`,
-    [hashToken(token)],
-  );
+  const tokenHash = hashToken(token);
+  const cliente = await pool.connect();
+  try {
+    await cliente.query("BEGIN");
+    // O lock espera uma rotacao em andamento. A consulta seguinte ganha um novo
+    // snapshot e encontra o hash antigo no historico que acabou de ser gravado.
+    let resultado = await cliente.query(
+      "SELECT id FROM sessoes_refresh WHERE token_hash = $1 FOR UPDATE",
+      [tokenHash],
+    );
+    if (!resultado.rows[0]) {
+      resultado = await cliente.query(
+        `SELECT sr.id FROM sessoes_refresh sr
+          JOIN sessoes_refresh_usados su ON su.sessao_id = sr.id
+         WHERE su.token_hash = $1 FOR UPDATE OF sr`,
+        [tokenHash],
+      );
+    }
+    if (resultado.rows[0]) {
+      await cliente.query(
+        `UPDATE sessoes_refresh
+            SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'LOGOUT'
+          WHERE id = $1 AND revoked_at IS NULL`,
+        [resultado.rows[0].id],
+      );
+    }
+    await cliente.query("COMMIT");
+  } catch (erro) {
+    await cliente.query("ROLLBACK").catch(() => {});
+    throw erro;
+  } finally {
+    cliente.release();
+  }
 }
 
 async function encerrarTodasSessoes(pool, usuarioId) {

@@ -11,10 +11,10 @@ function normalizarDadosVacinacao(dados) {
   const animalId = converterId(dados.animal_id);
   const vacinaId = converterId(dados.vacina_id);
   const aplicacao = normalizarDataCalendario(dados.data_aplicacao, "Data de aplicação");
-  const proxima = dados.proxima_dose
+  const proxima = dados.proxima_dose !== undefined && dados.proxima_dose !== null && dados.proxima_dose !== ""
     ? normalizarDataCalendario(dados.proxima_dose, "Próxima dose")
     : { valor: null };
-  const observacao = normalizarTextoOpcional(dados.observacao, "Observação", 500);
+  const observacao = normalizarTextoOpcional(dados.observacao, "Observação", 255);
   const erro = (!animalId && "Animal inválido") || (!vacinaId && "Vacina inválida") ||
     aplicacao.erro || proxima.erro || observacao.erro;
   if (erro) return { erro };
@@ -142,14 +142,14 @@ router.get("/vacinacoes/proximas", async (req, res) => {
     const { periodo = "todos" } = req.query;
 
     const filtrosPeriodo = {
-      hoje: "vacinacoes.proxima_dose = CURRENT_DATE",
+      hoje: "vacinacoes.proxima_dose = (CURRENT_TIMESTAMP AT TIME ZONE $5)::date",
 
       semana: `
-                vacinacoes.proxima_dose BETWEEN CURRENT_DATE
-                AND CURRENT_DATE + INTERVAL '7 days'
+                vacinacoes.proxima_dose BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE $5)::date
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $5)::date + INTERVAL '7 days'
             `,
 
-      futuro: "vacinacoes.proxima_dose > CURRENT_DATE",
+      futuro: "vacinacoes.proxima_dose > (CURRENT_TIMESTAMP AT TIME ZONE $5)::date",
 
       todos: "vacinacoes.proxima_dose IS NOT NULL",
     };
@@ -180,13 +180,14 @@ router.get("/vacinacoes/proximas", async (req, res) => {
             JOIN vacinas
                 ON vacinacoes.vacina_id = vacinas.id
             WHERE ${filtro}
+              AND $5::text IS NOT NULL
               AND (
                 $1 = 'admin'
                 OR (propriedades.usuario_id = $2 AND vacinas.usuario_id = $2)
               )
             ORDER BY vacinacoes.proxima_dose, vacinacoes.id
             LIMIT $3 OFFSET $4
-        `, [req.usuario.perfil, req.usuario.id, limite + 1, offset]);
+        `, [req.usuario.perfil, req.usuario.id, limite + 1, offset, process.env.APP_TIMEZONE || "America/Sao_Paulo"]);
 
     res.json(responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
@@ -245,6 +246,15 @@ router.get("/vacinacoes/:id", async (req, res) => {
 
 router.put("/vacinacoes/:id", async (req, res) => {
   try {
+    const atual = await pool.query(
+      `SELECT vc.id FROM vacinacoes vc
+        JOIN animais a ON a.id = vc.animal_id
+        JOIN propriedades p ON p.id = a.propriedade_id
+        JOIN vacinas v ON v.id = vc.vacina_id
+       WHERE vc.id = $1 AND ($2 = 'admin' OR (p.usuario_id = $3 AND v.usuario_id = $3))`,
+      [req.params.id, req.usuario.perfil, req.usuario.id],
+    );
+    if (!atual.rows[0]) return res.status(404).json({ mensagem: "Vacinação não encontrada" });
     const campos = validarCamposPermitidos(req.body, ["animal_id", "vacina_id", "data_aplicacao", "proxima_dose", "observacao"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
     const { id } = req.params;

@@ -1,6 +1,6 @@
 const express = require("express");
 const pool = require("../database/pool")
-const { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarNumeroFinito } = require("../utils/validacoes");
+const { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarNumeroFinito, normalizarEstado } = require("../utils/validacoes");
 const { validarParametroId } = require("../middleware/validacao");
 const { registrarErro, registrarEvento } = require("../utils/log");
 const {
@@ -144,10 +144,10 @@ router.post("/propriedades", async (req, res) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "cidade", "estado", "area"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 120);
-    const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 120);
-    const estado = normalizarTextoObrigatorio(req.body.estado, "Estado", 2, 2);
-    const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 1e9 });
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
+    const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 100);
+    const estado = normalizarEstado(req.body.estado);
+    const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 99999999.99 });
     const erro = nome.erro || cidade.erro || estado.erro || area.erro;
     if (erro) return res.status(400).json({ mensagem: erro });
 
@@ -176,10 +176,10 @@ router.put("/propriedades/:id", async (req, res) => {
     const campos = validarCamposPermitidos(req.body, ["nome", "cidade", "estado", "area"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
     const { id } = req.params;
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 120);
-    const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 120);
-    const estado = normalizarTextoObrigatorio(req.body.estado, "Estado", 2, 2);
-    const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 1e9 });
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
+    const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 100);
+    const estado = normalizarEstado(req.body.estado);
+    const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 99999999.99 });
     const erro = nome.erro || cidade.erro || estado.erro || area.erro;
     if (erro) return res.status(400).json({ mensagem: erro });
 

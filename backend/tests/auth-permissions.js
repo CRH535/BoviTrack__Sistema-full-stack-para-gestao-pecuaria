@@ -201,10 +201,10 @@ async function executar() {
   const loginA = await login(emailA, senhaUsuario);
   const loginB = await login(emailB, senhaUsuario);
   confirmar("usuário + senha correta -> 200", loginA.status === 200 && loginB.status === 200);
-  const tokenA = loginA.dados.token;
+  let tokenA = loginA.dados.token;
   const tokenB = loginB.dados.token;
 
-  const edicaoPropriaA = await requisitar("/usuarios/me", {
+  const tentativaPrivilegio = await requisitar("/usuarios/me", {
     metodo: "PUT",
     token: tokenA,
     corpo: {
@@ -212,6 +212,10 @@ async function executar() {
       email: emailA,
       perfil: "admin",
     },
+  });
+  confirmar("edicao propria rejeita campos de privilegio", tentativaPrivilegio.status === 400);
+  const edicaoPropriaA = await requisitar("/usuarios/me", {
+    metodo: "PUT", token: tokenA, corpo: { nome: "Usuário A Atualizado", email: emailA },
   });
   confirmar(
     "usuário atualiza somente nome/email da própria conta",
@@ -235,9 +239,13 @@ async function executar() {
   const usuarioBPorId = await requisitar(`/usuarios/${usuarioB.id}`, { token: tokenAdmin });
   confirmar("admin busca usuário por ID", usuarioBPorId.status === 200 && usuarioBPorId.dados.email === emailB);
 
-  const edicaoB = await requisitar(`/usuarios/${usuarioB.id}`, {
+  const tentativaAdmin = await requisitar(`/usuarios/${usuarioB.id}`, {
     metodo: "PUT", token: tokenAdmin,
     corpo: { nome: "Usuário B Editado", email: emailB, perfil: "admin", senha: "nao-deve-alterar" },
+  });
+  confirmar("edicao administrativa rejeita perfil e senha", tentativaAdmin.status === 400);
+  const edicaoB = await requisitar(`/usuarios/${usuarioB.id}`, {
+    metodo: "PUT", token: tokenAdmin, corpo: { nome: "Usuário B Editado", email: emailB },
   });
   confirmar("admin edita somente nome/email", edicaoB.status === 200 && edicaoB.dados.usuario.nome === "Usuário B Editado" && edicaoB.dados.usuario.perfil === "usuario");
   confirmar("edição com email de outro usuário -> 409", (await requisitar(`/usuarios/${usuarioB.id}`, { metodo: "PUT", token: tokenAdmin, corpo: { nome: "Usuário B", email: emailA } })).status === 409);
@@ -754,13 +762,18 @@ async function executar() {
       animalEditadoComNovosCampos.dados.animal.data_nascimento === "2020-02-29",
   );
 
+  const animalParaEditar = Object.fromEntries(
+    ["nome", "numero_brinco", "data_nascimento", "especie", "raca", "sexo", "peso", "propriedade_id", "mae_id"]
+      .map((campo) => [campo, animalEditadoComNovosCampos.dados.animal[campo]]),
+  );
+
   confirmar(
     "edição ignora o próprio animal na validação do brinco",
     (await requisitar(`/animais/${conjuntoA.animal.id}`, {
       metodo: "PUT",
       token: tokenA,
       corpo: {
-        ...animalEditadoComNovosCampos.dados.animal,
+        ...animalParaEditar,
         peso: 110,
       },
     })).status === 200,
@@ -772,7 +785,7 @@ async function executar() {
       metodo: "PUT",
       token: tokenA,
       corpo: {
-        ...animalEditadoComNovosCampos.dados.animal,
+        ...animalParaEditar,
         numero_brinco: "00125",
       },
     })).status === 409,
@@ -1032,7 +1045,10 @@ async function executar() {
     metodo: "PUT", token: tokenAdmin, corpo: { ativo: true },
   });
   confirmar("admin reativa USUARIO_A", reativacaoA.status === 200 && reativacaoA.dados.usuario.ativo === true);
-  confirmar("USUARIO_A volta a fazer login", (await login(emailA, senhaUsuario)).status === 200);
+  confirmar("reativacao nao ressuscita token anterior", (await requisitar("/dashboard", { token: tokenA })).status === 401);
+  const loginReativado = await login(emailA, senhaUsuario);
+  confirmar("USUARIO_A volta a fazer login", loginReativado.status === 200);
+  tokenA = loginReativado.dados.token;
 
   const exclusaoB = await requisitar(`/usuarios/${usuarioB.id}`, {
     metodo: "DELETE",
@@ -1055,13 +1071,17 @@ async function executar() {
     Object.values(dadosRestantesB.rows[0]).every((total) => total === 0),
   );
 
-  const exclusaoPropriaA = await requisitar("/usuarios/me", {
+  const tentativaExclusaoId = await requisitar("/usuarios/me", {
     metodo: "DELETE",
     token: tokenA,
     corpo: {
       confirmacao: "EXCLUIR",
       usuario_id: cadastroAdministrativo.dados.usuario.id,
     },
+  });
+  confirmar("exclusao propria rejeita usuario_id enviado no corpo", tentativaExclusaoId.status === 400);
+  const exclusaoPropriaA = await requisitar("/usuarios/me", {
+    metodo: "DELETE", token: tokenA, corpo: { confirmacao: "EXCLUIR" },
   });
   confirmar("usuário comum exclui somente a própria conta", exclusaoPropriaA.status === 200);
   confirmar("conta excluída pelo próprio usuário não consegue login", (await login(emailA, senhaUsuario)).status === 401);

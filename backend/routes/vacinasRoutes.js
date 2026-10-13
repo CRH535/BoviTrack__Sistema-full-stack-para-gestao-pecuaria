@@ -11,9 +11,9 @@ router.post("/vacinas", async (req, res) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "fabricante", "descricao"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome da vacina", 120);
-    const fabricante = normalizarTextoOpcional(req.body.fabricante, "Fabricante", 120);
-    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 500);
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome da vacina", 100);
+    const fabricante = normalizarTextoOpcional(req.body.fabricante, "Fabricante", 100);
+    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const erro = nome.erro || fabricante.erro || descricao.erro;
     if (erro) return res.status(400).json({ mensagem: erro });
 
@@ -96,9 +96,9 @@ router.put("/vacinas/:id", async (req, res) => {
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
     const { id } = req.params;
 
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome da vacina", 120);
-    const fabricante = normalizarTextoOpcional(req.body.fabricante, "Fabricante", 120);
-    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 500);
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome da vacina", 100);
+    const fabricante = normalizarTextoOpcional(req.body.fabricante, "Fabricante", 100);
+    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const erro = nome.erro || fabricante.erro || descricao.erro;
     if (erro) return res.status(400).json({ mensagem: erro });
 

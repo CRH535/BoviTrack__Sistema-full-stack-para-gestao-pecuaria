@@ -139,6 +139,7 @@ router.post("/auth/login", limitarLoginIp, limitarLoginConta, async (req, res) =
       },
     });
   } catch (erro) {
+    if (erro.status === 403) return res.status(403).json({ mensagem: erro.message });
     registrarErro("login_erro", erro, req);
     res.status(500).json({ mensagem: "Erro ao realizar login" });
   }

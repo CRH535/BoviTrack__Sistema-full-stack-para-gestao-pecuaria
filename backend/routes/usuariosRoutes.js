@@ -2,7 +2,7 @@ const express = require("express");
 const pool = require("../database/pool");
 const { somenteAdmin, exigirAutenticacaoRecente } = require("../middleware/autenticacao");
 const { responderCriacaoUsuario } = require("../controllers/usuariosController")
-const { excluirUsuarioComDados } = require("../services/usuarios");
+const { alterarAtivoUsuario, excluirUsuarioComDados } = require("../services/usuarios");
 const { limparCookieRefresh } = require("../services/sessoes");
 const { obterImpactoExclusaoUsuario } = require("../services/impactoExclusao");
 const { normalizarPaginacao, responderPagina, validarCamposPermitidos } = require("../utils/validacoes");
@@ -248,34 +248,13 @@ router.put("/usuarios/:id/ativo", somenteAdmin, exigirAutenticacaoRecente(), asy
       return res.status(400).json({ mensagem: "O campo ativo deve ser verdadeiro ou falso" });
     }
 
-    const usuarioResultado = await pool.query(
-      "SELECT id, perfil FROM usuarios WHERE id = $1",
-      [req.params.id],
-    );
-
-    if (usuarioResultado.rows.length === 0) {
-      return res.status(404).json({ mensagem: "Usuário não encontrado" });
-    }
-
-    if (usuarioResultado.rows[0].perfil === "admin") {
-      return res.status(403).json({
-        mensagem: "O administrador principal não pode ser ativado ou desativado por esta rota",
-      });
-    }
-
-    const resultado = await pool.query(
-      `UPDATE usuarios
-          SET ativo = $1
-        WHERE id = $2
-        RETURNING id, nome, email, perfil, ativo, created_at`,
-      [ativo, req.params.id],
-    );
+    const usuario = await alterarAtivoUsuario(req.params.id, ativo);
 
     res.json({
       mensagem: ativo
         ? "Usuário ativado com sucesso!"
         : "Usuário desativado com sucesso!",
-      usuario: resultado.rows[0],
+      usuario,
     });
     registrarEvento("info", "usuario_status_alterado", {
       request_id: req.id,
@@ -284,6 +263,7 @@ router.put("/usuarios/:id/ativo", somenteAdmin, exigirAutenticacaoRecente(), asy
       ativo,
     });
   } catch (erro) {
+    if (erro.status) return res.status(erro.status).json({ mensagem: erro.message });
     registrarErro("usuarios_rota_erro", erro, req);
     res.status(500).json({ mensagem: "Erro ao alterar situação do usuário" });
   }

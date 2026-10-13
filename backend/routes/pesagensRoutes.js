@@ -100,20 +100,23 @@ router.get("/animais/:animalId/pesagens/resumo", async (req, res) => {
               SELECT lote_id FROM animais_lotes WHERE animal_id = $1
             )
          ), ultimas AS (
-           SELECT DISTINCT ON (p.animal_id)
-                  adl.lote_id, p.animal_id, p.peso_kg
-             FROM animais_do_lote adl
-             JOIN pesagens p ON p.animal_id = adl.animal_id
+           SELECT DISTINCT ON (p.animal_id) p.animal_id, p.peso_kg
+             FROM pesagens p
+            WHERE p.animal_id IN (SELECT animal_id FROM animais_do_lote)
             ORDER BY p.animal_id, p.data_pesagem DESC, p.id DESC
          )
          SELECT l.id AS lote_id, l.nome AS lote,
                 AVG(u.peso_kg)::numeric(10,2) AS peso_medio,
                 COUNT(u.animal_id)::integer AS animais_com_pesagem
            FROM ultimas u
-           JOIN lotes l ON l.id = u.lote_id
+           JOIN animais_do_lote adl ON adl.animal_id = u.animal_id
+           JOIN lotes l ON l.id = adl.lote_id
+           JOIN animais a ON a.id = u.animal_id AND a.propriedade_id = l.propriedade_id
+           JOIN propriedades pr ON pr.id = l.propriedade_id
+          WHERE ($2 = 'admin' OR pr.usuario_id = $3)
           GROUP BY l.id, l.nome
           ORDER BY l.nome`,
-        [animalId],
+        [animalId, req.usuario.perfil, req.usuario.id],
       ),
     ]);
 
@@ -289,8 +292,10 @@ router.get("/pesagens", async (req, res) => {
     const propriedadeId = req.query.propriedade_id ? converterId(req.query.propriedade_id) : null;
     const loteId = req.query.lote_id ? converterId(req.query.lote_id) : null;
     const animalId = req.query.animal_id ? converterId(req.query.animal_id) : null;
+    if (req.query.tipo !== undefined && typeof req.query.tipo !== "string") return res.status(400).json({ mensagem: "Filtro invalido" });
     const tipo = req.query.tipo ? String(req.query.tipo).toUpperCase() : null;
-    const busca = String(req.query.busca || "").trim();
+    if (req.query.busca !== undefined && typeof req.query.busca !== "string") return res.status(400).json({ mensagem: "Busca invalida" });
+    const busca = (req.query.busca || "").trim();
     if (busca.length > 120) return res.status(400).json({ mensagem: "Busca acima do limite permitido" });
     const inicio = req.query.data_inicio ? normalizarDataCalendario(req.query.data_inicio, "Data inicial") : { valor: null };
     const fim = req.query.data_fim ? normalizarDataCalendario(req.query.data_fim, "Data final") : { valor: null };

@@ -1,6 +1,7 @@
 const assert = require("assert/strict");
 const bcrypt = require("bcryptjs");
 const { app, pool } = require("../server");
+const { dataHojeNoFuso } = require("../utils/validacoes");
 
 const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const emailA = `receitas-a-${sufixo}@bovitrack.local`;
@@ -108,7 +109,8 @@ async function executar() {
   });
   const idA = propriedadeA.dados.propriedade.id;
   const idB = propriedadeB.dados.propriedade.id;
-  const hoje = new Date().toISOString().slice(0, 10);
+  // Os filtros financeiros usam APP_TIMEZONE, inclusive na virada do dia UTC.
+  const hoje = dataHojeNoFuso();
 
   await requisitar("/despesas", {
     metodo: "POST",

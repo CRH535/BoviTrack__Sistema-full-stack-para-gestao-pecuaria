@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const pool = require("../database/pool");
 const { excluirUsuarioComDados } = require("./impactoExclusao");
+const { validarCamposPermitidos } = require("../utils/validacoes");
 
 function criarErroValidacao(mensagem, status = 400) {
   const erro = new Error(mensagem);
@@ -19,6 +20,9 @@ function validarSenha(senha) {
 }
 
 async function criarUsuarioComum(body) {
+  // perfil e ativo sao campos legados aceitos, mas nunca definem privilegios.
+  const campos = validarCamposPermitidos(body, ["nome", "email", "senha", "perfil", "ativo"]);
+  if (campos.erro) throw criarErroValidacao(campos.erro);
   const { nome: nomeRecebido, email: emailRecebido, senha } = body;
 
   if (
@@ -77,4 +81,39 @@ async function criarUsuarioComum(body) {
   }
 }
 
-module.exports = { criarUsuarioComum, excluirUsuarioComDados, validarSenha };
+async function alterarAtivoUsuario(usuarioId, ativo, banco = pool) {
+  const cliente = await banco.connect();
+  try {
+    await cliente.query("BEGIN");
+    const existente = await cliente.query(
+      "SELECT id, perfil FROM usuarios WHERE id = $1 FOR UPDATE",
+      [usuarioId],
+    );
+    if (!existente.rows[0]) throw criarErroValidacao("Usuário não encontrado", 404);
+    if (existente.rows[0].perfil === "admin") {
+      throw criarErroValidacao("O administrador principal não pode ser ativado ou desativado por esta rota", 403);
+    }
+    const resultado = await cliente.query(
+      `UPDATE usuarios SET ativo = $1 WHERE id = $2
+       RETURNING id, nome, email, perfil, ativo, created_at`,
+      [ativo, usuarioId],
+    );
+    if (!ativo) {
+      await cliente.query(
+        `UPDATE sessoes_refresh
+            SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'USUARIO_DESATIVADO'
+          WHERE usuario_id = $1 AND revoked_at IS NULL`,
+        [usuarioId],
+      );
+    }
+    await cliente.query("COMMIT");
+    return resultado.rows[0];
+  } catch (erro) {
+    await cliente.query("ROLLBACK").catch(() => {});
+    throw erro;
+  } finally {
+    cliente.release();
+  }
+}
+
+module.exports = { alterarAtivoUsuario, criarUsuarioComum, excluirUsuarioComDados, validarSenha };

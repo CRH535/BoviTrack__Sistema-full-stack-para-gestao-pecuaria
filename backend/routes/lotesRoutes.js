@@ -82,8 +82,8 @@ router.post("/lotes", async (req, res) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "descricao", "propriedade_id"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 120);
-    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 500);
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
+    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const propriedade_id = converterId(req.body.propriedade_id);
     const erro = nome.erro || descricao.erro || (!propriedade_id && "Propriedade inválida");
     if (erro) return res.status(400).json({ mensagem: erro });
@@ -129,8 +129,8 @@ router.put("/lotes/:id", async (req, res) => {
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
     const { id } = req.params;
 
-    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 120);
-    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 500);
+    const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
+    const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const propriedade_id = converterId(req.body.propriedade_id);
     const erro = nome.erro || descricao.erro || (!propriedade_id && "Propriedade inválida");
     if (erro) return res.status(400).json({ mensagem: erro });

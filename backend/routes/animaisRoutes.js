@@ -2,6 +2,7 @@ const express = require("express");
 const pool = require("../database/pool");
 const {
   converterId,
+  idOpcionalInformado,
   normalizarDataNascimento,
   normalizarNumeroBrinco,
   normalizarPaginacao,
@@ -18,20 +19,20 @@ const router = express.Router();
 router.param("id", validarParametroId);
 
 function normalizarDadosAnimal(dados) {
-  const nome = normalizarTextoObrigatorio(dados.nome, "Nome", 120);
-  const especie = normalizarTextoObrigatorio(dados.especie, "Espécie", 80);
-  const raca = normalizarTextoOpcional(dados.raca, "Raça", 100);
+  const nome = normalizarTextoObrigatorio(dados.nome, "Nome", 100);
+  const especie = normalizarTextoObrigatorio(dados.especie, "Espécie", 50);
+  const raca = normalizarTextoOpcional(dados.raca, "Raça", 50);
   const numeroBrinco = normalizarNumeroBrinco(dados.numero_brinco);
   const dataNascimento = normalizarDataNascimento(dados.data_nascimento);
   const propriedadeId = converterId(dados.propriedade_id);
-  const maeId = dados.mae_id ? converterId(dados.mae_id) : null;
+  const maeId = idOpcionalInformado(dados.mae_id) ? converterId(dados.mae_id) : null;
   const sexo = typeof dados.sexo === "string" ? dados.sexo.trim().toUpperCase() : "";
   const peso = dados.peso === undefined || dados.peso === null || dados.peso === ""
     ? { valor: null }
     : normalizarNumeroFinito(dados.peso, "Peso", { minimo: 0, maximo: 1e6 });
   const erro = nome.erro || especie.erro || raca.erro || numeroBrinco.erro ||
     dataNascimento.erro || peso.erro || (!propriedadeId && "Propriedade inválida") ||
-    (dados.mae_id && !maeId && "Mãe inválida") ||
+    (idOpcionalInformado(dados.mae_id) && !maeId && "Mãe inválida") ||
     (!["M", "F"].includes(sexo) && "Sexo deve ser M ou F");
   if (erro) return { erro };
   return { valor: {
@@ -265,6 +266,9 @@ router.post("/animais", async (req, res) => {
       animal: resultado.rows[0],
     });
   } catch (erro) {
+    if (erro.code === "23514" && ["animais_parentesco_consistente", "desmamas_referencias_consistentes"].includes(erro.constraint)) {
+      return res.status(400).json({ mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
+    }
     if (
       erro.code === "23505" &&
       erro.constraint === "animais_propriedade_numero_brinco_uidx"
@@ -438,6 +442,9 @@ router.put("/animais/:id", async (req, res) => {
       animal: resultado.rows[0],
     });
   } catch (erro) {
+    if (erro.code === "23514" && ["animais_parentesco_consistente", "desmamas_referencias_consistentes"].includes(erro.constraint)) {
+      return res.status(400).json({ mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
+    }
     if (
       erro.code === "23505" &&
       erro.constraint === "animais_propriedade_numero_brinco_uidx"
