@@ -9,7 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test tests/api.test.js",
+    "test": "node --test tests/api.test.js tests/financas.test.js",
     "test:e2e": "node ../scripts/test-isolated.cjs e2e"
   },
   "dependencies": {

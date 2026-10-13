@@ -1,0 +1,59 @@
+# Continuidade da reformulação visual
+
+## Escopo e branch
+
+- Missão: reformulação visual progressiva seguindo as quatro referências, preservando funcionalidades, APIs, autorização e animação de login/logout.
+- Branch ativa: `design/reformulacao-visual`. Não existe uma branch local `DEV` neste checkout.
+- Base verificada: `62235a9` (ponto de partida após a evolução funcional).
+- Não editar main, fazer push ou deploy.
+- Nunca imprimir `.env`. O backend local contém credenciais reais do Supabase; os testes devem usar exclusivamente `scripts/test-isolated.cjs`.
+
+## Concluído
+
+- Inspeção de Git, histórico e AGENTS.md.
+- Graphify consultado para o layout, páginas e componentes compartilhados.
+- Arquitetura React/Vite/Axios e CSS tradicional mapeada; controles individuais de leite, pesagem e desmama identificados.
+- Referências analisadas: sidebar clara, verde, hierarquia forte, tabelas densas, ficha com abas e painéis sem métricas inventadas.
+- Ferramentas conferidas: Playwright instalado; skills frontend-design/playwright-cli/code-review/find-docs ausentes. Graphify e vercel:react-best-practices disponíveis e lidas.
+- Auditoria Playwright criada em `frontend/tests/e2e/visual-audit.spec.js`: todas as rotas nos dois temas e nos sete viewports, com banco PostgreSQL descartável local.
+- Auditoria inicial concluída nos sete viewports antes da alteração da aplicação; capturas em `outputs/ui-audit/before/`.
+- Design system, sidebar clara, drawer, busca funcional, componentes de consulta e feedback implementados.
+- Dashboard reorganizado; Animais com filtros/ordenação/paginação/tabela e cartões mobile; ficha com seis abas.
+- Controle leiteiro extraído e carregado sob demanda; produção continua individual, com acesso pela navegação.
+- Propriedades/lotes/vacinas/vacinações/despesas com cadastro recolhido, busca e paginação; formulários/conta/configurações/usuários usam os tokens compartilhados.
+- Finanças com filtros, totais da API, gráfico mensal, categorias e lançamentos. Valores negativos e falta de dados são explícitos.
+- Login/cadastro reformulados; imagem otimizada de 2,43 MB para 295 KB. Transição completa de login/logout já validada em desktop e mobile.
+- Erros agora usam aparência vermelha e role alert; nova tentativa limpa somente o erro anterior.
+- Lint sem avisos, build, oito testes frontend, testes offline, isolamento e auditorias npm passaram.
+- Integração PostgreSQL (212 verificações) e integridade passaram nesta execução. Backend e migrations não alterados.
+- Graphify atualizado por AST: 1301 nós, 2291 arestas. Não houve extração via LLM.
+
+## Etapa atual
+
+Reformulação concluída em 13/10/2026. Foram aprovados 84 cenários da suíte completa, mais sete testes de escala temporal/foco, totalizando 91 cenários E2E nos sete viewports. A auditoria visual final teve sete execuções aprovadas e 238 capturas permanentes, incluindo login/cadastro nos dois temas. A rodada anterior revelou uma suposição antiga do teste (animal novo sempre na primeira página); o teste agora utiliza a busca. Backend e regras de negócio permaneceram preservados.
+
+## Próximas etapas
+
+1. Ler `BOVITRACK_REFORMULACAO_VISUAL.md` e revisar as capturas de `outputs/ui-audit/after/`.
+2. Fazer avaliação visual local com o usuário e tratar somente ajustes solicitados.
+3. Não refazer os componentes já concluídos. Não fazer push, merge, deploy nem alterar main sem uma nova instrução explícita.
+
+## Ambiente de testes
+
+PostgreSQL 18 instalado. Cluster exclusivo de testes em `%LOCALAPPDATA%\Temp\bovitrack-evolution-20261012\pgdata`, porta 55432 em loopback.
+
+```powershell
+node scripts/test-isolated.cjs offline
+node scripts/test-isolated.cjs e2e
+```
+
+O runner cria, prepara e remove um banco novo. Não usar `.env` real para testes que escrevem dados.
+
+## Decisões de design
+
+- Tokens existentes evoluem para verde/slate, superfícies brancas e bordas suaves; manter CSS tradicional e lazy routes.
+- Sidebar desktop 236 px; drawer até 1024 px, com Escape, foco contido e retorno de foco.
+- Formulários de cadastro recolhidos, edição expande e foca o primeiro campo.
+- Não simular notificação, assinatura, foto, saúde/lactação ou comparação percentual.
+- Produção permanece individual, pois a API atual fornece dados por animal; evitar N+1 para fabricar um painel agregado.
+
