@@ -1,0 +1,50 @@
+name: Validação BoviTrack
+
+on:
+  pull_request:
+  push:
+    branches: [main, DEV]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: isolated-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BOVITRACK_TEST_POSTGRES_URL: postgresql://postgres:isolated-ci-password@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run lint --prefix frontend
+      - run: npm run build --prefix frontend
+      - run: node scripts/test-isolated.cjs offline
+      - run: node scripts/test-isolation.cjs
+      - run: npm audit --audit-level=high --prefix backend
+      - run: npm audit --audit-level=high --prefix frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: node scripts/test-isolated.cjs all

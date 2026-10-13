@@ -26,7 +26,12 @@
     "test:receitas": "node tests/receitas.js",
     "test:clima": "node tests/clima.js",
     "test:deletion-impact": "node tests/deletion-impact.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:regressions": "node tests/backend-regressions.js",
+    "test:regressions:integration": "node tests/backend-regressions-integration.js",
+    "test:offline": "node ../scripts/test-isolated.cjs offline",
+    "test:isolated": "node ../scripts/test-isolated.cjs integration",
+    "migrate:integrity": "node scripts/migrate-integrity.js"
   },
   "keywords": [],
   "author": "",
