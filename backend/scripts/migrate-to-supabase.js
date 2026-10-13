@@ -25,6 +25,27 @@ const TABELAS_COM_SEQUENCE = TABELAS.filter(
   (tabela) => tabela !== "animais_lotes",
 );
 
+// Esta ferramenta foi escrita para o schema inicial. Nunca declarar sucesso
+// quando uma origem atual possui historicos que nao serao copiados.
+async function validarEscopoOrigem(cliente) {
+  const resultado = await cliente.query(
+    `SELECT table_name AS objeto FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name <> ALL($1::text[])
+     UNION ALL
+     SELECT table_name || '.' || column_name AS objeto
+       FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'animais' AND column_name = 'mae_id'
+     ORDER BY objeto`,
+    [TABELAS],
+  );
+  if (resultado.rows.length) {
+    throw new Error(
+      `A origem possui estruturas nao suportadas por esta migracao inicial: ${resultado.rows.map((linha) => linha.objeto).join(", ")}. ` +
+      "Nenhum backup ou escrita no destino foi iniciado. Use backup/restauracao completos revisados para o schema atual; nao remova tabelas ou colunas para contornar esta verificacao.",
+    );
+  }
+}
+
 function identificador(nome) {
   if (!/^[a-z_][a-z0-9_]*$/i.test(nome)) {
     throw new Error(`Identificador SQL invalido: ${nome}`);
@@ -365,13 +386,15 @@ async function executar() {
   let transacaoOrigem = false;
   let transacaoDestino = false;
 
-  console.log("1/6 Criando backup completo do schema public local...");
-  const backup = criarBackup(origemConfig);
-  console.log(`Backup criado em ${backup}`);
-
   try {
+    await origem.connect();
+    await validarEscopoOrigem(origem);
+    console.log("1/6 Criando backup completo do schema public local...");
+    const backup = criarBackup(origemConfig);
+    console.log(`Backup criado em ${backup}`);
+
     console.log("2/6 Validando conexoes de origem e destino...");
-    await Promise.all([origem.connect(), destino.connect()]);
+    await destino.connect();
     const [versaoOrigem, versaoDestino] = await Promise.all([
       origem.query("SHOW server_version"),
       destino.query("SHOW server_version"),
