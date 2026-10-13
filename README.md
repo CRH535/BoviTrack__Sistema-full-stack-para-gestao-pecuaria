@@ -4,7 +4,7 @@
 
 O BoviTrack reúne informações de propriedades, animais, lotes, manejo, vacinação, produção leiteira e movimentações financeiras. A interface utiliza React; uma API Express concentra as regras de negócio, a autenticação e o acesso ao PostgreSQL.
 
-> **Status:** projeto em desenvolvimento. Esta documentação foi conferida com os arquivos disponíveis em 9 de outubro de 2026. A presença de funcionalidades e testes no repositório não representa certificação de operação em produção.
+> **Status:** projeto em desenvolvimento. Esta documentação foi conferida com os arquivos disponíveis em 12 de outubro de 2026. Veja o [relatório de evolução](docs/RELATORIO_EVOLUCAO_2026-10-12.md) para alterações, testes e limites da validação local.
 
 ## Sumário
 
@@ -134,6 +134,8 @@ Edite os dois arquivos `.env` conforme a seção de configuração. Escolha uma 
 
 O arquivo de schema abaixo cria as tabelas de negócio iniciais. Apesar do nome da pasta `supabase`, utiliza SQL PostgreSQL e pode inicializar um banco local vazio. Ele não deve ser reaplicado em um banco já populado.
 
+Antes dos scripts npm, configure `DB_*` no `.env` para esse banco e informe `ADMIN_NOME`, `ADMIN_EMAIL` e `ADMIN_SENHA` para `migrate:auth`. Mantenha `DATABASE_URL` ausente se quiser utilizar `DB_*`.
+
 ```powershell
 createdb -h localhost -p 5432 -U postgres bovitrack
 cd backend
@@ -145,6 +147,7 @@ npm run migrate:milk
 npm run migrate:bezerros
 
 psql -h localhost -p 5432 -U postgres -d bovitrack -v ON_ERROR_STOP=1 -f database/migrations/009_seguranca_sessoes_rate_limit.sql
+psql -h localhost -p 5432 -U postgres -d bovitrack -v ON_ERROR_STOP=1 -f database/migrations/012_integridade_parentesco_indices.sql
 npm run db:check
 ```
 
@@ -265,6 +268,8 @@ Não combine parâmetros SSL na URI, como `sslmode`, com `DB_SSL` e as variávei
 | `npm run build` | Build estático em `dist/`. |
 | `npm run preview` | Visualização local do build; não é um servidor de produção. |
 | `npm run lint` | Análise estática com ESLint. |
+| `npm test` | Regressões do cliente HTTP e isolamento de sessões, sem banco. |
+| `npm run test:e2e` | Playwright através do runner que cria banco local descartável. |
 
 ### Backend
 
@@ -284,6 +289,7 @@ Não combine parâmetros SSL na URI, como `sslmode`, com `DB_SSL` e as variávei
 | `npm run migrate:bezerros` | Estrutura de pesagens e desmamas. |
 | `npm run migrate:sessions` | Estrutura inicial das sessões de renovação. |
 | `npm run migrate:security` | Migrações `009` e `010`, via conexão administrativa do Supabase. |
+| `npm run migrate:integrity` | Migração `012`: proteção de parentesco e índices, via conexão administrativa explícita. |
 | `npm run migrate:supabase` | Backup e cópia do banco de origem para Supabase. |
 | `npm test` | Suíte de autenticação e permissões. |
 | `npm run test:milk` | Produção leiteira. |
@@ -292,8 +298,30 @@ Não combine parâmetros SSL na URI, como `sslmode`, com `DB_SSL` e as variávei
 | `npm run test:receitas` | Receitas e isolamento de acesso. |
 | `npm run test:clima` | Serviço de clima. |
 | `npm run test:deletion-impact` | Impacto de exclusões. |
+| `npm run test:offline` | Suítes offline do backend e do cliente HTTP. |
+| `npm run test:isolated` | Integração em banco novo local, criado e removido pelo runner. |
+| `npm run test:regressions` / `npm run test:regressions:integration` | Regressões de validação, sessão, ownership, agregações e parentesco. |
 
 Leia as pré-condições de cada script. As suítes de integração podem inserir e excluir registros; use banco isolado, com `ALLOW_TEST_DB_WRITES=true` somente durante esses testes. Não execute testes que gravam dados no banco de produção.
+
+### Validação reproduzível em banco descartável
+
+Depois de `npm ci` nas duas pastas, use um PostgreSQL **local dedicado aos testes**, com permissão de criar bancos. Na raiz, configure a conexão administrativa local do runner; o exemplo exige que você substitua a senha fictícia:
+
+```powershell
+$env:BOVITRACK_TEST_POSTGRES_URL = 'postgresql://postgres:SENHA_DE_TESTE@127.0.0.1:5432/postgres'
+node scripts/test-isolated.cjs offline
+node scripts/test-isolation.cjs
+node scripts/test-isolated.cjs integration
+cd frontend
+npx playwright install chromium
+cd ..
+node scripts/test-isolated.cjs e2e
+```
+
+`all` executa integração e E2E. O runner aceita somente URI PostgreSQL em loopback, sem query/hash, cria nome aleatório `bovitrack_test_*`, aplica schema e migrations (incluindo reaplicação de `012`), define configuração de teste e remove somente seu banco ao terminar normalmente ou diante de falha da suíte. A URL de negócio do ambiente é substituída. Os processos filhos legados podem ler `.env`, mas os valores explícitos do runner prevalecem. Não use conexão de produção. Uma interrupção forçada do processo pode deixar recursos de teste para limpeza manual.
+
+O Playwright inicia API e Vite nas portas `3005` e `5175`, recusa reutilizar servidores existentes, usa Chromium e sete viewports. Dados e autenticação são reais; apenas clima externo e o cenário explícito de erro do dashboard são simulados. Capturas ficam em `frontend/test-results/` e relatório HTML em `frontend/playwright-report/`, ambos ignorados pelo Git. O workflow [CI](.github/workflows/ci.yml) instala dependências e executa lint, build, auditoria e testes em serviço PostgreSQL próprio.
 
 ## Banco de dados e Supabase
 
@@ -303,14 +331,18 @@ Os IDs das entidades de negócio permanecem inteiros; não converta os relaciona
 
 ### Migrar dados existentes
 
+**Limite do copiador legado:** `migrate:supabase` copia somente nove tabelas do schema inicial. Agora recusa, antes de conectar ao destino, origens com tabelas adicionais ou `animais.mae_id`; portanto não serve para copiar uma instalação atual com sessões, leite, pesagens e desmamas. Nesse caso, planeje backup/restauração completos e ensaie em destino isolado. Não remova históricos para contornar a proteção.
+
 1. Faça backup e interrompa escritas na origem.
 2. Configure `SUPABASE_MIGRATION_URL` para um destino vazio, usando Direct connection ou Session pooler; informe a origem por `LOCAL_DATABASE_URL` ou `DB_*`.
-3. Dentro de `backend`, execute `npm run db:check` e `npm run migrate:supabase`.
+3. Confirme que a origem é compatível com as nove tabelas do copiador legado; dentro de `backend`, execute `npm run migrate:supabase`.
 4. O script cria backup em `backend/backups/`, valida o destino, copia os registros, preserva IDs, ajusta sequences e compara contagens antes do commit.
 5. Depois da cópia, revise e aplique as migrações incrementais necessárias para o estado da origem e os módulos atuais. Não presuma que a cópia do schema base conclui todas as migrações posteriores.
-6. Valide os dados e a aplicação antes de liberar novas escritas. Preserve a origem e o backup até concluir a conferência.
+6. Após completar as migrações do destino, execute `npm run db:check` e valide a aplicação antes de liberar novas escritas. Preserve a origem e o backup até concluir a conferência. O checker atual exige os módulos posteriores, por isso não é uma pré-condição compatível com o schema legado.
 
 O script recusa destinos com dados existentes ou estruturas parciais. As instruções detalhadas estão em [backend/MIGRACAO_SUPABASE.md](backend/MIGRACAO_SUPABASE.md); para produção, siga também os requisitos atuais de TLS e permissões em [backend/database/SEGURANCA_PRODUCAO.md](backend/database/SEGURANCA_PRODUCAO.md).
+
+A migração `012` não reescreve dados históricos e deve ser aplicada em janela de manutenção: a criação normal de índices pode bloquear escritas. Consulte [INTEGRIDADE_012.md](backend/database/INTEGRIDADE_012.md) para pré-condições e reversão. Inconsistências existentes são reportadas por `db:check`, sem correção automática.
 
 ### Preparar o runtime no Supabase
 

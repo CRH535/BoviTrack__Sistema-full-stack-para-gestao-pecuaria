@@ -1,5 +1,12 @@
 # Migração do BoviTrack para o Supabase
 
+> Revisão de 12/10/2026: este documento descreve o **copiador legado**, limitado
+> às nove tabelas do schema inicial (incluindo receitas). O script agora recusa
+> origens com tabelas adicionais ou `animais.mae_id`, antes de criar backup ou
+> acessar o destino. Uma base atual com sessões, leite, pesagens e desmamas exige
+> backup/restauração completos, ensaiados em destino isolado. Não elimine
+> históricos para usar o copiador. Veja [INTEGRIDADE_012.md](database/INTEGRIDADE_012.md).
+
 O Supabase será usado apenas como PostgreSQL hospedado. O backend continua usando
 `pg`, JWT e as mesmas queries. Supabase Auth, Data API e RLS não participam deste
 fluxo.
@@ -69,9 +76,12 @@ Pare temporariamente o backend para que não sejam criados registros durante a
 cópia. Depois, dentro de `backend`, execute:
 
 ```powershell
-npm run db:check
 npm run migrate:supabase
 ```
+
+O checker atual `db:check` exige as tabelas dos módulos posteriores; execute-o
+no destino depois de completar as migrations. Ele não é uma pré-condição
+compatível com a origem legada limitada às nove tabelas.
 
 O script:
 
