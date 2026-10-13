@@ -5,3 +5,13 @@ DER_BOVITRACK.png
 DICIONARIO_DADOS_BOVITRACK.png
 DICIONARIO_DADOS_TCC.md
 DICIONARIO_DADOS.md
+
+# Dependências e evidências locais de validação
+node_modules/
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
+# Backups automáticos do grafo; os arquivos atuais permanecem versionados.
+graphify-out/????-??-??/
