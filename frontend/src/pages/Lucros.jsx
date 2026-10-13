@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { Link } from "react-router-dom";
 import PainelFinanceiro from "../components/financas/PainelFinanceiro";
 import Lancamentos from "../components/financas/Lancamentos";
@@ -258,12 +259,12 @@ function Lucros() {
           </p>
         </div>
         <div className="page-header-actions">
-          <Link className="button-link button-primary" to="/producao">
+          <Button as={Link} startIcon="producao" className="button-link button-primary" to="/producao">
             Registrar produção
-          </Link>
-          <Link className="button-link" to="/despesas?novo=1">
+          </Button>
+          <Button as={Link} startIcon="despesas" className="button-link" to="/despesas?novo=1">
             Nova despesa
-          </Link>
+          </Button>
         </div>
       </header>
 
@@ -275,7 +276,7 @@ function Lucros() {
       {erro && (
         <div className="notice notice-error" role="alert">
           {erro}{" "}
-          <button
+          <Button startIcon="atualizar"
             type="button"
             onClick={() => {
               setErro("");
@@ -284,7 +285,7 @@ function Lucros() {
             }}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -383,7 +384,7 @@ function Lucros() {
             </div>
           </>
         )}
-        <button type="submit">Aplicar filtros</button>
+        <Button startIcon="filtro" loading={salvando} type="submit">Aplicar filtros</Button>
       </form>
       {!carregando && !erro && (
         <PainelFinanceiro
@@ -498,21 +499,21 @@ function Lucros() {
               />
             </div>
             <div className="form-actions revenue-form-actions">
-              <button type="submit">
+              <Button startIcon={editandoId ? "salvar" : "mais"} loading={salvando} type="submit">
                 {salvando
                   ? "Salvando..."
                   : editandoId
                     ? "Salvar alterações"
                     : "Cadastrar receita"}
-              </button>
+              </Button>
               {editandoId && (
-                <button
+                <Button startIcon="fechar"
                   className="button-secondary"
                   type="button"
                   onClick={limparFormulario}
                 >
                   Cancelar
-                </button>
+                </Button>
               )}
             </div>
           </fieldset>

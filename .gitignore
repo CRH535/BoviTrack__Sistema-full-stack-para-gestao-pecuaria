@@ -14,6 +14,7 @@ node_modules/
 test-results/
 playwright-report/
 outputs/ui-audit/
+outputs/iconografia/
 .codex/ui-*.cjs
 # Backups automáticos do grafo; os arquivos atuais permanecem versionados.
 graphify-out/????-??-??/

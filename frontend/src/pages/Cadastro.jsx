@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
@@ -145,13 +146,13 @@ function Cadastro() {
               required
             />
 
-            <button type="submit" disabled={enviando || carregando}>
+            <Button startIcon="mais" loading={enviando || carregando} type="submit" disabled={enviando || carregando}>
               {carregando
                 ? "Verificando sessão..."
                 : enviando
                   ? "Criando conta..."
                   : "Criar conta"}
-            </button>
+            </Button>
           </form>
 
           <p className="auth-switch">

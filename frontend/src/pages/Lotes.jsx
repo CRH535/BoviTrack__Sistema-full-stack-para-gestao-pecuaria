@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import useMensagem from "../hooks/useMensagem";
 import ColecaoRegistros from "../components/ui/ColecaoRegistros";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
@@ -367,19 +368,19 @@ function Lotes() {
 
             <br />
 
-            <button type="submit">
+            <Button startIcon={editandoId ? "salvar" : "mais"} loading={processando} type="submit">
               {editandoId ? "Salvar alterações" : "Cadastrar"}
-            </button>
+            </Button>
 
             {editandoId && (
-              <button
+              <Button startIcon="fechar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={limparFormulario}
               >
                 Cancelar
-              </button>
+              </Button>
             )}
           </fieldset>
         </form>
@@ -389,13 +390,13 @@ function Lotes() {
       {erroLista && (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar os registros.{" "}
-          <button
+          <Button startIcon="atualizar"
             disabled={processando}
             type="button"
             onClick={recarregarLotes}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -440,7 +441,7 @@ function Lotes() {
               <p>Animais: {lote.quantidade_animais || 0}</p>
 
               <div className="lot-actions">
-                <button
+                <Button
                   disabled={processando}
                   type="button"
                   onClick={() => gerenciarAnimais(lote)}
@@ -452,25 +453,25 @@ function Lotes() {
                   {loteGerenciado?.id === lote.id
                     ? "Fechar animais"
                     : "Gerenciar animais"}
-                </button>
+                </Button>
 
-                <button
+                <Button startIcon="editar"
                   disabled={processando}
                   className="button-secondary"
                   type="button"
                   onClick={() => editarLote(lote)}
                 >
                   Editar
-                </button>
+                </Button>
 
-                <button
+                <Button startIcon="excluir"
                   disabled={processando}
                   className="button-danger"
                   type="button"
                   onClick={() => excluirLote(lote.id)}
                 >
                   Excluir
-                </button>
+                </Button>
               </div>
 
               {loteGerenciado?.id === lote.id && (
@@ -510,14 +511,14 @@ function Lotes() {
                         </p>
                       </div>
 
-                      <button
+                      <Button startIcon="retirar"
                         disabled={processando}
                         className="button-danger"
                         type="button"
                         onClick={() => removerAnimalDoLote(animal)}
                       >
-                        Remover
-                      </button>
+Remover
+                      </Button>
                     </div>
                   ))}
 
@@ -557,14 +558,14 @@ function Lotes() {
                         ))}
                       </select>
 
-                      <button
+                      <Button startIcon="mais" loading={processando}
                         type="submit"
                         disabled={
                           !animalSelecionado || animaisCompativeis.length === 0
                         }
                       >
-                        Adicionar ao lote
-                      </button>
+Adicionar ao lote
+                      </Button>
                     </fieldset>
                   </form>
                 </section>

@@ -1,3 +1,5 @@
+import SearchInput from "./SearchInput";
+import Button from "./Button";
 import { useMemo, useState } from "react";
 import { EstadoVazio } from "./Estado";
 import Paginacao from "./Paginacao";
@@ -36,7 +38,7 @@ export default function ColecaoRegistros({
       <div className="panel collection-toolbar">
         <label>
           Pesquisar registros
-          <input
+          <SearchInput
             type="search"
             value={busca}
             placeholder="Buscar nos registros cadastrados..."
@@ -50,7 +52,7 @@ export default function ColecaoRegistros({
           {lista.length}{" "}
           {lista.length === 1 ? "registro encontrado" : "registros encontrados"}
         </span>
-        <button
+        <Button startIcon="limpar"
           className="button-secondary"
           type="button"
           onClick={() => {
@@ -59,7 +61,7 @@ export default function ColecaoRegistros({
           }}
         >
           Limpar busca
-        </button>
+        </Button>
       </div>
       {lista.length ? (
         <div className={`record-grid ${className}`}>

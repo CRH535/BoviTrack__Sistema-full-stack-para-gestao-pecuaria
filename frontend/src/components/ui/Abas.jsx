@@ -1,3 +1,4 @@
+import Button from "./Button";
 export default function Abas({ itens, ativa, onChange, id = "ficha" }) {
   function teclado(event, index) {
     let destino;
@@ -15,7 +16,7 @@ export default function Abas({ itens, ativa, onChange, id = "ficha" }) {
   return (
     <div className="ui-tabs" role="tablist" aria-label="Informações do animal">
       {itens.map((item, index) => (
-        <button
+        <Button startIcon={item.icone}
           id={`${id}-tab-${item.id}`}
           type="button"
           role="tab"
@@ -28,7 +29,7 @@ export default function Abas({ itens, ativa, onChange, id = "ficha" }) {
           key={item.id}
         >
           {item.rotulo}
-        </button>
+        </Button>
       ))}
     </div>
   );

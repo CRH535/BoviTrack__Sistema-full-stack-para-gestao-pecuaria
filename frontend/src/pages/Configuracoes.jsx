@@ -1,3 +1,5 @@
+import Button from "../components/ui/Button";
+import Icone from "../components/Icone";
 import IconeConfiguracoes from "../components/IconeConfiguracoes";
 import VoltarInicio from "../components/VoltarInicio";
 import { usePreferences } from "../preferences/usePreferences";
@@ -6,16 +8,19 @@ import { useTutorial } from "../tutorial/useTutorial";
 const temas = [
   {
     value: "light",
+    icon: "sol",
     label: "Claro",
     description: "Interface clara e leve.",
   },
   {
     value: "dark",
+    icon: "lua",
     label: "Escuro",
     description: "Superfícies escuras e confortáveis.",
   },
   {
     value: "system",
+    icon: "sistema",
     label: "Sistema",
     description: "Acompanha este dispositivo.",
   },
@@ -83,7 +88,7 @@ function Configuracoes() {
                 </span>
 
                 <span className="theme-option-copy">
-                  <strong>{tema.label}</strong>
+                  <strong><Icone nome={tema.icon} />{tema.label}</strong>
                   <small>{tema.description}</small>
                 </span>
 
@@ -110,7 +115,7 @@ function Configuracoes() {
         <div className="settings-section-heading">
           <div>
             <span className="settings-section-icon" aria-hidden="true">
-              ?
+              <Icone nome="ajuda" />
             </span>
             <div>
               <h2 id="tutorial-titulo">Tutorial do BoviTrack</h2>
@@ -120,14 +125,14 @@ function Configuracoes() {
             </div>
           </div>
         </div>
-        <button
+        <Button startIcon="tutorial"
           className="tutorial-settings-action"
           type="button"
           onClick={restartTutorial}
           disabled={tutorialActive}
         >
           Refazer tutorial
-        </button>
+        </Button>
       </section>
 
       <section

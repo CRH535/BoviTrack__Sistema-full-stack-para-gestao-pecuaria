@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import useMensagem from "../hooks/useMensagem";
 import ListaAnimais from "../components/animais/ListaAnimais";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
@@ -353,19 +354,19 @@ function Animais() {
 
             <br />
 
-            <button type="submit">
+            <Button startIcon={editandoId ? "salvar" : "mais"} loading={processando} type="submit">
               {editandoId ? "Salvar alterações" : "Cadastrar"}
-            </button>
+            </Button>
 
             {editandoId && (
-              <button
+              <Button startIcon="fechar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={limparFormulario}
               >
                 Cancelar
-              </button>
+              </Button>
             )}
           </fieldset>
         </form>
@@ -375,13 +376,13 @@ function Animais() {
       {erroLista && (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar os registros.{" "}
-          <button
+          <Button startIcon="atualizar"
             disabled={processando}
             type="button"
             onClick={recarregarAnimais}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 

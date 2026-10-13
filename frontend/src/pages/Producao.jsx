@@ -1,3 +1,5 @@
+import SearchInput from "../components/ui/SearchInput";
+import Button from "../components/ui/Button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
@@ -43,15 +45,15 @@ export default function Producao() {
             produção.
           </p>
         </div>
-        <Link className="button-link" to="/lucros">
+        <Button as={Link} startIcon="lucros" className="button-link" to="/lucros">
           Ver resultados financeiros
-        </Link>
+        </Button>
       </header>
       <Card titulo="Acompanhamento por animal" icone="producao">
         <label htmlFor="busca-producao">
           Buscar por nome, brinco ou propriedade
         </label>
-        <input
+        <SearchInput
           id="busca-producao"
           type="search"
           value={busca}
@@ -64,7 +66,7 @@ export default function Producao() {
       ) : erro ? (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar os animais.{" "}
-          <button
+          <Button startIcon="atualizar"
             type="button"
             onClick={() => {
               setCarregando(true);
@@ -72,7 +74,7 @@ export default function Producao() {
             }}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       ) : (
         <>
@@ -94,12 +96,12 @@ export default function Producao() {
                   <p>Brinco {animal.numero_brinco || "não informado"}</p>
                   <p>{animal.propriedade}</p>
                   <div className="record-actions">
-                    <Link
+                    <Button as={Link} startIcon="producao"
                       className="button-link"
                       to={`/animais/${animal.id}?aba=producao`}
                     >
                       Abrir controle leiteiro
-                    </Link>
+                    </Button>
                   </div>
                 </article>
               ))}
@@ -109,9 +111,9 @@ export default function Producao() {
               titulo="Nenhum animal encontrado"
               descricao="Cadastre um animal ou ajuste a busca para começar."
               acao={
-                <Link className="button-link" to="/animais?novo=1">
+                <Button as={Link} startIcon="mais" className="button-link" to="/animais?novo=1">
                   Cadastrar animal
-                </Link>
+                </Button>
               }
             />
           )}

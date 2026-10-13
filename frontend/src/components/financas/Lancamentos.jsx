@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Card from "../ui/Card";
@@ -100,27 +101,27 @@ export default function Lancamentos({
           renderAcoes={(r) =>
             r.tipo === "receita" ? (
               <div className="record-actions">
-                <button
+                <Button startIcon="editar"
                   className="button-secondary"
                   type="button"
                   disabled={processando}
                   onClick={() => onEditar(r.registro)}
                 >
                   Editar
-                </button>
-                <button
+                </Button>
+                <Button startIcon="excluir"
                   className="button-danger"
                   type="button"
                   disabled={processando}
                   onClick={() => onExcluir(r.registro)}
                 >
                   Excluir
-                </button>
+                </Button>
               </div>
             ) : (
-              <Link className="button-link" to="/despesas">
+              <Button as={Link} startIcon="despesas" className="button-link" to="/despesas">
                 Gerenciar despesa
-              </Link>
+              </Button>
             )
           }
         />

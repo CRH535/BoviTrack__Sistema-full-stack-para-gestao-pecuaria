@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { formatarDataSemFuso } from "../../utils/datas";
 import Card from "../ui/Card";
+import Button from "../ui/Button";
 import Kpi from "../ui/Kpi";
 import IconeImagem from "../IconeImagem";
 import ClimaDashboard from "../ClimaDashboard";
@@ -58,7 +59,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         ? "Animal sem pesagem recente"
         : "Animais sem pesagem recente",
       "Sem registro nos últimos 60 dias.",
-      "identificacao",
+      "pesagem",
       "warning",
     ],
     [
@@ -68,7 +69,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         ? "Desmama nos próximos 30 dias"
         : "Desmamas nos próximos 30 dias",
       "Revise o planejamento de manejo.",
-      "animais-lotes",
+      "desmama",
       "info",
     ],
   ];
@@ -128,7 +129,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
           rotulo="Desmamas próximas"
           valor={resumo.desmamas_proximas}
           contexto="Nos próximos 30 dias"
-          icone="animais-lotes"
+          icone="desmama"
           tom="warning"
           to="/desmamas"
         />
@@ -166,7 +167,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         <Card
           titulo="Resultado financeiro"
           icone="grafico"
-          acao={<Link to="/lucros">Ver resultados →</Link>}
+          acao={<Button as={Link} endIcon="seta" to="/lucros">Ver resultados</Button>}
         >
           <span className="card-description">
             Acumulado dos registros cadastrados
@@ -232,7 +233,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         <Card
           titulo="Próximas vacinações"
           icone="calendario"
-          acao={<Link to="/vacinacoes">Ver agenda →</Link>}
+          acao={<Button as={Link} endIcon="seta" to="/vacinacoes">Ver agenda</Button>}
         >
           {proximasVacinacoes.length ? (
             <div className="ui-action-list">
@@ -280,7 +281,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
                 "/pesagens",
                 "Registrar pesagem",
                 "Escolher o animal e acompanhar o peso",
-                "identificacao",
+                "pesagem",
               ],
               [
                 "/producao",
@@ -311,7 +312,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         <Card
           titulo="Pesagens recentes"
           icone="relogio"
-          acao={<Link to="/pesagens">Ver histórico →</Link>}
+          acao={<Button as={Link} endIcon="seta" to="/pesagens">Ver histórico</Button>}
         >
           {pesagens ? (
             pesagens.length ? (
@@ -323,7 +324,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
                     to={`/animais/${item.animal_id}?aba=pesagens`}
                   >
                     <span className="ui-action-icon">
-                      <IconeImagem nome="identificacao" />
+                      <IconeImagem nome="pesagem" />
                     </span>
                     <span>
                       <strong>{item.animal}</strong>
@@ -350,7 +351,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
       </div>
       <Card
         titulo="Crescimento e manejo"
-        icone="animais-lotes"
+        icone="desmama"
         className="dashboard-management"
       >
         <dl>

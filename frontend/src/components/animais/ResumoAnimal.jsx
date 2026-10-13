@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -96,9 +97,9 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
       {dados.some((d) => d === null) && (
         <div className="notice notice-error" role="alert">
           Parte do resumo está indisponível.{" "}
-          <button type="button" onClick={() => setTentativa((n) => n + 1)}>
+          <Button startIcon="atualizar" type="button" onClick={() => setTentativa((n) => n + 1)}>
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
       {!historico && (
@@ -159,12 +160,12 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                 titulo="Evolução do peso"
                 icone="identificacao"
                 acao={
-                  <button
+                  <Button startIcon="pesagem"
                     className="ui-sort"
                     onClick={() => onAbrir("pesagens")}
                   >
-                    Ver pesagens →
-                  </button>
+                    Ver pesagens
+                  </Button>
                 }
               >
                 {peso ? (
@@ -180,12 +181,12 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                 titulo="Produção de leite"
                 icone="producao"
                 acao={
-                  <button
+                  <Button startIcon="producao"
                     className="ui-sort"
                     onClick={() => onAbrir("producao")}
                   >
-                    Ver produção →
-                  </button>
+                    Ver produção
+                  </Button>
                 }
               >
                 <p className="card-description">Últimos 30 dias</p>
@@ -201,7 +202,7 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                 {agenda.length ? (
                   <div className="ui-timeline">
                     {agenda.slice(0, 5).map((item) => (
-                      <button
+                      <Button startIcon={item.aba === "pesagens" ? "pesagem" : item.aba === "vacinacao" ? "vacinas" : "desmama"}
                         className="ui-timeline-item"
                         key={item.id}
                         type="button"
@@ -212,7 +213,7 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                           <strong>{item.titulo}</strong>
                           <small>{item.descricao}</small>
                         </span>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ) : (
@@ -233,13 +234,13 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                       : "Há pesagem registrada nos últimos 60 dias."
                     : "Acompanhamento de peso indisponível."}
                 </p>
-                <button
+                <Button startIcon="pesagem"
                   className="button-secondary"
                   type="button"
                   onClick={() => onAbrir("pesagens")}
                 >
                   Registrar pesagem
-                </button>
+                </Button>
               </Card>
             </aside>
           </div>
@@ -251,9 +252,9 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
         className="profile-history"
         acao={
           !historico && (
-            <button className="ui-sort" onClick={() => onAbrir("historico")}>
-              Ver histórico →
-            </button>
+            <Button startIcon="historico" className="ui-sort" onClick={() => onAbrir("historico")}>
+              Ver histórico
+            </Button>
           )
         }
       >
@@ -264,7 +265,7 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
         {eventos.length ? (
           <div className="ui-timeline">
             {(historico ? eventos : eventos.slice(0, 5)).map((item) => (
-              <button
+              <Button startIcon={item.aba === "pesagens" ? "pesagem" : item.aba === "vacinacao" ? "vacinas" : "desmama"}
                 className="ui-timeline-item"
                 key={item.id}
                 type="button"
@@ -275,15 +276,15 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                   <strong>{item.titulo}</strong>
                   <small>{item.descricao}</small>
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         ) : (
           <p>Nenhum registro de manejo disponível.</p>
         )}
-        <Link className="ui-help-link" to="/animais">
-          Voltar à lista de animais →
-        </Link>
+        <Button as={Link} startIcon="voltar" className="ui-help-link" to="/animais">
+          Voltar à lista de animais
+        </Button>
       </Card>
     </>
   );

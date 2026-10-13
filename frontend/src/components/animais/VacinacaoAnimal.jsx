@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -48,19 +49,19 @@ export default function VacinacaoAnimal({ animal }) {
     <>
       <div className="section-heading">
         <h2>Vacinações do animal</h2>
-        <Link
+        <Button as={Link} startIcon="vacinas"
           className="button-link"
           to={`/vacinacoes?novo=1&animal=${animal.id}`}
         >
           Registrar vacinação
-        </Link>
+        </Button>
       </div>
       {erro ? (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar as vacinações.{" "}
-          <button onClick={() => setTentativa((n) => n + 1)}>
+          <Button startIcon="atualizar" onClick={() => setTentativa((n) => n + 1)}>
             Tentar novamente
-          </button>
+          </Button>
         </div>
       ) : lista ? (
         lista.length ? (

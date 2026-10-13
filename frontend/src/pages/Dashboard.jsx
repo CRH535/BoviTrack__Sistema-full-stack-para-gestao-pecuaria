@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { useEffect, useState } from "react";
 import DashboardConteudo from "../components/dashboard/DashboardConteudo";
 import api from "../services/api";
@@ -81,7 +82,7 @@ function Dashboard() {
         <p className="notice notice-error" role="alert">
           {erro}
         </p>
-        <button
+        <Button startIcon="atualizar"
           type="button"
           onClick={() => {
             setErro("");
@@ -90,7 +91,7 @@ function Dashboard() {
           }}
         >
           Tentar novamente
-        </button>
+        </Button>
       </div>
     );
   }

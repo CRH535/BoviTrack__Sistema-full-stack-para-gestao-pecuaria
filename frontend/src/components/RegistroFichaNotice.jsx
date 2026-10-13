@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { Link } from "react-router-dom";
 
 function RegistroFichaNotice({ tipo, acao }) {
@@ -12,9 +13,9 @@ function RegistroFichaNotice({ tipo, acao }) {
         Os registros de {tipo} são feitos diretamente na ficha do animal. Acesse{" "}
         <strong>Animais &gt; Ver ficha</strong> para {acao}.
       </p>
-      <Link className="button-secondary button-link" to="/animais">
+      <Button as={Link} startIcon="animais" className="button-secondary button-link" to="/animais">
         Ir para Animais
-      </Link>
+      </Button>
     </aside>
   );
 }

@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
+    "prebuild": "npm run test:icons",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test tests/api.test.js tests/financas.test.js",
+    "test": "node --test tests/api.test.js tests/financas.test.js tests/icons.test.js",
+    "test:icons": "node --test tests/icons.test.js",
     "test:e2e": "node ../scripts/test-isolated.cjs e2e"
   },
   "dependencies": {
@@ -19,6 +21,7 @@
     "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.8",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.0",
     "@types/react": "^19.2.17",

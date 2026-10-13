@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { IconButton } from "./ui/Button";
 
 function PasswordInput({ rotulo = "senha", ...inputProps }) {
   const [visivel, setVisivel] = useState(false);
@@ -17,27 +18,14 @@ function PasswordInput({ rotulo = "senha", ...inputProps }) {
         ref={inputRef}
         type={visivel ? "text" : "password"}
       />
-      <button
+      <IconButton
+        icon={visivel ? "ocultar" : "visualizar"}
         className="password-toggle"
         type="button"
-        aria-label={acao}
+        label={acao}
         aria-pressed={visivel}
         onClick={alternarVisibilidade}
-      >
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-          <path
-            d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
-          {visivel && (
-            <path d="M3 21 21 3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          )}
-        </svg>
-      </button>
+      />
     </div>
   );
 }

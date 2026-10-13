@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import useMensagem from "../hooks/useMensagem";
 import ColecaoRegistros from "../components/ui/ColecaoRegistros";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
@@ -279,19 +280,19 @@ function Propriedades() {
 
             <br />
 
-            <button type="submit">
+            <Button startIcon={editandoId ? "salvar" : "mais"} loading={processando} type="submit">
               {editandoId ? "Salvar alterações" : "Cadastrar"}
-            </button>
+            </Button>
 
             {editandoId && (
-              <button
+              <Button startIcon="fechar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={limparFormulario}
               >
                 Cancelar
-              </button>
+              </Button>
             )}
           </fieldset>
         </form>
@@ -301,13 +302,13 @@ function Propriedades() {
       {erroLista && (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar os registros.{" "}
-          <button
+          <Button startIcon="atualizar"
             disabled={processando}
             type="button"
             onClick={recarregarPropriedades}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -361,7 +362,7 @@ function Propriedades() {
             )}
 
             <div className="record-actions">
-              <button
+              <Button startIcon="clima"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
@@ -375,24 +376,24 @@ function Propriedades() {
                 {climaAbertoId === propriedade.id
                   ? "Ocultar clima"
                   : "Ver clima"}
-              </button>
-              <button
+              </Button>
+              <Button startIcon="editar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={() => editarPropriedade(propriedade)}
               >
                 Editar
-              </button>
+              </Button>
 
-              <button
+              <Button startIcon="excluir"
                 disabled={processando}
                 className="button-danger"
                 type="button"
                 onClick={() => abrirExclusao(propriedade)}
               >
                 Excluir
-              </button>
+              </Button>
             </div>
             {climaAbertoId === propriedade.id && (
               <section

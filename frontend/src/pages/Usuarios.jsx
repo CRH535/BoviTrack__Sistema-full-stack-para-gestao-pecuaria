@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import useMensagem from "../hooks/useMensagem";
 import { useCallback, useEffect, useState } from "react";
 import ConfirmacaoExclusao from "../components/ConfirmacaoExclusao";
@@ -225,9 +226,9 @@ function Usuarios() {
 
         <div className="page-header-actions">
           {!modo && (
-            <button type="button" onClick={abrirNovoUsuario}>
-              + Novo usuário
-            </button>
+            <Button startIcon="mais" type="button" onClick={abrirNovoUsuario}>
+              Novo usuário
+            </Button>
           )}
           <VoltarInicio />
         </div>
@@ -297,16 +298,16 @@ function Usuarios() {
             )}
 
             <div className="form-actions">
-              <button type="submit" disabled={salvando}>
+              <Button startIcon="salvar" loading={salvando} type="submit" disabled={salvando}>
                 {salvando ? "Salvando..." : "Salvar"}
-              </button>
-              <button
+              </Button>
+              <Button startIcon="fechar"
                 className="button-secondary"
                 type="button"
                 onClick={fecharFormulario}
               >
                 Cancelar
-              </button>
+              </Button>
             </div>
           </fieldset>
         </form>
@@ -324,9 +325,9 @@ function Usuarios() {
 
       {carregando && <p role="status">Carregando contas...</p>}
       {erroLista && (
-        <button type="button" onClick={recarregarUsuarios}>
+        <Button startIcon="atualizar" type="button" onClick={recarregarUsuarios}>
           Tentar novamente
-        </button>
+        </Button>
       )}
       <div
         hidden={carregando || erroLista}
@@ -354,30 +355,30 @@ function Usuarios() {
                   {usuario.ativo ? "Ativo" : "Inativo"}
                 </td>
                 <td className="user-actions" data-label="Ações">
-                  <button
+                  <Button startIcon="editar"
                     className="button-secondary button-small"
                     type="button"
                     onClick={() => abrirEdicao(usuario)}
                   >
                     Editar
-                  </button>
+                  </Button>
 
                   {usuario.perfil === "usuario" && (
                     <>
-                      <button
+                      <Button startIcon="bloqueio"
                         className="button-small"
                         type="button"
                         onClick={() => alterarSituacao(usuario)}
                       >
                         {usuario.ativo ? "Desativar" : "Ativar"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button startIcon="excluir"
                         className="button-danger button-small"
                         type="button"
                         onClick={() => abrirExclusaoUsuario(usuario)}
                       >
                         Excluir usuário
-                      </button>
+                      </Button>
                     </>
                   )}
                 </td>

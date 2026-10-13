@@ -1,3 +1,5 @@
+import SearchInput from "../ui/SearchInput";
+import Button, { IconButton } from "../ui/Button";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Card from "../ui/Card";
@@ -134,7 +136,7 @@ export default function ListaAnimais({
       <section className="panel animal-filters" aria-label="Filtros do rebanho">
         <div>
           <label htmlFor="filtro-animal-busca">Buscar animal</label>
-          <input
+          <SearchInput
             id="filtro-animal-busca"
             type="search"
             placeholder="Brinco, nome ou raça"
@@ -193,9 +195,9 @@ export default function ListaAnimais({
             <option value="M">Machos</option>
           </select>
         </div>
-        <button className="button-secondary" type="button" onClick={limpar}>
+        <Button startIcon="limpar" className="button-secondary" type="button" onClick={limpar}>
           Limpar filtros
-        </button>
+        </Button>
         <div className="mobile-order">
           <label htmlFor="filtro-animal-ordem">Ordenar animais</label>
           <select
@@ -278,25 +280,21 @@ export default function ListaAnimais({
               }}
               renderAcoes={(a) => (
                 <div className="record-actions">
-                  <Link className="button-link" to={`/animais/${a.id}`}>
+                  <Button as={Link} startIcon="visualizar" className="button-link" to={`/animais/${a.id}`}>
                     Ver ficha
-                  </Link>
-                  <button
+                  </Button>
+                  <IconButton icon="editar" label="Editar" title={`Editar animal ${a.nome}`}
                     className="button-secondary"
                     type="button"
                     disabled={processando}
                     onClick={() => onEditar(a)}
-                  >
-                    Editar
-                  </button>
-                  <button
+                  />
+                  <IconButton icon="excluir" label="Excluir" title={`Excluir animal ${a.nome}`}
                     className="button-danger"
                     type="button"
                     disabled={processando}
                     onClick={() => onExcluir(a.id)}
-                  >
-                    Excluir
-                  </button>
+                  />
                 </div>
               )}
             />
@@ -309,9 +307,9 @@ export default function ListaAnimais({
                   : "Cadastre o primeiro animal para acompanhar o rebanho."
               }
               acao={
-                <Link className="button-link" to="/animais?novo=1">
+                <Button as={Link} startIcon="mais" className="button-link" to="/animais?novo=1">
                   Cadastrar animal
-                </Link>
+                </Button>
               }
             />
           )}
@@ -335,12 +333,12 @@ export default function ListaAnimais({
               A ficha reúne pesagens, vacinações, desmama e produção de cada
               animal.
             </p>
-            <Link className="ui-help-link" to="/pesagens">
-              Consultar pesagens →
-            </Link>
-            <Link className="ui-help-link" to="/desmamas">
-              Consultar desmamas →
-            </Link>
+            <Button as={Link} startIcon="pesagem" className="ui-help-link" to="/pesagens">
+              Consultar pesagens
+            </Button>
+            <Button as={Link} startIcon="desmama" className="ui-help-link" to="/desmamas">
+              Consultar desmamas
+            </Button>
           </Card>
         </aside>
       </div>

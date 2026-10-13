@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { formatarDataSemFuso } from "../utils/datas";
@@ -37,9 +38,9 @@ function ClimaPropriedade({ propriedade, compacto = false }) {
       {!carregando && erro && (
         <div className="weather-message">
           <p>{erro}</p>
-          <button className="button-secondary" type="button" onClick={() => { setCarregando(true); setTentativa((valor) => valor + 1); }}>
+          <Button startIcon="atualizar" className="button-secondary" type="button" onClick={() => { setCarregando(true); setTentativa((valor) => valor + 1); }}>
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
       {!carregando && dados && (

@@ -38,6 +38,17 @@ Reformulação concluída em 13/10/2026. Foram aprovados 84 cenários da suíte 
 2. Fazer avaliação visual local com o usuário e tratar somente ajustes solicitados.
 3. Não refazer os componentes já concluídos. Não fazer push, merge, deploy nem alterar main sem uma nova instrução explícita.
 
+## Ajuste posterior: iconografia (13/10/2026)
+
+- Concluída na DEV local, criada a partir de `4eab00c` com autorização para preservar a versão visual atual e suas alterações existentes. Main permanece em `62235a9`.
+- Confirmadas ações/abas sem SVG, SVG antigo de senha com curva incompleta e omissão silenciosa de nomes desconhecidos. Corrigidos também nowrap dos botões e cabeçalho leiteiro em 320px.
+- Registro próprio central, Button/IconButton/SearchInput, escala de tamanhos e ícones nas ações. Ajuda/temas e buscas de Pesagens/Desmamas completados; favicon, PNGs e identidade preservados.
+- Prebuild verifica nomes/imports/assets e caixa exata dos caminhos. Nenhuma biblioteca de ícones nova; Babel parser explicitado somente como dependência de desenvolvimento para a auditoria JSX.
+- Lint/build e 10 testes frontend passaram. Total de 54 cenários E2E distintos validados: 18 de desenvolvimento, 12 de produção e 24 fluxos em desktop/mobile. Seis larguras (320/375/425/768/1024/1440), claro/escuro, console, contraste, assets e favicon em login/logout verificados.
+- 914 estados auditados, 938 capturas e nenhum erro remanescente de iconografia. Evidências: `outputs/iconografia/index.html`, `production-report/`, `flows-report/` e `validation-summary.json`. Relatório completo: `BOVITRACK_ICONOGRAFIA.md`.
+- 247 handlers preservados em 42 arquivos; backend/APIs/autenticação/permissões/banco de produção intactos. Graphify atualizado por AST: 1363 nós, 2447 arestas; aviso preexistente de parser SQL ausente.
+- Entrega em commit lógico na DEV após validação. Não houve push, merge, deploy ou alteração de main.
+
 ## Ambiente de testes
 
 PostgreSQL 18 instalado. Cluster exclusivo de testes em `%LOCALAPPDATA%\Temp\bovitrack-evolution-20261012\pgdata`, porta 55432 em loopback.

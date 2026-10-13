@@ -1,3 +1,4 @@
+import Button from "../ui/Button";
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -69,7 +70,7 @@ function TutorialDialog({ eyebrow, title, description, actions, onEscape }) {
 
         <div className="tutorial-dialog-actions">
           {actions.map((acao) => (
-            <button
+            <Button startIcon={acao.variant === "secondary" ? "fechar" : "tutorial"}
               key={acao.label}
               type="button"
               className={`tutorial-button tutorial-button--${acao.variant || "primary"}`}
@@ -77,7 +78,7 @@ function TutorialDialog({ eyebrow, title, description, actions, onEscape }) {
               data-autofocus={acao.autoFocus ? "true" : undefined}
             >
               {acao.label}
-            </button>
+            </Button>
           ))}
         </div>
       </section>

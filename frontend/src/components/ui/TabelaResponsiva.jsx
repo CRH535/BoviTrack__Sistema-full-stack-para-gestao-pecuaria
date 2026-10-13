@@ -1,3 +1,4 @@
+import Button from "./Button";
 export default function TabelaResponsiva({
   colunas,
   itens,
@@ -25,20 +26,14 @@ export default function TabelaResponsiva({
               }
             >
               {col.ordenavel && onOrdenar ? (
-                <button
+                <Button
+                  endIcon={ordenacao?.campo === col.id ? (ordenacao.direcao === "asc" ? "subir" : "descer") : "ordenar"}
                   className="ui-sort"
                   type="button"
                   onClick={() => onOrdenar(col.id)}
                 >
                   {col.rotulo}
-                  <span aria-hidden="true">
-                    {ordenacao?.campo === col.id
-                      ? ordenacao.direcao === "asc"
-                        ? "↑"
-                        : "↓"
-                      : "↕"}
-                  </span>
-                </button>
+                </Button>
               ) : (
                 col.rotulo
               )}

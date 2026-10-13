@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import useMensagem from "../hooks/useMensagem";
 import ColecaoRegistros from "../components/ui/ColecaoRegistros";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
@@ -285,19 +286,19 @@ function Vacinacoes() {
 
             <br />
 
-            <button type="submit">
+            <Button startIcon={editandoId ? "salvar" : "vacinacoes"} loading={processando} type="submit">
               {editandoId ? "Salvar alterações" : "Registrar vacinação"}
-            </button>
+            </Button>
 
             {editandoId && (
-              <button
+              <Button startIcon="fechar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={limparFormulario}
               >
                 Cancelar
-              </button>
+              </Button>
             )}
           </fieldset>
         </form>
@@ -307,13 +308,13 @@ function Vacinacoes() {
       {erroLista && (
         <div className="notice notice-error" role="alert">
           Não foi possível carregar os registros.{" "}
-          <button
+          <Button startIcon="atualizar"
             disabled={processando}
             type="button"
             onClick={recarregarVacinacoes}
           >
             Tentar novamente
-          </button>
+          </Button>
         </div>
       )}
 
@@ -359,23 +360,23 @@ function Vacinacoes() {
             <p>Observação: {vacinacao.observacao || "-"}</p>
 
             <div className="record-actions">
-              <button
+              <Button startIcon="editar"
                 disabled={processando}
                 className="button-secondary"
                 type="button"
                 onClick={() => editarVacinacao(vacinacao)}
               >
                 Editar
-              </button>
+              </Button>
 
-              <button
+              <Button startIcon="excluir"
                 disabled={processando}
                 className="button-danger"
                 type="button"
                 onClick={() => excluirVacinacao(vacinacao.id)}
               >
                 Excluir
-              </button>
+              </Button>
             </div>
           </article>
         )}

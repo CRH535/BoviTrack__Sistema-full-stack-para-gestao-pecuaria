@@ -102,6 +102,15 @@ test.describe("animação original", () => {
   test("login e logout preservam transição black-hole completa", async ({
     page,
   }, info) => {
+    async function validarMarcaNaTransicao() {
+      const marca = page.locator(".black-hole-transition__brand-mark");
+      await expect(marca).toHaveAttribute("src", "/favicon.svg");
+      await expect.poll(() => marca.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return el.complete && el.naturalWidth > 0 && rect.width > 0 &&
+          rect.height > 0 && Number(getComputedStyle(el).opacity) > 0;
+      })).toBe(true);
+    }
     await page.goto("/login");
     await page
       .getByLabel("Email", { exact: true })
@@ -113,6 +122,7 @@ test.describe("animação original", () => {
     await expect(page.locator("html")).toHaveClass(
       /black-hole-transition-active/,
     );
+    await validarMarcaNaTransicao();
     await page.screenshot({ path: info.outputPath("login-transition.png") });
     await expect(page.locator("html")).not.toHaveClass(
       /black-hole-transition-active/,
@@ -135,6 +145,7 @@ test.describe("animação original", () => {
     await expect(page.locator("html")).toHaveClass(
       /black-hole-transition-active/,
     );
+    await validarMarcaNaTransicao();
     await expect(page.locator("html")).not.toHaveClass(
       /black-hole-transition-active/,
       { timeout: 15000 },

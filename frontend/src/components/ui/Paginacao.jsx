@@ -1,3 +1,4 @@
+import { IconButton } from "./Button";
 export default function Paginacao({
   total,
   pagina,
@@ -25,27 +26,25 @@ export default function Paginacao({
             ))}
           </select>
         </label>
-        <button
+        <IconButton
+          icon="voltar"
+          label="Página anterior"
           type="button"
           className="button-secondary button-small"
           disabled={pagina <= 1}
           onClick={() => onPagina(pagina - 1)}
-          aria-label="Página anterior"
-        >
-          ←
-        </button>
+        />
         <span aria-live="polite">
           {pagina} / {paginas}
         </span>
-        <button
+        <IconButton
+          icon="avancar"
+          label="Próxima página"
           type="button"
           className="button-secondary button-small"
           disabled={pagina >= paginas}
           onClick={() => onPagina(pagina + 1)}
-          aria-label="Próxima página"
-        >
-          →
-        </button>
+        />
       </div>
     </footer>
   );

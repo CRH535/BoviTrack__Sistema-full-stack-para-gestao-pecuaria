@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import api from "../services/api";
@@ -12,12 +13,12 @@ import { Carregamento } from "../components/ui/Estado";
 import { formatarDataSemFuso } from "../utils/datas";
 
 const abas = [
-  { id: "resumo", rotulo: "Resumo" },
-  { id: "pesagens", rotulo: "Pesagens" },
-  { id: "vacinacao", rotulo: "Vacinação" },
-  { id: "desmama", rotulo: "Desmama" },
-  { id: "producao", rotulo: "Produção" },
-  { id: "historico", rotulo: "Histórico" },
+  { id: "resumo", rotulo: "Resumo", icone: "resumo" },
+  { id: "pesagens", rotulo: "Pesagens", icone: "pesagem" },
+  { id: "vacinacao", rotulo: "Vacinação", icone: "vacinacoes" },
+  { id: "desmama", rotulo: "Desmama", icone: "desmama" },
+  { id: "producao", rotulo: "Produção", icone: "producao" },
+  { id: "historico", rotulo: "Histórico", icone: "historico" },
 ];
 export default function FichaAnimal() {
   const { id } = useParams();
@@ -77,7 +78,7 @@ export default function FichaAnimal() {
         <p className="notice notice-error" role="alert">
           {erro}
         </p>
-        <button
+        <Button startIcon="atualizar"
           type="button"
           onClick={() => {
             setCarregando(true);
@@ -85,10 +86,10 @@ export default function FichaAnimal() {
           }}
         >
           Tentar novamente
-        </button>{" "}
-        <Link className="button-link" to="/animais">
+        </Button>{" "}
+        <Button as={Link} startIcon="voltar" className="button-link" to="/animais">
           Voltar para animais
-        </Link>
+        </Button>
       </div>
     );
   return (
@@ -105,9 +106,9 @@ export default function FichaAnimal() {
             Ficha do animal · identificação, manejo e produção em um só lugar.
           </p>
         </div>
-        <Link className="button-link" to="/animais">
+        <Button as={Link} startIcon="voltar" className="button-link" to="/animais">
           Voltar para animais
-        </Link>
+        </Button>
       </header>
       <section className="panel animal-profile-card">
         <div className="animal-profile-identity">

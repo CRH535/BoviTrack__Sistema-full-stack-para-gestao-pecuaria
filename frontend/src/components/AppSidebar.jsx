@@ -41,7 +41,7 @@ function Conteudo({ usuario, sair, fechar }) {
             {icon === "configuracoes" ? (
               <IconeConfiguracoes className="nav-icon-image" />
             ) : (
-              <IconeImagem nome={icon} className="nav-icon-image" />
+              <IconeImagem nome={icon === "animais-lotes" ? "desmama" : icon === "identificacao" ? "pesagem" : icon} className="nav-icon-image" />
             )}
             <span>{label}</span>
           </NavLink>

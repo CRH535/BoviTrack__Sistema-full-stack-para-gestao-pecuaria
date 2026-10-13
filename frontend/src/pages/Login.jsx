@@ -1,3 +1,4 @@
+import Button from "../components/ui/Button";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
@@ -96,7 +97,7 @@ function Login() {
               placeholder="Digite sua senha"
             />
 
-            <button
+            <Button startIcon="entrar" loading={carregando || enviando || transicaoAtiva}
               type="submit"
               disabled={carregando || enviando || transicaoAtiva}
             >
@@ -105,7 +106,7 @@ function Login() {
                 : enviando
                   ? "Entrando..."
                   : "Entrar"}
-            </button>
+            </Button>
           </form>
 
           <p className="auth-switch">

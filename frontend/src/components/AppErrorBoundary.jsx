@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { Component } from "react";
 import { createPortal } from "react-dom";
 
@@ -16,7 +17,7 @@ class AppErrorBoundary extends Component {
           <div className="panel">
             <h1 id="app-error-title">Não foi possível abrir esta tela</h1>
             <p>A aplicação pode ter sido atualizada. Recarregue a página para tentar novamente.</p>
-            <button type="button" autoFocus onClick={() => window.location.reload()}>Recarregar página</button>
+            <Button startIcon="atualizar" type="button" autoFocus onClick={() => window.location.reload()}>Recarregar página</Button>
           </div>
         </section>,
         document.body,

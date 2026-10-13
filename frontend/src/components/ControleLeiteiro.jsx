@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import GraficoProducaoLeite from "./GraficoProducaoLeite";
@@ -301,7 +302,7 @@ function ControleLeiteiro({ animal }) {
     return (
       <div className="notice notice-error" role="alert">
         {erro || "Não foi possível carregar a produção."}
-        <button
+        <Button startIcon="atualizar"
           type="button"
           onClick={() => {
             setCarregando(true);
@@ -309,7 +310,7 @@ function ControleLeiteiro({ animal }) {
           }}
         >
           Tentar novamente
-        </button>
+        </Button>
       </div>
     );
   const diferencaSeteDias =
@@ -336,14 +337,14 @@ function ControleLeiteiro({ animal }) {
               Controle Leiteiro
             </h2>
           </div>
-          <button
+          <Button
             disabled={processando}
             type="button"
             onClick={abrirNovoRegistro}
           >
             <IconeImagem nome="producao" className="button-icon-image" />
             Registrar produção
-          </button>
+          </Button>
         </div>
 
         {formularioAberto && (
@@ -405,16 +406,16 @@ function ControleLeiteiro({ animal }) {
                 />
               </div>
               <div className="form-actions milk-form-actions">
-                <button type="submit">
+                <Button startIcon={editandoId ? "salvar" : "producao"} loading={processando} type="submit">
                   {editandoId ? "Salvar alterações" : "Registrar produção"}
-                </button>
-                <button
+                </Button>
+                <Button startIcon="fechar"
                   className="button-secondary"
                   type="button"
                   onClick={fecharFormulario}
                 >
                   Cancelar
-                </button>
+                </Button>
               </div>
             </fieldset>
           </form>
@@ -490,7 +491,7 @@ function ControleLeiteiro({ animal }) {
               ["30dias", "Últimos 30 dias"],
               ["todos", "Todos"],
             ].map(([valor, rotulo]) => (
-              <button
+              <Button startIcon="calendario"
                 className={
                   periodo === valor && !dataInicio && !dataFim
                     ? "active"
@@ -501,7 +502,7 @@ function ControleLeiteiro({ animal }) {
                 key={valor}
               >
                 {rotulo}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -527,7 +528,7 @@ function ControleLeiteiro({ animal }) {
                 onChange={(evento) => setDataFim(evento.target.value)}
               />
             </div>
-            <button type="submit">Aplicar intervalo</button>
+            <Button startIcon="filtro" loading={processando} type="submit">Aplicar intervalo</Button>
           </form>
 
           {carregandoHistorico && (
@@ -565,22 +566,22 @@ function ControleLeiteiro({ animal }) {
                       </div>
                       <p>{producao.observacao || "Sem observação"}</p>
                       <div className="record-actions">
-                        <button
+                        <Button startIcon="editar"
                           disabled={processando}
                           className="button-secondary button-small"
                           type="button"
                           onClick={() => editarProducao(producao)}
                         >
                           Editar
-                        </button>
-                        <button
+                        </Button>
+                        <Button startIcon="excluir"
                           disabled={processando}
                           className="button-danger button-small"
                           type="button"
                           onClick={() => excluirProducao(producao.id)}
                         >
                           Excluir
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
