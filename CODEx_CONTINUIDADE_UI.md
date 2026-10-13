@@ -26,7 +26,7 @@
 - Erros agora usam aparência vermelha e role alert; nova tentativa limpa somente o erro anterior.
 - Lint sem avisos, build, oito testes frontend, testes offline, isolamento e auditorias npm passaram.
 - Integração PostgreSQL (212 verificações) e integridade passaram nesta execução. Backend e migrations não alterados.
-- Graphify atualizado por AST: 1301 nós, 2291 arestas. Não houve extração via LLM.
+- Graphify atualizado por AST: 1317 nós, 2306 arestas na atualização final. Não houve extração via LLM.
 
 ## Etapa atual
 

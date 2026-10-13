@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "frontend/package.json": {
-    "mtime": 1791848880.9956474,
-    "seen": 1791851181.6323183,
-    "ast_hash": "1a2cf904877b806c783b1ee02dbfe35d",
+    "mtime": 1791862639.1415565,
+    "seen": 1791864501.6480594,
+    "ast_hash": "a4cd62d52c3416eb06beaacc3db58855",
     "semantic_hash": ""
   },
   "frontend/public/theme-init.js": {
@@ -438,9 +438,9 @@
     "semantic_hash": ""
   },
   "frontend/src/App.jsx": {
-    "mtime": 1791849174.1084943,
-    "seen": 1791851181.6323295,
-    "ast_hash": "897f1aa08d2134a2058798580811faa9",
+    "mtime": 1791862639.204069,
+    "seen": 1791864501.6489275,
+    "ast_hash": "4f578aa8e459bf598a52222aa7e61074",
     "semantic_hash": ""
   },
   "frontend/src/auth/AdminRoute.jsx": {
@@ -492,15 +492,15 @@
     "semantic_hash": ""
   },
   "frontend/src/components/GraficoPeso.jsx": {
-    "mtime": 1791851409.940868,
-    "seen": 1791851685.1219168,
-    "ast_hash": "b1a58f3dc1bc96201d0ce5c867bc582b",
+    "mtime": 1791863593.3603282,
+    "seen": 1791864501.6538553,
+    "ast_hash": "3739cfd316f19de996247ca1db6404a1",
     "semantic_hash": ""
   },
   "frontend/src/components/GraficoProducaoLeite.jsx": {
-    "mtime": 1791848506.131362,
-    "seen": 1791851181.6323547,
-    "ast_hash": "cd5638ac5df5853eb51d69823afabe9b",
+    "mtime": 1791865693.4330416,
+    "seen": 1791866889.39489,
+    "ast_hash": "cff00aabc7a70df16052d4c4a3592ec5",
     "semantic_hash": ""
   },
   "frontend/src/components/IconeConfiguracoes.jsx": {
@@ -510,9 +510,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/IconeImagem.jsx": {
-    "mtime": 1791848506.1338918,
-    "seen": 1791851181.632359,
-    "ast_hash": "f0321aac5fe09f17d538d8a7c8e4c2b9",
+    "mtime": 1791862639.312064,
+    "seen": 1791864501.6543772,
+    "ast_hash": "cde3a61b8486a33e5f5f1caef91a0584",
     "semantic_hash": ""
   },
   "frontend/src/components/RegistroFichaNotice.jsx": {
@@ -546,33 +546,33 @@
     "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
-    "mtime": 1791847967.9264889,
-    "seen": 1791851181.6323721,
-    "ast_hash": "b3a29ccdffc88a42b4f1d5c462be29f1",
+    "mtime": 1791862639.7640452,
+    "seen": 1791864501.6571453,
+    "ast_hash": "ef11e59b19ce984414a2da65206e3059",
     "semantic_hash": ""
   },
   "frontend/src/pages/Animais.jsx": {
-    "mtime": 1791849236.530232,
-    "seen": 1791851181.6323743,
-    "ast_hash": "98866d5336a723f18e5f91369c38ffbe",
+    "mtime": 1791864197.6284256,
+    "seen": 1791864501.6571496,
+    "ast_hash": "364e01031d5c189344393cb0872e6c85",
     "semantic_hash": ""
   },
   "frontend/src/pages/Cadastro.jsx": {
-    "mtime": 1791849236.5312421,
-    "seen": 1791851181.6323764,
-    "ast_hash": "3d34acfe85e15cbc50a87669d41aa1f6",
+    "mtime": 1791862639.8270442,
+    "seen": 1791864501.6571522,
+    "ast_hash": "8326d14644d0ea1190d2f781d3665b81",
     "semantic_hash": ""
   },
   "frontend/src/pages/Configuracoes.jsx": {
-    "mtime": 1791849236.5502844,
-    "seen": 1791851181.632378,
-    "ast_hash": "da207ce86491415b5601a30acf904944",
+    "mtime": 1791864982.528185,
+    "seen": 1791866889.408875,
+    "ast_hash": "acfb744bea25d8fc00bae84830ba7cbc",
     "semantic_hash": ""
   },
   "frontend/src/pages/Dashboard.jsx": {
-    "mtime": 1791849236.5512953,
-    "seen": 1791851181.63238,
-    "ast_hash": "1707df89e1e3d749b94cbaa14d668b3e",
+    "mtime": 1791862639.8440416,
+    "seen": 1791864501.6576009,
+    "ast_hash": "d197e23e91a8562a0c4346332569db4c",
     "semantic_hash": ""
   },
   "frontend/src/pages/Desmamas.jsx": {
@@ -582,33 +582,33 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/Despesas.jsx": {
-    "mtime": 1791849236.5903752,
-    "seen": 1791851181.6323833,
-    "ast_hash": "260e78e92ecfad329621ae28a77c4649",
+    "mtime": 1791864197.844423,
+    "seen": 1791864501.6580532,
+    "ast_hash": "6437df6548885f11707df1e8cc99a2d2",
     "semantic_hash": ""
   },
   "frontend/src/pages/FichaAnimal.jsx": {
-    "mtime": 1791849236.6119163,
-    "seen": 1791851181.6323853,
-    "ast_hash": "8793d88c7048f63ae0cb0e00d8fd33c6",
+    "mtime": 1791862639.9070394,
+    "seen": 1791864501.6580565,
+    "ast_hash": "4ff0d203a5b52f2463859e107e134df9",
     "semantic_hash": ""
   },
   "frontend/src/pages/Login.jsx": {
-    "mtime": 1791849236.612921,
-    "seen": 1791851181.6323872,
-    "ast_hash": "8464fa4c9a0a07e21ebc15a45fbdd49b",
+    "mtime": 1791862639.929038,
+    "seen": 1791864501.6580591,
+    "ast_hash": "3b0c036dd8db33b1df472c08457d5d9a",
     "semantic_hash": ""
   },
   "frontend/src/pages/Lotes.jsx": {
-    "mtime": 1791849236.6339538,
-    "seen": 1791851181.6323888,
-    "ast_hash": "0319a93f7708efa155b1025b74e1a5d6",
+    "mtime": 1791864197.7514243,
+    "seen": 1791864501.6580617,
+    "ast_hash": "0f91ae534b3183f2c2468d6bc685ad9a",
     "semantic_hash": ""
   },
   "frontend/src/pages/Lucros.jsx": {
-    "mtime": 1791849236.653983,
-    "seen": 1791851181.632391,
-    "ast_hash": "217e83e67a0505e6700364309854fefa",
+    "mtime": 1791863212.2059214,
+    "seen": 1791864501.6580648,
+    "ast_hash": "a5da29bf05bf5c20d6c26c80e10eb459",
     "semantic_hash": ""
   },
   "frontend/src/pages/MinhaConta.jsx": {
@@ -624,27 +624,27 @@
     "semantic_hash": ""
   },
   "frontend/src/pages/Propriedades.jsx": {
-    "mtime": 1791849236.678537,
-    "seen": 1791851181.6323962,
-    "ast_hash": "74abcaa5d164ce94e1719fd6ac0fe9d6",
+    "mtime": 1791864197.6874263,
+    "seen": 1791864501.6589365,
+    "ast_hash": "0e07b6aaa3b4e52640e80aab40e75b75",
     "semantic_hash": ""
   },
   "frontend/src/pages/Usuarios.jsx": {
-    "mtime": 1791849236.6975782,
-    "seen": 1791851181.6323981,
-    "ast_hash": "ee6d416a9c4664e449442864f33aefc8",
+    "mtime": 1791864197.8784225,
+    "seen": 1791864501.6589394,
+    "ast_hash": "b0507e3ebfd71ed3b2cb67d14c9b09f7",
     "semantic_hash": ""
   },
   "frontend/src/pages/Vacinacoes.jsx": {
-    "mtime": 1791849236.6985776,
-    "seen": 1791851181.6323998,
-    "ast_hash": "22ec50164327b9c4aed024d50fd5cd2d",
+    "mtime": 1791864197.8144248,
+    "seen": 1791864501.6589422,
+    "ast_hash": "6c633550df08a9838a14b56dacea1731",
     "semantic_hash": ""
   },
   "frontend/src/pages/Vacinas.jsx": {
-    "mtime": 1791849236.7166307,
-    "seen": 1791851181.6324017,
-    "ast_hash": "e7f98b32a61149c770fb6c6eb6dd4b30",
+    "mtime": 1791864197.7834227,
+    "seen": 1791864501.658945,
+    "ast_hash": "f136f90219c34dfe27a0f273272ffaff",
     "semantic_hash": ""
   },
   "frontend/src/preferences/PreferencesProvider.jsx": {
@@ -1038,15 +1038,15 @@
     "semantic_hash": ""
   },
   "frontend/tests/e2e/bovitrack.spec.js": {
-    "mtime": 1791851136.1050239,
-    "seen": 1791851181.6324306,
-    "ast_hash": "7983aa9eceeb3d0730ced74d25edec3f",
+    "mtime": 1791863333.334381,
+    "seen": 1791864501.6651573,
+    "ast_hash": "d0b456275985f975aec1578c019cfd3e",
     "semantic_hash": ""
   },
   "scripts/test-isolated.cjs": {
-    "mtime": 1791851142.7932794,
-    "seen": 1791851181.6324365,
-    "ast_hash": "73748714b3aa02f7c23f77f31d670ed6",
+    "mtime": 1791863196.5172126,
+    "seen": 1791864501.66603,
+    "ast_hash": "48288e27935594a1c7c4807e7bb0f033",
     "semantic_hash": ""
   },
   "scripts/test-isolation.cjs": {
@@ -1077,6 +1077,198 @@
     "mtime": 1791851762.2017772,
     "seen": 1791851793.4891124,
     "ast_hash": "6e241e7e2fe90a4eb30af6b368830908",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/AppSidebar.jsx": {
+    "mtime": 1791862640.6855183,
+    "seen": 1791864501.6516361,
+    "ast_hash": "a9430bf0b23cfd8c21d9a070cc4ef5d4",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ControleLeiteiro.jsx": {
+    "mtime": 1791862640.7385132,
+    "seen": 1791864501.6534114,
+    "ast_hash": "09c6acbd6d22b34084b7e395a840fda5",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Icone.jsx": {
+    "mtime": 1791862640.7475145,
+    "seen": 1791864501.653862,
+    "ast_hash": "e1990a8d4d977cda5d2a6d0fc1068913",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/LayoutApp.jsx": {
+    "mtime": 1791862640.6975167,
+    "seen": 1791864501.6543803,
+    "ast_hash": "043aefa4719139315ad517eddd872f56",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/Marca.jsx": {
+    "mtime": 1791862640.7545161,
+    "seen": 1791864501.6543832,
+    "ast_hash": "6c0568b7829bf4391a4a896d3288783b",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/animais/ListaAnimais.jsx": {
+    "mtime": 1791862747.7072177,
+    "seen": 1791864501.6557302,
+    "ast_hash": "c9791fed0f6b75d81950cbb307fc9057",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/animais/ResumoAnimal.jsx": {
+    "mtime": 1791862640.4895253,
+    "seen": 1791864501.6557326,
+    "ast_hash": "0713073d6ac2d139a1b75693ea2eca07",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/animais/VacinacaoAnimal.jsx": {
+    "mtime": 1791862640.5425267,
+    "seen": 1791864501.6557345,
+    "ast_hash": "5971f04d51d244be91f1c19c15bf3a75",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/dashboard/DashboardConteudo.jsx": {
+    "mtime": 1791865177.5302298,
+    "seen": 1791866889.3999631,
+    "ast_hash": "468253a36184ce7ae994e3f0f72ea540",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/financas/Lancamentos.jsx": {
+    "mtime": 1791862640.5305245,
+    "seen": 1791864501.655739,
+    "ast_hash": "c972fd83e43f1be972f20dd47e274506",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/financas/PainelFinanceiro.jsx": {
+    "mtime": 1791863212.0859258,
+    "seen": 1791864501.6557417,
+    "ast_hash": "d1b9edb4da783e1e1a4c5c93e59e9120",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Abas.jsx": {
+    "mtime": 1791862640.503524,
+    "seen": 1791864501.6571186,
+    "ast_hash": "4061396c0d905f45939954a5ee40e20b",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Card.jsx": {
+    "mtime": 1791862640.5115254,
+    "seen": 1791864501.6571214,
+    "ast_hash": "f9d6547f80a54e6084d1885dfb8e5466",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/ColecaoRegistros.jsx": {
+    "mtime": 1791862640.670518,
+    "seen": 1791864501.6571238,
+    "ast_hash": "33d6aaacde4e402b7deb2cd5343bac63",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Distribuicao.jsx": {
+    "mtime": 1791863196.5102196,
+    "seen": 1791864501.657126,
+    "ast_hash": "51c0f9be26c39aea54914026eff7edc1",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Estado.jsx": {
+    "mtime": 1791862640.6425207,
+    "seen": 1791864501.657128,
+    "ast_hash": "ae8fdd3bbcd090dbedd155500f0831a2",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/FormularioCadastro.jsx": {
+    "mtime": 1791862640.6305215,
+    "seen": 1791864501.6571305,
+    "ast_hash": "909115d7160c5b44831a5f81439c5dad",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Kpi.jsx": {
+    "mtime": 1791862640.6125226,
+    "seen": 1791864501.6571324,
+    "ast_hash": "e9de110dadfaba98c7724d4797de6d74",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/Paginacao.jsx": {
+    "mtime": 1791862640.596522,
+    "seen": 1791864501.6571345,
+    "ast_hash": "882608ad3bf03700a77c56744efb85e1",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/ui/TabelaResponsiva.jsx": {
+    "mtime": 1791862640.5795228,
+    "seen": 1791864501.6571367,
+    "ast_hash": "aa2cfb0471e1152ca5c6107c1d265dda",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/useLarguraGrafico.js": {
+    "mtime": 1791862640.7625153,
+    "seen": 1791864501.6571393,
+    "ast_hash": "eb627d1644b5ae580ea16a2439dc90dc",
+    "semantic_hash": ""
+  },
+  "frontend/src/hooks/useMensagem.js": {
+    "mtime": 1791863910.3481321,
+    "seen": 1791864501.6571412,
+    "ast_hash": "e5fade413b37e981ec6a944aa1860350",
+    "semantic_hash": ""
+  },
+  "frontend/src/pages/Producao.jsx": {
+    "mtime": 1791862640.7765152,
+    "seen": 1791864501.6589324,
+    "ast_hash": "d2bbbbb6fad1ba8a96114d1f89562b76",
+    "semantic_hash": ""
+  },
+  "frontend/src/utils/financas.js": {
+    "mtime": 1791862640.7935152,
+    "seen": 1791864501.664717,
+    "ast_hash": "9056b82a625e524d1bcc099d72afad5d",
+    "semantic_hash": ""
+  },
+  "frontend/tests/e2e/final-flows.spec.js": {
+    "mtime": 1791865861.9770153,
+    "seen": 1791866889.4228299,
+    "ast_hash": "d581332ce5429971fe1963a252d1a5bb",
+    "semantic_hash": ""
+  },
+  "frontend/tests/e2e/ui-interactions.spec.js": {
+    "mtime": 1791862640.8385112,
+    "seen": 1791864501.665164,
+    "ast_hash": "b94e0aa34056e5114d4fa9261e7e3b05",
+    "semantic_hash": ""
+  },
+  "frontend/tests/e2e/visual-audit.spec.js": {
+    "mtime": 1791866129.8169363,
+    "seen": 1791866889.4232879,
+    "ast_hash": "6eb513074007b72fc9ce3d972ea80f34",
+    "semantic_hash": ""
+  },
+  "frontend/tests/e2e/visual-fixtures.js": {
+    "mtime": 1791865177.7832253,
+    "seen": 1791866889.423291,
+    "ast_hash": "c72ace998f6bd277bdecf2918c735f91",
+    "semantic_hash": ""
+  },
+  "frontend/tests/financas.test.js": {
+    "mtime": 1791862640.8035133,
+    "seen": 1791864501.6651716,
+    "ast_hash": "104bf9d9745907175eef82fca546773d",
+    "semantic_hash": ""
+  },
+  "CODEx_CONTINUIDADE_UI.md": {
+    "mtime": 1791866722.0681007,
+    "seen": 1791866889.4307077,
+    "ast_hash": "b99bf1155bfa27d1005191a05c3bbca2",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/bovitrack-login-hero.jpg": {
+    "mtime": 1791862113.45919,
+    "seen": 1791864501.676298,
+    "ast_hash": "bda4e6f18aa8ef3b311381e15f07b6c1",
+    "semantic_hash": ""
+  },
+  "BOVITRACK_REFORMULACAO_VISUAL.md": {
+    "mtime": 1791866722.0661013,
+    "seen": 1791866889.4307032,
+    "ast_hash": "bdcb587b690770b56de541a88c69c2f5",
     "semantic_hash": ""
   }
 }
