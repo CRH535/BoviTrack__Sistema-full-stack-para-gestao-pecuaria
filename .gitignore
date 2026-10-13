@@ -15,6 +15,7 @@ test-results/
 playwright-report/
 outputs/ui-audit/
 outputs/iconografia/
+outputs/navigation-images/
 .codex/ui-*.cjs
 # Backups automáticos do grafo; os arquivos atuais permanecem versionados.
 graphify-out/????-??-??/

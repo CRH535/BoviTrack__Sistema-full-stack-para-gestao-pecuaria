@@ -6,6 +6,7 @@ import "./index.css";
 import "./styles/layout.css";
 import "./styles/ui.css";
 import "./styles/icons.css";
+import "./styles/navigation-images.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./auth/AuthContext.jsx";
 import { BlackHoleTransitionProvider } from "./transitions/BlackHoleTransitionProvider.jsx";

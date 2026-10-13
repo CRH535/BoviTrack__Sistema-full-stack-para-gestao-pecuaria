@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import IconeImagem from "../IconeImagem";
+import IlustracaoModulo from "../IlustracaoModulo";
 export default function Kpi({
   rotulo,
   valor,
   contexto,
   icone,
+  ilustrado = false,
   tom = "success",
   to,
 }) {
@@ -16,7 +18,7 @@ export default function Kpi({
     >
       {icone && (
         <span className="ui-kpi-icon">
-          <IconeImagem nome={icone} />
+          {ilustrado ? <IlustracaoModulo nome={icone} /> : <IconeImagem nome={icone} />}
         </span>
       )}
       <div>

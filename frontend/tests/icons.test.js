@@ -63,7 +63,7 @@ test("nomes estáticos de ícones pertencem ao registro central", () => {
     visit(parseJs(readFileSync(file, "utf8")), (node) => {
       if (node.type === "JSXOpeningElement") {
         for (const attr of node.attributes) {
-          const isName = attr.name?.name === "nome" && ["Icone", "IconeImagem"].includes(node.name.name);
+          const isName = attr.name?.name === "nome" && ["Icone", "IconeImagem", "IlustracaoModulo"].includes(node.name.name);
           if (isName || ["icone", "icon", "startIcon", "endIcon", "leftIcon", "rightIcon"].includes(attr.name?.name))
             selectedStrings(attr.value).forEach((value) => check(value, file));
         }

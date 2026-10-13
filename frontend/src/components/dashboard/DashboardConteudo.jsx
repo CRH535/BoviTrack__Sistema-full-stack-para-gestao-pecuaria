@@ -6,6 +6,7 @@ import Card from "../ui/Card";
 import Button from "../ui/Button";
 import Kpi from "../ui/Kpi";
 import IconeImagem from "../IconeImagem";
+import IlustracaoModulo from "../IlustracaoModulo";
 import ClimaDashboard from "../ClimaDashboard";
 import Distribuicao from "../ui/Distribuicao";
 const moeda = (valor) =>
@@ -97,6 +98,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         aria-label="Resumo do sistema"
       >
         <Kpi
+          ilustrado
           rotulo="Animais"
           valor={resumo.animais}
           contexto="No seu rebanho"
@@ -104,6 +106,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
           to="/animais"
         />
         <Kpi
+          ilustrado
           rotulo="Propriedades"
           valor={resumo.propriedades}
           contexto="Unidades cadastradas"
@@ -111,6 +114,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
           to="/propriedades"
         />
         <Kpi
+          ilustrado
           rotulo="Lotes"
           valor={resumo.lotes}
           contexto="Organização do rebanho"
@@ -118,14 +122,16 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
           to="/lotes"
         />
         <Kpi
+          ilustrado
           rotulo="Vacinações próximas"
           valor={proximasVacinacoes.length}
           contexto="Nos próximos 7 dias"
-          icone="vacinas"
+          icone="vacinacoes"
           tom="danger"
           to="/vacinacoes"
         />
         <Kpi
+          ilustrado
           rotulo="Desmamas próximas"
           valor={resumo.desmamas_proximas}
           contexto="Nos próximos 30 dias"
@@ -151,7 +157,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
                 to={`/${rota}`}
               >
                 <span className="ui-action-icon">
-                  <IconeImagem nome={icon} />
+                  <IlustracaoModulo nome={icon} />
                 </span>
                 <span>
                   <strong>
@@ -298,7 +304,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
             ].map(([to, titulo, descricao, icon]) => (
               <Link className="ui-action-row" to={to} key={to}>
                 <span className="ui-action-icon">
-                  <IconeImagem nome={icon} />
+                  <IlustracaoModulo nome={icon} />
                 </span>
                 <span>
                   <strong>{titulo}</strong>
@@ -324,7 +330,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
                     to={`/animais/${item.animal_id}?aba=pesagens`}
                   >
                     <span className="ui-action-icon">
-                      <IconeImagem nome="pesagem" />
+                      <IlustracaoModulo nome="pesagem" />
                     </span>
                     <span>
                       <strong>{item.animal}</strong>

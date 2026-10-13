@@ -546,9 +546,9 @@
     "semantic_hash": ""
   },
   "frontend/src/main.jsx": {
-    "mtime": 1791868337.132594,
-    "seen": 1791869668.0638928,
-    "ast_hash": "0f9db332d2df82e69e9e4ef74630b2c4",
+    "mtime": 1791902693.0881927,
+    "seen": 1791903384.5693343,
+    "ast_hash": "cc95cb241ae09cb328bca2cfc121e2a6",
     "semantic_hash": ""
   },
   "frontend/src/pages/Animais.jsx": {
@@ -1080,9 +1080,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/AppSidebar.jsx": {
-    "mtime": 1791868503.529034,
-    "seen": 1791869668.057506,
-    "ast_hash": "c7cb51017e545654ade287174698065b",
+    "mtime": 1791902693.0892022,
+    "seen": 1791903384.552892,
+    "ast_hash": "fa6caf06c3a9588bdb70624dedf2d609",
     "semantic_hash": ""
   },
   "frontend/src/components/ControleLeiteiro.jsx": {
@@ -1128,9 +1128,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/dashboard/DashboardConteudo.jsx": {
-    "mtime": 1791868873.889108,
-    "seen": 1791869668.0597732,
-    "ast_hash": "86e7876b4aae1bd0dc70c152fd90a809",
+    "mtime": 1791902693.09271,
+    "seen": 1791903384.5616329,
+    "ast_hash": "9ec57d720c3821799b94728667f06be0",
     "semantic_hash": ""
   },
   "frontend/src/components/financas/Lancamentos.jsx": {
@@ -1182,9 +1182,9 @@
     "semantic_hash": ""
   },
   "frontend/src/components/ui/Kpi.jsx": {
-    "mtime": 1791862640.6125226,
-    "seen": 1791864501.6571324,
-    "ast_hash": "e9de110dadfaba98c7724d4797de6d74",
+    "mtime": 1791902693.0912023,
+    "seen": 1791903384.5671017,
+    "ast_hash": "da8f02e5a2ddc5c3e697e350a2ae3938",
     "semantic_hash": ""
   },
   "frontend/src/components/ui/Paginacao.jsx": {
@@ -1254,9 +1254,9 @@
     "semantic_hash": ""
   },
   "CODEx_CONTINUIDADE_UI.md": {
-    "mtime": 1791870440.7061892,
-    "seen": 1791900013.657643,
-    "ast_hash": "40ac78d0c0c6e9d258634be9eeb54c86",
+    "mtime": 1791901685.694501,
+    "seen": 1791903384.5954192,
+    "ast_hash": "15ba648ce8f00071a275344a78722ebd",
     "semantic_hash": ""
   },
   "frontend/src/assets/bovitrack-login-hero.jpg": {
@@ -1308,9 +1308,9 @@
     "semantic_hash": ""
   },
   "BOVITRACK_ICONOGRAFIA.md": {
-    "mtime": 1791900010.3463943,
-    "seen": 1791900013.6572065,
-    "ast_hash": "8c74dfa86d7e57755923c2227b774c22",
+    "mtime": 1791901685.6935008,
+    "seen": 1791903384.5949924,
+    "ast_hash": "861b6e4104d83b109f8bea79c5a93b45",
     "semantic_hash": ""
   },
   "frontend/playwright.icons.config.js": {
@@ -1320,15 +1320,105 @@
     "semantic_hash": ""
   },
   "frontend/tests/icons.test.js": {
-    "mtime": 1791899851.5463126,
-    "seen": 1791900013.6504903,
-    "ast_hash": "e3b9ccb92a555555670eaa702842b978",
+    "mtime": 1791902856.5271409,
+    "seen": 1791903384.5883904,
+    "ast_hash": "a772ba6f22704d2dbdb4fd5b966a661b",
     "semantic_hash": ""
   },
   "frontend/tests/e2e/icon-search.spec.js": {
     "mtime": 1791900861.61523,
     "seen": 1791900880.5305939,
     "ast_hash": "7bddf2495c970c85379647a88de09d29",
+    "semantic_hash": ""
+  },
+  "frontend/playwright.navigation.config.js": {
+    "mtime": 1791902856.5301392,
+    "seen": 1791903384.5493612,
+    "ast_hash": "acae809d5bead53ce1b67d075af2473b",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/IlustracaoModulo.jsx": {
+    "mtime": 1791902693.0846808,
+    "seen": 1791903384.557747,
+    "ast_hash": "75078be0e52bfaa379d3219241fd743b",
+    "semantic_hash": ""
+  },
+  "frontend/tests/e2e/navigation-images.spec.js": {
+    "mtime": 1791903048.696527,
+    "seen": 1791903384.5861225,
+    "ast_hash": "6fce98be23d22c7f7b5b8f419a502c48",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/animais.webp": {
+    "mtime": 1791902697.734,
+    "seen": 1791903384.607449,
+    "ast_hash": "744fa6c50baedee5d1fb3cf9ab7986f6",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/configuracoes.svg": {
+    "mtime": 1791902693.0831642,
+    "seen": 1791903384.607452,
+    "ast_hash": "57005b5242f585b50c36e7c810e96203",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/dashboard.webp": {
+    "mtime": 1791902700.576,
+    "seen": 1791903384.6074548,
+    "ast_hash": "5764e69deb82f302feca096006274371",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/despesas.webp": {
+    "mtime": 1791902703.401,
+    "seen": 1791903384.6074567,
+    "ast_hash": "183a017c7c586eb115bbe16465f52c26",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/lotes.webp": {
+    "mtime": 1791902706.208,
+    "seen": 1791903384.6074588,
+    "ast_hash": "a309a5e9cb089d6054ac7b4212e2f217",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/lucros.webp": {
+    "mtime": 1791902709.041,
+    "seen": 1791903384.6074605,
+    "ast_hash": "07c664a76274cee3312a78d3241273e6",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/pesagens.svg": {
+    "mtime": 1791902693.0801358,
+    "seen": 1791903384.6074634,
+    "ast_hash": "5aff39d4b31ccabfd214b2f7123bd7f3",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/producao.svg": {
+    "mtime": 1791902693.0816414,
+    "seen": 1791903384.6074655,
+    "ast_hash": "a1bdb1caa1eaab26a15c545dac9e3eb1",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/propriedades.webp": {
+    "mtime": 1791902711.881,
+    "seen": 1791903384.6074672,
+    "ast_hash": "c36c6b0faaffd036a4cff1f67b7c9306",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/usuarios.webp": {
+    "mtime": 1791902714.683,
+    "seen": 1791903384.6074693,
+    "ast_hash": "52114bdce741c2fe3b895a72704ffe3e",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/vacinacoes.webp": {
+    "mtime": 1791902717.495,
+    "seen": 1791903384.607471,
+    "ast_hash": "c4c89f89899eecb67cf030517367f194",
+    "semantic_hash": ""
+  },
+  "frontend/src/assets/navigation/vacinas.webp": {
+    "mtime": 1791902720.263,
+    "seen": 1791903384.607473,
+    "ast_hash": "514f70ffb6e521f1f15d6a63e9e78f55",
     "semantic_hash": ""
   }
 }

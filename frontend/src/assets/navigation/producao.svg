@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <linearGradient id="milk" x1="7" y1="8" x2="18" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#dce5dd"/></linearGradient>
+    <linearGradient id="cap" x1="9" y1="2" x2="15" y2="6" gradientUnits="userSpaceOnUse"><stop stop-color="#31a263"/><stop offset="1" stop-color="#075436"/></linearGradient>
+  </defs>
+  <ellipse cx="12" cy="22" rx="7" ry="1" fill="#163b2c" opacity=".15"/>
+  <path d="M9 2h6v4l3 4v11H6V10l3-4z" fill="url(#milk)" stroke="#176342" stroke-width="1.1" stroke-linejoin="round"/>
+  <rect x="8.5" y="2" width="7" height="4" rx="1" fill="url(#cap)" stroke="#075436" stroke-width=".7"/>
+  <path d="M10 3h4 M7 11v8" stroke="#fff" stroke-opacity=".8" stroke-width=".8" stroke-linecap="round"/>
+  <rect x="7" y="12" width="10" height="6" rx="1" fill="#d0ead6"/>
+  <path d="M12 12.8s-2 2.2-2 3.3a2 2 0 0 0 4 0c0-1.1-2-3.3-2-3.3Z" fill="#176342"/>
+</svg>

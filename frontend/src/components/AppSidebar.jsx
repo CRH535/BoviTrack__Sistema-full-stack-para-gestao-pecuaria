@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, NavLink } from "react-router-dom";
 import IconeImagem from "./IconeImagem";
-import IconeConfiguracoes from "./IconeConfiguracoes";
+import IlustracaoModulo from "./IlustracaoModulo";
 import Marca from "./Marca";
 
 const itens = [
@@ -38,11 +38,7 @@ function Conteudo({ usuario, sair, fechar }) {
             onClick={fechar}
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
-            {icon === "configuracoes" ? (
-              <IconeConfiguracoes className="nav-icon-image" />
-            ) : (
-              <IconeImagem nome={icon === "animais-lotes" ? "desmama" : icon === "identificacao" ? "pesagem" : icon} className="nav-icon-image" />
-            )}
+            <IlustracaoModulo nome={icon === "animais-lotes" ? "desmama" : icon === "identificacao" ? "pesagem" : icon} />
             <span>{label}</span>
           </NavLink>
         ))}
