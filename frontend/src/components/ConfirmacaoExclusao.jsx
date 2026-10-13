@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 function ConfirmacaoExclusao({
   aberto,
@@ -16,6 +16,24 @@ function ConfirmacaoExclusao({
   onConfirmar,
 }) {
   const [confirmacao, setConfirmacao] = useState("");
+  const dialogRef = useRef(null);
+  const tituloId = useId();
+  const descricaoId = useId();
+  const campoId = useId();
+
+  useEffect(() => {
+    if (!aberto) return undefined;
+    const dialog = dialogRef.current;
+    const focoAnterior = document.activeElement;
+    const overflowAnterior = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = overflowAnterior;
+      if (focoAnterior?.isConnected) focoAnterior.focus({ preventScroll: true });
+    };
+  }, [aberto]);
 
   useEffect(() => {
     if (!aberto) return undefined;
@@ -56,16 +74,18 @@ function ConfirmacaoExclusao({
   }
 
   return (
-    <div className="dialog-backdrop">
-      <section
+      <dialog
+        ref={dialogRef}
         className="panel confirmation-dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="confirmation-dialog-title"
+        aria-labelledby={tituloId}
+        aria-describedby={descricaoId}
+        onCancel={(evento) => evento.preventDefault()}
       >
         <span className="danger-kicker">Ação permanente</span>
-        <h2 id="confirmation-dialog-title">{titulo}</h2>
-        <p>{mensagem}</p>
+        <h2 id={tituloId}>{titulo}</h2>
+        <p id={descricaoId}>{mensagem}</p>
 
         {impactoObrigatorio && carregandoImpacto && (
           <div className="deletion-impact-status" role="status">
@@ -88,11 +108,11 @@ function ConfirmacaoExclusao({
         <form onSubmit={confirmar}>
           {confirmacaoExigida && (
             <div className="confirmation-field">
-              <label htmlFor="confirmation-text">
+              <label htmlFor={campoId}>
                 Digite <strong>{confirmacaoExigida}</strong> para confirmar
               </label>
               <input
-                id="confirmation-text"
+                id={campoId}
                 type="text"
                 value={confirmacao}
                 onChange={(evento) => setConfirmacao(evento.target.value)}
@@ -109,6 +129,7 @@ function ConfirmacaoExclusao({
               type="button"
               onClick={cancelar}
               disabled={processando}
+              autoFocus={!confirmacaoExigida}
             >
               Cancelar
             </button>
@@ -121,8 +142,7 @@ function ConfirmacaoExclusao({
             </button>
           </div>
         </form>
-      </section>
-    </div>
+      </dialog>
   );
 }
 

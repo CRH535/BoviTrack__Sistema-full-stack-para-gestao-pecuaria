@@ -22,6 +22,8 @@ function ControleDesmama({ animal, onPesagemCriada }) {
   const [processando, setProcessando] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(true);
+  const [tentativa, setTentativa] = useState(0);
   const [dados, setDados] = useState({ data_planejada: obterDataAtualLocal(), tipo_desmama: "CONVENCIONAL", mae_id: animal.mae_id || "", lote_destino_id: "", status: "PLANEJADA", data_inicio: "", data_fim: "", suplementacao: "", observacao: "" });
   const [dadosConclusao, setDadosConclusao] = useState({ data_desmama: obterDataAtualLocal(), data_fim: obterDataAtualLocal(), peso_kg: "", metodo: "BALANCA", lote_destino_id: "", observacao: "" });
 
@@ -51,11 +53,13 @@ function ControleDesmama({ animal, onPesagemCriada }) {
         setMaes(animaisResposta.data.filter((item) => item.sexo === "F" && item.id !== animal.id && Number(item.propriedade_id) === Number(animal.propriedade_id)));
       } catch (falha) {
         if (ativo) setErro(falha.response?.data?.mensagem || "Não foi possível carregar o controle de desmama.");
+      } finally {
+        if (ativo) setCarregando(false);
       }
     }
     carregarInicial();
     return () => { ativo = false; };
-  }, [animal.id, animal.propriedade_id]);
+  }, [animal.id, animal.propriedade_id, tentativa]);
 
   const ativa = useMemo(() => eventos.find((item) => ["PLANEJADA", "EM_ANDAMENTO"].includes(item.status) && item.tipo_desmama !== "TEMPORARIA"), [eventos]);
   const definitiva = useMemo(() => eventos.find((item) => item.status === "CONCLUIDA" && item.tipo_desmama !== "TEMPORARIA"), [eventos]);
@@ -77,7 +81,7 @@ function ControleDesmama({ animal, onPesagemCriada }) {
   }
 
   async function salvar(evento) {
-    evento.preventDefault(); setProcessando(true); setErro(""); setMensagem("");
+    evento.preventDefault(); if (processando) return; setProcessando(true); setErro(""); setMensagem("");
     const corpo = { ...dados, mae_id: dados.mae_id ? Number(dados.mae_id) : null, lote_destino_id: dados.lote_destino_id ? Number(dados.lote_destino_id) : null, data_inicio: dados.data_inicio || null, data_fim: dados.data_fim || null, suplementacao: dados.suplementacao.trim() || null, observacao: dados.observacao.trim() || null };
     try {
       const resposta = editando ? await api.put(`/desmamas/${editando}`, corpo) : await api.post(`/animais/${animal.id}/desmamas`, corpo);
@@ -95,7 +99,7 @@ function ControleDesmama({ animal, onPesagemCriada }) {
   }
 
   async function concluir(evento) {
-    evento.preventDefault(); setProcessando(true); setErro("");
+    evento.preventDefault(); if (processando) return; setProcessando(true); setErro("");
     try {
       const temporaria = conclusao.tipo_desmama === "TEMPORARIA";
       await api.post(`/desmamas/${conclusao.id}/concluir`, temporaria
@@ -117,12 +121,13 @@ function ControleDesmama({ animal, onPesagemCriada }) {
     <section className="management-section weaning-section">
       <div className="section-heading management-heading">
         <div><span className="eyebrow">Manejo do bezerro</span><h2>Controle de desmama</h2></div>
-        {!definitiva && <button type="button" onClick={planejar}>{eventos.length ? "Novo planejamento" : "Planejar desmama"}</button>}
+        {!definitiva && <button disabled={processando || carregando} type="button" onClick={planejar}>{eventos.length ? "Novo planejamento" : "Planejar desmama"}</button>}
       </div>
-      {mensagem && <p className="notice">{mensagem}</p>}
-      {erro && <p className="notice notice-error">{erro}</p>}
+      {carregando && <p role="status">Carregando manejo do animal...</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
+      {erro && <div className="notice notice-error" role="alert">{erro} <button type="button" onClick={() => { setErro(""); setCarregando(true); setTentativa((atual) => atual + 1); }}>Tentar novamente</button></div>}
       {alertas.map((alerta, indice) => <p className="notice notice-warning" key={`${alerta.id}-${indice}`}>{alerta.mensagem} {alerta.vacina && <strong>{alerta.vacina} em {formatarDataSemFuso(alerta.proxima_dose)}.</strong>}</p>)}
-      <div className="weaning-summary panel">
+      <div hidden={carregando || Boolean(erro)} className="weaning-summary panel">
         <div><span>Status</span><strong>{statusAtual === "DESMAMADO" ? "Desmamado" : "Não desmamado"}</strong></div>
         <div><span>Idade atual</span><strong>{idadeAtual === null ? "Não informada" : `${idadeAtual} dias`}</strong></div>
         <div><span>Último peso</span><strong>{eventos[0]?.ultimo_peso ? `${Number(eventos[0].ultimo_peso).toLocaleString("pt-BR")} kg` : animal.peso ? `${animal.peso} kg` : "Não informado"}</strong></div>
@@ -132,34 +137,34 @@ function ControleDesmama({ animal, onPesagemCriada }) {
 
       {dados.tipo_desmama === "PRECOCE" && formulario && <p className="notice notice-warning">Desmama precoce exige atenção ao manejo nutricional e às condições do sistema de produção.</p>}
       {formulario && (
-        <form className="panel data-form management-form" onSubmit={salvar}>
+        <form className="panel data-form management-form" onSubmit={salvar}><fieldset className="form-fields" disabled={processando || carregando}>
           <div className="management-form-title"><h3>{editando ? "Editar planejamento" : "Planejar desmama"}</h3></div>
-          <div><label>Data planejada</label><input type="date" required value={dados.data_planejada} onChange={(e) => alterar("data_planejada", e.target.value)} /></div>
-          <div><label>Tipo</label><select value={dados.tipo_desmama} onChange={(e) => alterar("tipo_desmama", e.target.value)}>{TIPOS.map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}</select></div>
-          <div><label>Mãe</label><select value={dados.mae_id} onChange={(e) => alterar("mae_id", e.target.value)}><option value="">Não informada</option>{maes.map((mae) => <option key={mae.id} value={mae.id}>{mae.nome} — brinco {mae.numero_brinco || "não informado"}</option>)}</select></div>
-          <div><label>Lote de destino planejado</label><select value={dados.lote_destino_id} onChange={(e) => alterar("lote_destino_id", e.target.value)}><option value="">Não informado</option>{lotes.map((lote) => <option key={lote.id} value={lote.id}>{lote.nome}</option>)}</select></div>
-          {dados.tipo_desmama === "TEMPORARIA" && <><div><label>Data de início</label><input type="date" value={dados.data_inicio} onChange={(e) => alterar("data_inicio", e.target.value)} /></div><div><label>Data de fim prevista</label><input type="date" value={dados.data_fim} onChange={(e) => alterar("data_fim", e.target.value)} /></div></>}
-          <div><label>Status</label><select value={dados.status} onChange={(e) => alterar("status", e.target.value)}><option value="PLANEJADA">Planejada</option><option value="EM_ANDAMENTO">Em andamento</option></select></div>
-          <div><label>Suplementação</label><input maxLength="500" value={dados.suplementacao} onChange={(e) => alterar("suplementacao", e.target.value)} /></div>
-          <div className="management-wide-field"><label>Observações</label><textarea maxLength="1000" value={dados.observacao} onChange={(e) => alterar("observacao", e.target.value)} /></div>
-          <div className="form-actions management-form-actions"><button disabled={processando} type="submit">{processando ? "Salvando..." : "Salvar planejamento"}</button><button className="button-secondary" type="button" onClick={() => setFormulario(false)}>Cancelar</button></div>
-        </form>
+          <div><label htmlFor="controledesmama-campo-1">Data planejada</label><input id="controledesmama-campo-1" type="date" required value={dados.data_planejada} onChange={(e) => alterar("data_planejada", e.target.value)} /></div>
+          <div><label htmlFor="controledesmama-campo-2">Tipo</label><select id="controledesmama-campo-2" value={dados.tipo_desmama} onChange={(e) => alterar("tipo_desmama", e.target.value)}>{TIPOS.map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}</select></div>
+          <div><label htmlFor="controledesmama-campo-3">Mãe</label><select id="controledesmama-campo-3" value={dados.mae_id} onChange={(e) => alterar("mae_id", e.target.value)}><option value="">Não informada</option>{maes.map((mae) => <option key={mae.id} value={mae.id}>{mae.nome} — brinco {mae.numero_brinco || "não informado"}</option>)}</select></div>
+          <div><label htmlFor="controledesmama-campo-4">Lote de destino planejado</label><select id="controledesmama-campo-4" value={dados.lote_destino_id} onChange={(e) => alterar("lote_destino_id", e.target.value)}><option value="">Não informado</option>{lotes.map((lote) => <option key={lote.id} value={lote.id}>{lote.nome}</option>)}</select></div>
+          {dados.tipo_desmama === "TEMPORARIA" && <><div><label htmlFor="controledesmama-campo-5">Data de início</label><input id="controledesmama-campo-5" type="date" value={dados.data_inicio} onChange={(e) => alterar("data_inicio", e.target.value)} /></div><div><label htmlFor="controledesmama-campo-6">Data de fim prevista</label><input id="controledesmama-campo-6" type="date" value={dados.data_fim} onChange={(e) => alterar("data_fim", e.target.value)} /></div></>}
+          <div><label htmlFor="controledesmama-campo-7">Status</label><select id="controledesmama-campo-7" value={dados.status} onChange={(e) => alterar("status", e.target.value)}><option value="PLANEJADA">Planejada</option><option value="EM_ANDAMENTO">Em andamento</option></select></div>
+          <div><label htmlFor="controledesmama-campo-8">Suplementação</label><input id="controledesmama-campo-8" maxLength="500" value={dados.suplementacao} onChange={(e) => alterar("suplementacao", e.target.value)} /></div>
+          <div className="management-wide-field"><label htmlFor="controledesmama-campo-9">Observações</label><textarea id="controledesmama-campo-9" maxLength="1000" value={dados.observacao} onChange={(e) => alterar("observacao", e.target.value)} /></div>
+          <div className="form-actions management-form-actions"><button disabled={processando || carregando} type="submit">{processando ? "Salvando..." : "Salvar planejamento"}</button><button disabled={processando || carregando} className="button-secondary" type="button" onClick={() => setFormulario(false)}>Cancelar</button></div>
+        </fieldset></form>
       )}
 
       {conclusao && (
-        <form className="panel data-form management-form conclusion-form" onSubmit={concluir}>
+        <form className="panel data-form management-form conclusion-form" onSubmit={concluir}><fieldset className="form-fields" disabled={processando || carregando}>
           <div className="management-form-title"><h3>Concluir {conclusao.tipo_desmama === "TEMPORARIA" ? "período temporário" : "desmama"}</h3></div>
-          {conclusao.tipo_desmama === "TEMPORARIA" ? <div><label>Data de fim</label><input required type="date" value={dadosConclusao.data_fim} onChange={(e) => alterarConclusao("data_fim", e.target.value)} /></div> : <><div><label>Data real da desmama</label><input required type="date" value={dadosConclusao.data_desmama} onChange={(e) => alterarConclusao("data_desmama", e.target.value)} /></div><div><label>Peso na desmama (kg)</label><input required min="0.01" step="0.01" type="number" value={dadosConclusao.peso_kg} onChange={(e) => alterarConclusao("peso_kg", e.target.value)} /></div><div><label>Método da pesagem</label><select value={dadosConclusao.metodo} onChange={(e) => alterarConclusao("metodo", e.target.value)}><option value="BALANCA">Balança</option><option value="FITA">Fita de pesagem</option><option value="ESTIMATIVA">Estimativa</option><option value="OUTRO">Outro</option></select></div></>}
-          <div><label>Lote de destino</label><select value={dadosConclusao.lote_destino_id} onChange={(e) => alterarConclusao("lote_destino_id", e.target.value)}><option value="">Não informado</option>{lotes.map((lote) => <option key={lote.id} value={lote.id}>{lote.nome}</option>)}</select></div>
-          <div className="management-wide-field"><label>Observações</label><textarea value={dadosConclusao.observacao} onChange={(e) => alterarConclusao("observacao", e.target.value)} /></div>
-          <div className="form-actions management-form-actions"><button disabled={processando} type="submit">{processando ? "Concluindo..." : "Concluir"}</button><button className="button-secondary" type="button" onClick={() => setConclusao(null)}>Cancelar</button></div>
-        </form>
+          {conclusao.tipo_desmama === "TEMPORARIA" ? <div><label htmlFor="controledesmama-campo-10">Data de fim</label><input id="controledesmama-campo-10" required type="date" value={dadosConclusao.data_fim} onChange={(e) => alterarConclusao("data_fim", e.target.value)} /></div> : <><div><label htmlFor="controledesmama-campo-11">Data real da desmama</label><input id="controledesmama-campo-11" required type="date" value={dadosConclusao.data_desmama} onChange={(e) => alterarConclusao("data_desmama", e.target.value)} /></div><div><label htmlFor="controledesmama-campo-12">Peso na desmama (kg)</label><input id="controledesmama-campo-12" required min="0.01" max="99999999.99" step="0.01" type="number" value={dadosConclusao.peso_kg} onChange={(e) => alterarConclusao("peso_kg", e.target.value)} /></div><div><label htmlFor="controledesmama-campo-13">Método da pesagem</label><select id="controledesmama-campo-13" value={dadosConclusao.metodo} onChange={(e) => alterarConclusao("metodo", e.target.value)}><option value="BALANCA">Balança</option><option value="FITA">Fita de pesagem</option><option value="ESTIMATIVA">Estimativa</option><option value="OUTRO">Outro</option></select></div></>}
+          <div><label htmlFor="controledesmama-campo-14">Lote de destino</label><select id="controledesmama-campo-14" value={dadosConclusao.lote_destino_id} onChange={(e) => alterarConclusao("lote_destino_id", e.target.value)}><option value="">Não informado</option>{lotes.map((lote) => <option key={lote.id} value={lote.id}>{lote.nome}</option>)}</select></div>
+          <div className="management-wide-field"><label htmlFor="controledesmama-campo-15">Observações</label><textarea id="controledesmama-campo-15" value={dadosConclusao.observacao} onChange={(e) => alterarConclusao("observacao", e.target.value)} /></div>
+          <div className="form-actions management-form-actions"><button disabled={processando || carregando} type="submit">{processando ? "Concluindo..." : "Concluir"}</button><button disabled={processando || carregando} className="button-secondary" type="button" onClick={() => setConclusao(null)}>Cancelar</button></div>
+        </fieldset></form>
       )}
 
       <section className="history-section">
         <div className="section-heading"><div><span className="eyebrow">Eventos preservados</span><h3>Histórico de desmama</h3></div><span className="count-badge">{eventos.length}</span></div>
-        {!eventos.length && <div className="empty-state"><p>Nenhum evento de desmama registrado.</p></div>}
-        <div className="management-list">{eventos.map((item) => <article className="panel management-record weaning-record" key={item.id}><div><span className={`status-pill status-${item.status.toLowerCase()}`}>{STATUS[item.status]}</span><strong>{ROTULOS_TIPO[item.tipo_desmama]}</strong></div><div><strong>{formatarDataSemFuso(item.data_planejada)}</strong><span>{item.tipo_desmama === "TEMPORARIA" ? `${formatarDataSemFuso(item.data_inicio)} → ${formatarDataSemFuso(item.data_fim, "em aberto")}` : item.data_desmama ? `Concluída em ${formatarDataSemFuso(item.data_desmama)}` : "Data planejada"}</span></div><div><strong>Mãe</strong><span>{item.mae ? `${item.mae} — ${item.mae_brinco || "sem brinco"}` : "Não informada"}</span></div><p>{item.observacao || item.suplementacao || "Sem observações"}</p>{["PLANEJADA", "EM_ANDAMENTO"].includes(item.status) && <div className="record-actions"><button className="button-secondary button-small" type="button" onClick={() => editar(item)}>Editar</button><button className="button-small" type="button" onClick={() => abrirConclusao(item)}>Concluir</button><button className="button-danger button-small" type="button" onClick={() => cancelar(item)}>Cancelar</button></div>}</article>)}</div>
+        {!carregando && !erro && !eventos.length && <div className="empty-state"><p>Nenhum evento de desmama registrado.</p></div>}
+        <div hidden={carregando || Boolean(erro)} className="management-list">{eventos.map((item) => <article className="panel management-record weaning-record" key={item.id}><div><span className={`status-pill status-${item.status.toLowerCase()}`}>{STATUS[item.status]}</span><strong>{ROTULOS_TIPO[item.tipo_desmama]}</strong></div><div><strong>{formatarDataSemFuso(item.data_planejada)}</strong><span>{item.tipo_desmama === "TEMPORARIA" ? `${formatarDataSemFuso(item.data_inicio)} → ${formatarDataSemFuso(item.data_fim, "em aberto")}` : item.data_desmama ? `Concluída em ${formatarDataSemFuso(item.data_desmama)}` : "Data planejada"}</span></div><div><strong>Mãe</strong><span>{item.mae ? `${item.mae} — ${item.mae_brinco || "sem brinco"}` : "Não informada"}</span></div><p>{item.observacao || item.suplementacao || "Sem observações"}</p>{["PLANEJADA", "EM_ANDAMENTO"].includes(item.status) && <div className="record-actions"><button disabled={processando || carregando} className="button-secondary button-small" type="button" onClick={() => editar(item)}>Editar</button><button disabled={processando || carregando} className="button-small" type="button" onClick={() => abrirConclusao(item)}>Concluir</button><button disabled={processando || carregando} className="button-danger button-small" type="button" onClick={() => cancelar(item)}>Cancelar</button></div>}</article>)}</div>
       </section>
     </section>
   );

@@ -4,6 +4,7 @@ import api, {
   definirTokenAcesso,
   limparTokenAcesso,
   obterTokenAcesso,
+  obterGeracaoSessao,
   renovarSessao,
 } from "../services/api";
 import AuthContext from "./auth-context";
@@ -12,14 +13,27 @@ const CANAL_AUTH = "bovitrack-auth";
 const CHAVE_EVENTO_AUTH = "bovitrack_auth_event";
 const CHAVE_LOGOUT_PENDENTE = "bovitrack_logout_pending";
 
+function lerStorage(chave) {
+  try { return localStorage.getItem(chave); } catch { return null; }
+}
+
+function salvarStorage(chave, valor) {
+  try {
+    if (valor === null) localStorage.removeItem(chave);
+    else localStorage.setItem(chave, valor);
+  } catch { /* O estado da sessão continua em memória. */ }
+}
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const canalRef = useRef(null);
 
   useEffect(() => {
+    let ativo = true;
     const encerrarLocalmente = () => {
       limparTokenAcesso();
+      if (!ativo) return;
       setUsuario(null);
       setCarregando(false);
     };
@@ -36,28 +50,34 @@ export function AuthProvider({ children }) {
     window.addEventListener("storage", receberStorage);
 
     async function restaurarSessao() {
+      const geracao = obterGeracaoSessao();
+      const vigente = () => ativo && geracao === obterGeracaoSessao();
       try {
-        if (localStorage.getItem(CHAVE_LOGOUT_PENDENTE)) {
+        if (lerStorage(CHAVE_LOGOUT_PENDENTE)) {
           await api.post("/auth/logout", null, { ignorarRenovacao: true });
-          localStorage.removeItem(CHAVE_LOGOUT_PENDENTE);
-          encerrarLocalmente();
+          if (vigente()) {
+            salvarStorage(CHAVE_LOGOUT_PENDENTE, null);
+            encerrarLocalmente();
+          }
           return;
         }
         await renovarSessao();
         const resposta = await api.get("/auth/me");
-        setUsuario(resposta.data.usuario);
+        if (vigente()) setUsuario(resposta.data.usuario);
       } catch (erro) {
+        if (!vigente()) return;
         if (![400, 401, 403].includes(erro.response?.status)) {
           console.error("Não foi possível restaurar a sessão");
         }
         encerrarLocalmente();
       } finally {
-        setCarregando(false);
+        if (vigente()) setCarregando(false);
       }
     }
 
     restaurarSessao();
     return () => {
+      ativo = false;
       window.removeEventListener("bovitrack:sessao-encerrada", encerrarLocalmente);
       window.removeEventListener("storage", receberStorage);
       canal?.close();
@@ -66,15 +86,21 @@ export function AuthProvider({ children }) {
 
   function avisarOutrasAbas() {
     canalRef.current?.postMessage({ tipo: "logout" });
-    localStorage.setItem(CHAVE_EVENTO_AUTH, String(Date.now()));
-    localStorage.removeItem(CHAVE_EVENTO_AUTH);
+    salvarStorage(CHAVE_EVENTO_AUTH, String(Date.now()));
+    salvarStorage(CHAVE_EVENTO_AUTH, null);
   }
 
   async function login(email, senha) {
+    limparTokenAcesso();
+    definirLogoutEmAndamento(false);
     const resposta = await api.post("/auth/login", { email, senha });
-    localStorage.removeItem(CHAVE_LOGOUT_PENDENTE);
-    definirTokenAcesso(resposta.data.token);
+    salvarStorage(CHAVE_LOGOUT_PENDENTE, null);
+    // O cookie é compartilhado entre abas. Um login novo invalida as interfaces
+    // antigas antes que possam renovar a sessão usando a outra conta.
+    avisarOutrasAbas();
+    definirTokenAcesso(resposta.data.token, resposta.data.usuario.id);
     setUsuario(resposta.data.usuario);
+    setCarregando(false);
   }
 
   async function logout({ manterInterface = false } = {}) {
@@ -82,13 +108,13 @@ export function AuthProvider({ children }) {
     definirLogoutEmAndamento(true);
     limparTokenAcesso();
     avisarOutrasAbas();
-    localStorage.setItem(CHAVE_LOGOUT_PENDENTE, "1");
+    salvarStorage(CHAVE_LOGOUT_PENDENTE, "1");
 
     try {
       await api.post("/auth/logout", null, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      localStorage.removeItem(CHAVE_LOGOUT_PENDENTE);
+      salvarStorage(CHAVE_LOGOUT_PENDENTE, null);
     } catch {
       // A sessão local já foi encerrada e não é reativada por uma falha de rede.
       console.error("Não foi possível confirmar o logout no servidor");
@@ -101,11 +127,18 @@ export function AuthProvider({ children }) {
   }
 
   async function logoutTodosDispositivos() {
-    await api.post("/auth/logout-all");
-    localStorage.removeItem(CHAVE_LOGOUT_PENDENTE);
+    definirLogoutEmAndamento(true);
+    try {
+      await api.post("/auth/logout-all");
+    } catch (erro) {
+      definirLogoutEmAndamento(false);
+      throw erro;
+    }
+    salvarStorage(CHAVE_LOGOUT_PENDENTE, null);
     limparTokenAcesso();
     avisarOutrasAbas();
     setUsuario(null);
+    definirLogoutEmAndamento(false);
   }
 
   function finalizarLogoutVisual() {

@@ -27,6 +27,9 @@ function Despesas() {
 
   const [editandoId, setEditandoId] = useState(null);
   const [mensagem, setMensagem] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [erroLista, setErroLista] = useState(false);
 
   useEffect(() => {
     carregarDespesas();
@@ -34,12 +37,17 @@ function Despesas() {
   }, []);
 
   async function carregarDespesas() {
+    setCarregandoLista(true);
+    setErroLista(false);
     try {
       const resposta = await api.getAll("/despesas");
       setDespesas(resposta.data);
     } catch {
+      setErroLista(true);
       console.error("Falha em uma operação de despesas");
       setMensagem("Erro ao carregar despesas");
+    } finally {
+      setCarregandoLista(false);
     }
   }
 
@@ -65,6 +73,8 @@ function Despesas() {
   async function salvarDespesa(evento) {
     evento.preventDefault();
 
+    if (processando) return;
+    setProcessando(true);
     try {
       const dados = {
         descricao,
@@ -89,6 +99,8 @@ function Despesas() {
       console.error("Falha em uma operação de despesas");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao salvar despesa");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -109,6 +121,8 @@ function Despesas() {
 
     if (!confirmar) return;
 
+    if (processando) return;
+    setProcessando(true);
     try {
       await api.delete(`/despesas/${id}`);
 
@@ -121,6 +135,8 @@ function Despesas() {
       console.error("Falha em uma operação de despesas");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao excluir despesa");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -135,36 +151,40 @@ function Despesas() {
         <VoltarInicio />
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
+      {processando && <p role="status">Salvando registros...</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
 
       <form className="panel data-form" onSubmit={salvarDespesa}>
+        <fieldset className="form-fields" disabled={processando || carregandoLista}>
         <div>
-          <label>Descrição</label>
+          <label htmlFor="despesas-campo-1">Descrição</label>
           <br />
 
-          <input
+          <input id="despesas-campo-1" required
             type="text"
             value={descricao}
+            maxLength="150"
             onChange={(e) => setDescricao(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Categoria</label>
+          <label htmlFor="despesas-campo-2">Categoria</label>
           <br />
 
-          <input
+          <input id="despesas-campo-2" required
             type="text"
             value={categoria}
+            maxLength="100"
             onChange={(e) => setCategoria(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Forma de pagamento</label>
+          <label htmlFor="despesas-campo-3">Forma de pagamento</label>
           <br />
 
-          <input
+          <input id="despesas-campo-3"
             type="text"
             maxLength="100"
             value={formaPagamento}
@@ -174,22 +194,22 @@ function Despesas() {
         </div>
 
         <div>
-          <label>Valor</label>
+          <label htmlFor="despesas-campo-4">Valor</label>
           <br />
 
-          <input
+          <input id="despesas-campo-4" required
             type="number"
-            step="0.01"
+            min="0.01" max="99999999.99" step="0.01"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Data</label>
+          <label htmlFor="despesas-campo-5">Data</label>
           <br />
 
-          <input
+          <input id="despesas-campo-5" required
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
@@ -197,10 +217,10 @@ function Despesas() {
         </div>
 
         <div>
-          <label>Propriedade</label>
+          <label htmlFor="despesas-campo-6">Propriedade</label>
           <br />
 
-          <select
+          <select id="despesas-campo-6" required
             value={propriedadeId}
             onChange={(e) => setPropriedadeId(e.target.value)}
           >
@@ -221,20 +241,24 @@ function Despesas() {
         </button>
 
         {editandoId && (
-          <button className="button-secondary" type="button" onClick={limparFormulario}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
             Cancelar
           </button>
         )}
+      </fieldset>
       </form>
+
+      {carregandoLista && <p role="status">Carregando registros...</p>}
+      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarDespesas}>Tentar novamente</button></div>}
 
       <div className="section-heading">
         <div><span className="eyebrow">Histórico</span><h2>Despesas cadastradas</h2></div>
-        <span className="count-badge">{despesas.length}</span>
+        <span className="count-badge">{carregandoLista || erroLista ? "—" : despesas.length}</span>
       </div>
 
-      {despesas.length === 0 && <div className="empty-state"><p>Nenhuma despesa cadastrada.</p></div>}
+      {!carregandoLista && !erroLista && despesas.length === 0 && <div className="empty-state"><p>Nenhuma despesa cadastrada.</p></div>}
 
-      <div className="record-grid expense-grid">
+      <div hidden={carregandoLista || erroLista} className="record-grid expense-grid">
       {despesas.map((despesa) => (
         <article className="record-card expense-card" key={despesa.id}>
           <span className="record-icon" aria-hidden="true">
@@ -254,11 +278,11 @@ function Despesas() {
           <p>Propriedade: {despesa.propriedade || despesa.propriedade_id}</p>
 
           <div className="record-actions">
-          <button className="button-secondary" type="button" onClick={() => editarDespesa(despesa)}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarDespesa(despesa)}>
             Editar
           </button>
 
-          <button className="button-danger" type="button" onClick={() => excluirDespesa(despesa.id)}>
+          <button disabled={processando} className="button-danger" type="button" onClick={() => excluirDespesa(despesa.id)}>
             Excluir
           </button>
           </div>

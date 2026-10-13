@@ -17,6 +17,9 @@ function Vacinacoes() {
 
   const [editandoId, setEditandoId] = useState(null);
   const [mensagem, setMensagem] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [erroLista, setErroLista] = useState(false);
 
   useEffect(() => {
     carregarVacinacoes();
@@ -25,12 +28,17 @@ function Vacinacoes() {
   }, []);
 
   async function carregarVacinacoes() {
+    setCarregandoLista(true);
+    setErroLista(false);
     try {
       const resposta = await api.getAll("/vacinacoes");
       setVacinacoes(resposta.data);
     } catch {
+      setErroLista(true);
       console.error("Falha em uma operação de vacinações");
       setMensagem("Erro ao carregar vacinações");
+    } finally {
+      setCarregandoLista(false);
     }
   }
 
@@ -64,6 +72,8 @@ function Vacinacoes() {
   async function salvarVacinacao(evento) {
     evento.preventDefault();
 
+    if (processando) return;
+    setProcessando(true);
     try {
       const dados = {
         animal_id: Number(animalId),
@@ -87,6 +97,8 @@ function Vacinacoes() {
       console.error("Falha em uma operação de vacinações");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao salvar vacinação");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -113,6 +125,8 @@ function Vacinacoes() {
 
     if (!confirmar) return;
 
+    if (processando) return;
+    setProcessando(true);
     try {
       await api.delete(`/vacinacoes/${id}`);
 
@@ -125,6 +139,8 @@ function Vacinacoes() {
       console.error("Falha em uma operação de vacinações");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao excluir vacinação");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -139,14 +155,16 @@ function Vacinacoes() {
         <VoltarInicio />
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
+      {processando && <p role="status">Salvando registros...</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
 
       <form className="panel data-form" onSubmit={salvarVacinacao}>
+        <fieldset className="form-fields" disabled={processando || carregandoLista}>
         <div>
-          <label>Animal</label>
+          <label htmlFor="vacinacoes-campo-1">Animal</label>
           <br />
 
-          <select
+          <select id="vacinacoes-campo-1" required
             value={animalId}
             onChange={(e) => setAnimalId(e.target.value)}
           >
@@ -164,10 +182,10 @@ function Vacinacoes() {
         </div>
 
         <div>
-          <label>Vacina</label>
+          <label htmlFor="vacinacoes-campo-2">Vacina</label>
           <br />
 
-          <select
+          <select id="vacinacoes-campo-2" required
             value={vacinaId}
             onChange={(e) => setVacinaId(e.target.value)}
           >
@@ -182,10 +200,10 @@ function Vacinacoes() {
         </div>
 
         <div>
-          <label>Data de aplicação</label>
+          <label htmlFor="vacinacoes-campo-3">Data de aplicação</label>
           <br />
 
-          <input
+          <input id="vacinacoes-campo-3" required
             type="date"
             value={dataAplicacao}
             onChange={(e) => setDataAplicacao(e.target.value)}
@@ -193,22 +211,24 @@ function Vacinacoes() {
         </div>
 
         <div>
-          <label>Próxima dose</label>
+          <label htmlFor="vacinacoes-campo-4">Próxima dose</label>
           <br />
 
-          <input
+          <input id="vacinacoes-campo-4"
             type="date"
+            min={dataAplicacao || undefined}
             value={proximaDose}
             onChange={(e) => setProximaDose(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Observação</label>
+          <label htmlFor="vacinacoes-campo-5">Observação</label>
           <br />
 
-          <textarea
+          <textarea id="vacinacoes-campo-5"
             value={observacao}
+            maxLength="255"
             onChange={(e) => setObservacao(e.target.value)}
           />
         </div>
@@ -220,20 +240,24 @@ function Vacinacoes() {
         </button>
 
         {editandoId && (
-          <button className="button-secondary" type="button" onClick={limparFormulario}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
             Cancelar
           </button>
         )}
+      </fieldset>
       </form>
+
+      {carregandoLista && <p role="status">Carregando registros...</p>}
+      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarVacinacoes}>Tentar novamente</button></div>}
 
       <div className="section-heading">
         <div><span className="eyebrow">Histórico</span><h2>Vacinações registradas</h2></div>
-        <span className="count-badge">{vacinacoes.length}</span>
+        <span className="count-badge">{carregandoLista || erroLista ? "—" : vacinacoes.length}</span>
       </div>
 
-      {vacinacoes.length === 0 && <div className="empty-state"><p>Nenhuma vacinação registrada.</p></div>}
+      {!carregandoLista && !erroLista && vacinacoes.length === 0 && <div className="empty-state"><p>Nenhuma vacinação registrada.</p></div>}
 
-      <div className="record-grid vaccination-grid">
+      <div hidden={carregandoLista || erroLista} className="record-grid vaccination-grid">
       {vacinacoes.map((vacinacao) => (
         <article className="record-card vaccination-card" key={vacinacao.id}>
           <span className="record-icon" aria-hidden="true">
@@ -260,11 +284,11 @@ function Vacinacoes() {
           <p>Observação: {vacinacao.observacao || "-"}</p>
 
           <div className="record-actions">
-          <button className="button-secondary" type="button" onClick={() => editarVacinacao(vacinacao)}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarVacinacao(vacinacao)}>
             Editar
           </button>
 
-          <button className="button-danger" type="button" onClick={() => excluirVacinacao(vacinacao.id)}>
+          <button disabled={processando} className="button-danger" type="button" onClick={() => excluirVacinacao(vacinacao.id)}>
             Excluir
           </button>
           </div>

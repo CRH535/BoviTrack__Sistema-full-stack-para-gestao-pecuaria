@@ -30,6 +30,7 @@ function Login() {
 
   async function entrar(evento) {
     evento.preventDefault();
+    if (carregando || enviando || transicaoAtiva) return;
     setMensagem("");
     setMensagemSucesso(false);
     setEnviando(true);
@@ -65,7 +66,7 @@ function Login() {
         <p>Entre para acompanhar seu rebanho e sua propriedade.</p>
 
         {mensagem && (
-          <p className={`form-message${mensagemSucesso ? " success-message" : ""}`}>
+          <p role={mensagemSucesso ? "status" : "alert"} className={`form-message${mensagemSucesso ? " success-message" : ""}`}>
             {mensagem}
           </p>
         )}
@@ -92,8 +93,8 @@ function Login() {
             placeholder="Digite sua senha"
           />
 
-          <button type="submit" disabled={enviando || transicaoAtiva}>
-            {enviando ? "Entrando..." : "Entrar"}
+          <button type="submit" disabled={carregando || enviando || transicaoAtiva}>
+            {carregando ? "Verificando sessão..." : enviando ? "Entrando..." : "Entrar"}
           </button>
         </form>
 

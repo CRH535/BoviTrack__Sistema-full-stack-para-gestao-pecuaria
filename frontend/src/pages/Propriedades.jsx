@@ -24,6 +24,9 @@ function Propriedades() {
 
   const [editandoId, setEditandoId] = useState(null);
   const [mensagem, setMensagem] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [erroLista, setErroLista] = useState(false);
   const [exclusao, setExclusao] = useState({
     propriedade: null,
     impacto: null,
@@ -37,12 +40,17 @@ function Propriedades() {
   }, []);
 
   async function carregarPropriedades() {
+    setCarregandoLista(true);
+    setErroLista(false);
     try {
       const resposta = await api.getAll("/propriedades");
       setPropriedades(resposta.data);
     } catch {
+      setErroLista(true);
       console.error("Falha em uma operação de propriedades");
       setMensagem("Erro ao carregar propriedades");
+    } finally {
+      setCarregandoLista(false);
     }
   }
 
@@ -57,6 +65,8 @@ function Propriedades() {
   async function salvarPropriedade(evento) {
     evento.preventDefault();
 
+    if (processando) return;
+    setProcessando(true);
     try {
       const dados = {
         nome,
@@ -81,6 +91,8 @@ function Propriedades() {
       setMensagem(
         erro.response?.data?.mensagem || "Erro ao salvar propriedade",
       );
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -173,36 +185,40 @@ function Propriedades() {
         <VoltarInicio />
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
+      {processando && <p role="status">Salvando registros...</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
 
       <form className="panel data-form" onSubmit={salvarPropriedade}>
+        <fieldset className="form-fields" disabled={processando || carregandoLista}>
         <div>
-          <label>Nome</label>
+          <label htmlFor="propriedades-campo-1">Nome</label>
           <br />
 
-          <input
+          <input id="propriedades-campo-1" required
             type="text"
             value={nome}
+            maxLength="100"
             onChange={(e) => setNome(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Cidade</label>
+          <label htmlFor="propriedades-campo-2">Cidade</label>
           <br />
 
-          <input
+          <input id="propriedades-campo-2" required
             type="text"
             value={cidade}
+            maxLength="100"
             onChange={(e) => setCidade(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Estado</label>
+          <label htmlFor="propriedades-campo-3">Estado</label>
           <br />
 
-          <input
+          <input id="propriedades-campo-3" required
             type="text"
             value={estado}
             maxLength="2"
@@ -211,12 +227,12 @@ function Propriedades() {
         </div>
 
         <div>
-          <label>Área (ha)</label>
+          <label htmlFor="propriedades-campo-4">Área (ha)</label>
           <br />
 
-          <input
+          <input id="propriedades-campo-4" required
             type="number"
-            step="0.01"
+            min="0.01" max="99999999.99" step="0.01"
             value={area}
             onChange={(e) => setArea(e.target.value)}
           />
@@ -229,25 +245,29 @@ function Propriedades() {
         </button>
 
         {editandoId && (
-          <button className="button-secondary" type="button" onClick={limparFormulario}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
             Cancelar
           </button>
         )}
+      </fieldset>
       </form>
+
+      {carregandoLista && <p role="status">Carregando registros...</p>}
+      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarPropriedades}>Tentar novamente</button></div>}
 
       <div className="section-heading">
         <div>
           <span className="eyebrow">Seus dados</span>
           <h2>Propriedades cadastradas</h2>
         </div>
-        <span className="count-badge">{propriedades.length}</span>
+        <span className="count-badge">{carregandoLista || erroLista ? "—" : propriedades.length}</span>
       </div>
 
-      {propriedades.length === 0 && <div className="empty-state"><p>Nenhuma propriedade cadastrada.</p></div>}
+      {!carregandoLista && !erroLista && propriedades.length === 0 && <div className="empty-state"><p>Nenhuma propriedade cadastrada.</p></div>}
 
-      <div className="record-grid">
+      <div hidden={carregandoLista || erroLista} className="record-grid">
       {propriedades.map((propriedade) => (
-        <article className={`record-card${climaAbertoId === propriedade.id ? " property-card-expanded" : ""}`} key={propriedade.id}>
+        <article className={`record-card property-card${climaAbertoId === propriedade.id ? " property-card-expanded" : ""}`} key={propriedade.id}>
           <span className="record-icon" aria-hidden="true">
             <IconeImagem nome="propriedades" className="record-icon-image" />
           </span>
@@ -277,14 +297,14 @@ function Propriedades() {
           )}
 
           <div className="record-actions">
-          <button className="button-secondary" type="button" aria-expanded={climaAbertoId === propriedade.id} onClick={() => setClimaAbertoId((atual) => atual === propriedade.id ? null : propriedade.id)}>
+          <button disabled={processando} className="button-secondary" type="button" aria-expanded={climaAbertoId === propriedade.id} onClick={() => setClimaAbertoId((atual) => atual === propriedade.id ? null : propriedade.id)}>
             {climaAbertoId === propriedade.id ? "Ocultar clima" : "Ver clima"}
           </button>
-          <button className="button-secondary" type="button" onClick={() => editarPropriedade(propriedade)}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarPropriedade(propriedade)}>
             Editar
           </button>
 
-          <button
+          <button disabled={processando}
             className="button-danger"
             type="button"
             onClick={() => abrirExclusao(propriedade)}

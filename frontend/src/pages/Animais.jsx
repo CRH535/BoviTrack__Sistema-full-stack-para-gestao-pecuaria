@@ -40,6 +40,9 @@ function Animais() {
 
   const [editandoId, setEditandoId] = useState(null);
   const [mensagem, setMensagem] = useState("");
+  const [processando, setProcessando] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(true);
+  const [erroLista, setErroLista] = useState(false);
 
   useEffect(() => {
     carregarAnimais();
@@ -47,12 +50,17 @@ function Animais() {
   }, []);
 
   async function carregarAnimais() {
+    setCarregandoLista(true);
+    setErroLista(false);
     try {
       const resposta = await api.getAll("/animais");
       setAnimais(resposta.data);
     } catch {
+      setErroLista(true);
       console.error("Falha em uma operação de animais");
       setMensagem("Erro ao carregar animais");
+    } finally {
+      setCarregandoLista(false);
     }
   }
 
@@ -81,6 +89,8 @@ function Animais() {
   async function salvarAnimal(evento) {
     evento.preventDefault();
 
+    if (processando) return;
+    setProcessando(true);
     try {
       const dados = {
         nome,
@@ -108,6 +118,8 @@ function Animais() {
       console.error("Falha em uma operação de animais");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao salvar animal");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -119,7 +131,7 @@ function Animais() {
     setEspecie(animal.especie);
     setRaca(animal.raca || "");
     setSexo(animal.sexo);
-    setPeso(animal.peso || "");
+    setPeso(animal.peso ?? "");
     setPropriedadeId(animal.propriedade_id);
     setMaeId(animal.mae_id || "");
   }
@@ -133,6 +145,8 @@ function Animais() {
       return;
     }
 
+    if (processando) return;
+    setProcessando(true);
     try {
       await api.delete(`/animais/${id}`);
 
@@ -145,6 +159,8 @@ function Animais() {
       console.error("Falha em uma operação de animais");
 
       setMensagem(erro.response?.data?.mensagem || "Erro ao excluir animal");
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -159,25 +175,28 @@ function Animais() {
         <VoltarInicio />
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
+      {processando && <p role="status">Salvando registros...</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
 
       <form className="panel data-form" onSubmit={salvarAnimal}>
+        <fieldset className="form-fields" disabled={processando || carregandoLista}>
         <div>
-          <label>Nome</label>
+          <label htmlFor="animais-campo-1">Nome</label>
           <br />
 
-          <input
+          <input id="animais-campo-1" required
             type="text"
             value={nome}
+            maxLength="100"
             onChange={(e) => setNome(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Número do brinco</label>
+          <label htmlFor="animais-campo-2">Número do brinco</label>
           <br />
 
-          <input
+          <input id="animais-campo-2"
             type="text"
             maxLength="50"
             value={numeroBrinco}
@@ -187,10 +206,10 @@ function Animais() {
         </div>
 
         <div>
-          <label>Data de nascimento</label>
+          <label htmlFor="animais-campo-3">Data de nascimento</label>
           <br />
 
-          <input
+          <input id="animais-campo-3"
             type="date"
             max={obterDataAtualLocal()}
             value={dataNascimento}
@@ -199,32 +218,34 @@ function Animais() {
         </div>
 
         <div>
-          <label>Espécie</label>
+          <label htmlFor="animais-campo-4">Espécie</label>
           <br />
 
-          <input
+          <input id="animais-campo-4" required
             type="text"
             value={especie}
+            maxLength="50"
             onChange={(e) => setEspecie(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Raça</label>
+          <label htmlFor="animais-campo-5">Raça</label>
           <br />
 
-          <input
+          <input id="animais-campo-5"
             type="text"
             value={raca}
+            maxLength="50"
             onChange={(e) => setRaca(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Sexo</label>
+          <label htmlFor="animais-campo-6">Sexo</label>
           <br />
 
-          <select value={sexo} onChange={(e) => setSexo(e.target.value)}>
+          <select id="animais-campo-6" required value={sexo} onChange={(e) => setSexo(e.target.value)}>
             <option value="">Selecione</option>
             <option value="M">Macho</option>
             <option value="F">Fêmea</option>
@@ -232,22 +253,22 @@ function Animais() {
         </div>
 
         <div>
-          <label>Peso</label>
+          <label htmlFor="animais-campo-7">Peso</label>
           <br />
 
-          <input
+          <input id="animais-campo-7"
             type="number"
-            step="0.01"
+            min="0" max="1000000" step="0.01"
             value={peso}
             onChange={(e) => setPeso(e.target.value)}
           />
         </div>
 
         <div>
-          <label>Propriedade</label>
+          <label htmlFor="animais-campo-8">Propriedade</label>
           <br />
 
-          <select
+          <select id="animais-campo-8" required
             value={propriedadeId}
             onChange={(e) => {
               setPropriedadeId(e.target.value);
@@ -265,9 +286,9 @@ function Animais() {
         </div>
 
         <div>
-          <label>Mãe (opcional)</label>
+          <label htmlFor="animais-campo-9">Mãe (opcional)</label>
           <br />
-          <select
+          <select id="animais-campo-9"
             value={maeId}
             onChange={(e) => setMaeId(e.target.value)}
             disabled={!propriedadeId}
@@ -294,23 +315,27 @@ function Animais() {
         </button>
 
         {editandoId && (
-          <button className="button-secondary" type="button" onClick={limparFormulario}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={limparFormulario}>
             Cancelar
           </button>
         )}
+      </fieldset>
       </form>
+
+      {carregandoLista && <p role="status">Carregando registros...</p>}
+      {erroLista && <div className="notice notice-error" role="alert">Não foi possível carregar os registros. <button disabled={processando} type="button" onClick={carregarAnimais}>Tentar novamente</button></div>}
 
       <div className="section-heading">
         <div>
           <span className="eyebrow">Rebanho</span>
           <h2>Animais cadastrados</h2>
         </div>
-        <span className="count-badge">{animais.length}</span>
+        <span className="count-badge">{carregandoLista || erroLista ? "—" : animais.length}</span>
       </div>
 
-      {animais.length === 0 && <div className="empty-state"><p>Nenhum animal cadastrado.</p></div>}
+      {!carregandoLista && !erroLista && animais.length === 0 && <div className="empty-state"><p>Nenhum animal cadastrado.</p></div>}
 
-      <div className="record-grid animal-grid">
+      <div hidden={carregandoLista || erroLista} className="record-grid animal-grid">
       {animais.map((animal) => (
         <article className="record-card animal-card" key={animal.id}>
           <div className="animal-card-heading">
@@ -330,7 +355,7 @@ function Animais() {
           <p>Espécie: {animal.especie}</p>
           <p>Raça: {animal.raca || "-"}</p>
           <p>Sexo: {animal.sexo}</p>
-          <p>Peso: {animal.peso || "-"} kg</p>
+          <p>Peso: {animal.peso ?? "-"} kg</p>
           <p>Propriedade: {animal.propriedade || animal.propriedade_id}</p>
           <p>Mãe: {animal.mae ? `${animal.mae} — brinco ${animal.mae_numero_brinco || "não informado"}` : "Não informada"}</p>
           <p>
@@ -345,11 +370,11 @@ function Animais() {
             Ver ficha
           </Link>
 
-          <button className="button-secondary" type="button" onClick={() => editarAnimal(animal)}>
+          <button disabled={processando} className="button-secondary" type="button" onClick={() => editarAnimal(animal)}>
             Editar
           </button>
 
-          <button className="button-danger" type="button" onClick={() => excluirAnimal(animal.id)}>
+          <button disabled={processando} className="button-danger" type="button" onClick={() => excluirAnimal(animal.id)}>
             Excluir
           </button>
           </div>

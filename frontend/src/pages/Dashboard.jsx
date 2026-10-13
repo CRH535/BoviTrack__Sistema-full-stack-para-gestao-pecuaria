@@ -26,6 +26,7 @@ function Dashboard() {
   const [proximasVacinacoes, setProximasVacinacoes] = useState([]);
   const [erro, setErro] = useState("");
   const [carregamentoConcluido, setCarregamentoConcluido] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
   const { sinalizarDestinoPronto } = useBlackHoleTransition();
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function Dashboard() {
     return () => {
       componenteAtivo = false;
     };
-  }, []);
+  }, [tentativa]);
 
   useEffect(() => {
     if (carregamentoConcluido) {
@@ -70,6 +71,15 @@ function Dashboard() {
     { nome: "Vacinas", valor: Number(resumo.vacinas), icon: "vacinas", rota: "/vacinas" },
   ];
   const maiorIndicador = Math.max(1, ...indicadores.map((item) => item.valor));
+  const receitasDisponiveis = resumo.receitas_disponiveis !== false && resumo.total_receitas != null && resumo.lucro_liquido != null;
+
+  if (!carregamentoConcluido) {
+    return <p className="session-loading inline-loading" role="status">Carregando visão geral do rebanho...</p>;
+  }
+
+  if (erro) {
+    return <div className="page"><h1>Visão geral do rebanho</h1><p className="notice notice-error" role="alert">{erro}</p><button type="button" onClick={() => { setErro(""); setCarregamentoConcluido(false); setTentativa((atual) => atual + 1); }}>Tentar novamente</button></div>;
+  }
 
   return (
     <div className="page dashboard-page">
@@ -79,10 +89,10 @@ function Dashboard() {
           <h1>Visão geral do rebanho</h1>
           <p>Acompanhe animais, lotes, vacinações e despesas em um só lugar.</p>
         </div>
-        <span className="status-badge"><span /> Sistema atualizado</span>
+        <span className="status-badge"><span /> Dados carregados</span>
       </header>
 
-      {erro && <p className="notice notice-error">{erro}</p>}
+      {erro && <p className="notice notice-error" role="alert">{erro}</p>}
 
       <section className="stats-grid" aria-label="Resumo do sistema">
         {indicadores.map((item) => (
@@ -124,16 +134,25 @@ function Dashboard() {
         <Link
           className="stat-card stat-card-finance dashboard-link-card"
           to="/lucros"
+          aria-label="Abrir Receitas"
+        >
+          <div><span>Receitas totais</span><strong>{receitasDisponiveis ? `R$ ${Number(resumo.total_receitas).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</strong><small>{receitasDisponiveis ? "Entradas acumuladas" : "Receitas indisponíveis"}</small></div>
+          <span className="stat-icon" aria-hidden="true"><IconeImagem nome="producao" className="stat-icon-image" /></span>
+        </Link>
+
+        <Link
+          className="stat-card stat-card-finance dashboard-link-card"
+          to="/lucros"
           aria-label="Abrir Lucros"
           data-tour="lucros-card"
         >
           <div>
             <span>Lucro líquido</span>
-            <strong>R$ {Number(resumo.lucro_liquido).toLocaleString("pt-BR", {
+            <strong>{receitasDisponiveis ? `R$ ${Number(resumo.lucro_liquido).toLocaleString("pt-BR", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            })}</strong>
-            <small>Receitas menos despesas</small>
+            })}` : "—"}</strong>
+            <small>{receitasDisponiveis ? "Receitas menos despesas" : "Resumo financeiro incompleto"}</small>
           </div>
           <span className="stat-icon" aria-hidden="true">
             <IconeImagem nome="producao" className="stat-icon-image" />

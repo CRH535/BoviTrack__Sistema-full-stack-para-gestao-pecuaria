@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   Link,
   Navigate,
@@ -7,26 +7,28 @@ import {
   Route,
   Routes,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import { useAuth } from "./auth/useAuth";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AdminRoute from "./auth/AdminRoute";
-import Dashboard from "./pages/Dashboard";
-import Propriedades from "./pages/Propriedades";
-import Animais from "./pages/Animais";
-import FichaAnimal from "./pages/FichaAnimal";
-import Lotes from "./pages/Lotes";
-import Vacinas from "./pages/Vacinas";
-import Vacinacoes from "./pages/Vacinacoes";
-import Despesas from "./pages/Despesas";
-import Lucros from "./pages/Lucros";
-import Pesagens from "./pages/Pesagens";
-import Desmamas from "./pages/Desmamas";
-import Login from "./pages/Login";
-import Cadastro from "./pages/Cadastro";
-import Usuarios from "./pages/Usuarios";
-import MinhaConta from "./pages/MinhaConta";
-import Configuracoes from "./pages/Configuracoes";
+import AppErrorBoundary from "./components/AppErrorBoundary";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Propriedades = lazy(() => import("./pages/Propriedades"));
+const Animais = lazy(() => import("./pages/Animais"));
+const FichaAnimal = lazy(() => import("./pages/FichaAnimal"));
+const Lotes = lazy(() => import("./pages/Lotes"));
+const Vacinas = lazy(() => import("./pages/Vacinas"));
+const Vacinacoes = lazy(() => import("./pages/Vacinacoes"));
+const Despesas = lazy(() => import("./pages/Despesas"));
+const Lucros = lazy(() => import("./pages/Lucros"));
+const Pesagens = lazy(() => import("./pages/Pesagens"));
+const Desmamas = lazy(() => import("./pages/Desmamas"));
+const Login = lazy(() => import("./pages/Login"));
+const Cadastro = lazy(() => import("./pages/Cadastro"));
+const Usuarios = lazy(() => import("./pages/Usuarios"));
+const MinhaConta = lazy(() => import("./pages/MinhaConta"));
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 import IconeImagem from "./components/IconeImagem";
 import IconeConfiguracoes from "./components/IconeConfiguracoes";
 import { useBlackHoleTransition } from "./transitions/useBlackHoleTransition";
@@ -59,6 +61,11 @@ function Marca() {
   );
 }
 
+function FichaAnimalRoute() {
+  const { id } = useParams();
+  return <FichaAnimal key={id} />;
+}
+
 function Layout() {
   const { usuario, logout, finalizarLogoutVisual } = useAuth();
   const location = useLocation();
@@ -87,6 +94,7 @@ function Layout() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
       <aside className="sidebar">
         <Link className="sidebar-brand" to="/" aria-label="BoviTrack - início">
           <Marca />
@@ -98,6 +106,8 @@ function Layout() {
               key={item.to}
               to={item.to}
               end={item.end}
+              aria-label={item.label}
+              title={item.label}
               data-tour={`menu-${item.icon}`}
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
             >
@@ -113,6 +123,8 @@ function Layout() {
           {usuario.perfil === "admin" && (
             <NavLink
               to="/usuarios"
+              aria-label="Usuários"
+              title="Usuários"
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
             >
               <IconeImagem nome="usuarios" className="nav-icon-image" />
@@ -123,6 +135,8 @@ function Layout() {
           {usuario.perfil === "usuario" && (
             <NavLink
               to="/minha-conta"
+              aria-label="Minha Conta"
+              title="Minha Conta"
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
             >
               <IconeImagem nome="usuarios" className="nav-icon-image" />
@@ -139,7 +153,7 @@ function Layout() {
             <strong>{usuario.nome}</strong>
             <small>{usuario.perfil === "admin" ? "Administrador" : "Usuário"}</small>
           </span>
-          <button className="logout-button" type="button" onClick={sair} title="Sair">
+          <button className="logout-button" type="button" onClick={sair} title="Sair" aria-label="Sair">
             <IconeImagem nome="sair" className="nav-icon-image" />
             <span>Sair</span>
           </button>
@@ -158,7 +172,7 @@ function Layout() {
           </div>
         </header>
 
-        <main className="page-content" tabIndex={-1}>
+        <main id="conteudo-principal" className="page-content" tabIndex={-1}>
           <Outlet />
         </main>
       </section>
@@ -168,6 +182,8 @@ function Layout() {
 
 function App() {
   return (
+    <AppErrorBoundary>
+    <Suspense fallback={<p className="session-loading" role="status">Carregando tela...</p>}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/cadastro" element={<Cadastro />} />
@@ -177,7 +193,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="propriedades" element={<Propriedades />} />
           <Route path="animais" element={<Animais />} />
-          <Route path="animais/:id" element={<FichaAnimal />} />
+          <Route path="animais/:id" element={<FichaAnimalRoute />} />
           <Route path="lotes" element={<Lotes />} />
           <Route path="pesagens" element={<Pesagens />} />
           <Route path="desmamas" element={<Desmamas />} />
@@ -195,6 +211,8 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
+    </AppErrorBoundary>
   );
 }
 

@@ -13,6 +13,8 @@ const formularioInicial = {
 
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erroLista, setErroLista] = useState(false);
   const [formulario, setFormulario] = useState(formularioInicial);
   const [modo, setModo] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
@@ -29,11 +31,16 @@ function Usuarios() {
   }, []);
 
   async function carregarUsuarios() {
+    setCarregando(true);
+    setErroLista(false);
     try {
       const resposta = await api.getAll("/usuarios");
       setUsuarios(resposta.data);
     } catch (erro) {
+      setErroLista(true);
       setMensagem(erro.response?.data?.mensagem || "Erro ao carregar usuários");
+    } finally {
+      setCarregando(false);
     }
   }
 
@@ -69,6 +76,7 @@ function Usuarios() {
 
   async function salvarUsuario(evento) {
     evento.preventDefault();
+    if (salvando) return;
     setMensagem("");
 
     const nome = formulario.nome.trim();
@@ -211,6 +219,7 @@ function Usuarios() {
 
       {modo && (
         <form className="panel user-form" onSubmit={salvarUsuario}>
+          <fieldset className="form-fields" disabled={salvando}>
           <h2>{modo === "novo" ? "Novo usuário" : "Editar usuário"}</h2>
 
           <label htmlFor="usuario-nome">Nome</label>
@@ -270,23 +279,25 @@ function Usuarios() {
               Cancelar
             </button>
           </div>
-        </form>
+        </fieldset></form>
       )}
 
       <div className="section-heading">
         <div><span className="eyebrow">Contas</span><h2>Usuários cadastrados</h2></div>
-        <span className="count-badge">{usuarios.length}</span>
+        <span className="count-badge">{carregando || erroLista ? "\u2014" : usuarios.length}</span>
       </div>
 
-      <div className="panel users-table-wrapper">
+      {carregando && <p role="status">Carregando contas...</p>}
+      {erroLista && <button type="button" onClick={carregarUsuarios}>Tentar novamente</button>}
+      <div hidden={carregando || erroLista} className="panel users-table-wrapper">
         <table className="users-table">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>Email</th>
-              <th>Perfil</th>
-              <th>Situação</th>
-              <th>Ações</th>
+              <th scope="col">Nome</th>
+              <th scope="col">Email</th>
+              <th scope="col">Perfil</th>
+              <th scope="col">Situação</th>
+              <th scope="col">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -322,7 +333,7 @@ function Usuarios() {
         </table>
       </div>
 
-      {usuarios.length === 0 && <p>Nenhum usuário cadastrado.</p>}
+      {!carregando && !erroLista && usuarios.length === 0 && <p>Nenhum usuário cadastrado.</p>}
 
       <ConfirmacaoExclusao
         aberto={Boolean(usuarioParaExcluir)}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import GraficoProducaoLeite from "../components/GraficoProducaoLeite";
 import ControlePesagens from "../components/ControlePesagens";
@@ -46,6 +46,7 @@ function FichaAnimal() {
   const [atualizacaoManejo, setAtualizacaoManejo] = useState(0);
 
   const [formularioAberto, setFormularioAberto] = useState(false);
+  const [processando, setProcessando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [data, setData] = useState(obterDataAtualLocal);
   const [turno, setTurno] = useState("");
@@ -55,6 +56,8 @@ function FichaAnimal() {
   const [periodo, setPeriodo] = useState("todos");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const requisicaoHistoricoRef = useRef(0);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -100,6 +103,8 @@ function FichaAnimal() {
     inicioRecebido = dataInicio,
     fimRecebido = dataFim,
   ) {
+    const requisicao = ++requisicaoHistoricoRef.current;
+    setCarregandoHistorico(true);
     const params = { periodo: periodoRecebido };
 
     if (periodoRecebido === "todos" && inicioRecebido) {
@@ -110,11 +115,14 @@ function FichaAnimal() {
       params.data_fim = fimRecebido;
     }
 
-    const resposta = await api.getAll(`/animais/${id}/producoes-leiteiras`, {
-      params,
-    });
-
-    setProducoes(resposta.data);
+    try {
+      const resposta = await api.getAll(`/animais/${id}/producoes-leiteiras`, { params });
+      if (requisicao === requisicaoHistoricoRef.current) setProducoes(resposta.data);
+    } catch (falha) {
+      if (requisicao === requisicaoHistoricoRef.current) throw falha;
+    } finally {
+      if (requisicao === requisicaoHistoricoRef.current) setCarregandoHistorico(false);
+    }
   }
 
   async function carregarResumo() {
@@ -173,6 +181,7 @@ function FichaAnimal() {
 
   async function salvarProducao(evento) {
     evento.preventDefault();
+    if (processando) return;
     setMensagem("");
     setErro("");
 
@@ -188,6 +197,7 @@ function FichaAnimal() {
       observacao: observacao.trim() || null,
     };
 
+    setProcessando(true);
     try {
       if (editandoId) {
         await api.put(`/producoes-leiteiras/${editandoId}`, dados);
@@ -204,10 +214,13 @@ function FichaAnimal() {
         erroSalvamento.response?.data?.mensagem ||
           "Não foi possível salvar a produção.",
       );
+    } finally {
+      setProcessando(false);
     }
   }
 
   async function excluirProducao(producaoId) {
+    if (processando) return;
     if (!window.confirm("Tem certeza que deseja excluir esta produção?")) {
       return;
     }
@@ -215,6 +228,7 @@ function FichaAnimal() {
     setMensagem("");
     setErro("");
 
+    setProcessando(true);
     try {
       await api.delete(`/producoes-leiteiras/${producaoId}`);
       setMensagem("Produção excluída com sucesso.");
@@ -227,6 +241,8 @@ function FichaAnimal() {
         erroExclusao.response?.data?.mensagem ||
           "Não foi possível excluir a produção.",
       );
+    } finally {
+      setProcessando(false);
     }
   }
 
@@ -294,7 +310,7 @@ function FichaAnimal() {
   if (!animal) {
     return (
       <div className="page">
-        <p className="notice notice-error">{erro || "Animal não encontrado."}</p>
+        <p className="notice notice-error" role="alert">{erro || "Animal não encontrado."}</p>
         <Link className="button-secondary button-link" to="/animais">
           Voltar para animais
         </Link>
@@ -321,8 +337,8 @@ function FichaAnimal() {
         </div>
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
-      {erro && <p className="notice notice-error">{erro}</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
+      {erro && <p className="notice notice-error" role="alert">{erro}</p>}
 
       <section className="panel animal-profile-card">
         <div className="animal-profile-identity">
@@ -380,7 +396,7 @@ function FichaAnimal() {
               Controle Leiteiro
             </h2>
           </div>
-          <button type="button" onClick={abrirNovoRegistro}>
+          <button disabled={processando} type="button" onClick={abrirNovoRegistro}>
             <IconeImagem nome="producao" className="button-icon-image" />
             Registrar produção
           </button>
@@ -388,6 +404,7 @@ function FichaAnimal() {
 
         {formularioAberto && (
           <form className="panel data-form milk-form" onSubmit={salvarProducao}>
+            <fieldset className="form-fields" disabled={processando}>
             <div className="milk-form-title">
               <h3>{editandoId ? "Editar produção" : "Registrar produção"}</h3>
               <p>Animal: {animal.nome}</p>
@@ -423,6 +440,7 @@ function FichaAnimal() {
                 type="number"
                 required
                 min="0.01"
+                max="99999999.99"
                 step="0.01"
                 inputMode="decimal"
                 value={quantidade}
@@ -448,6 +466,7 @@ function FichaAnimal() {
                 Cancelar
               </button>
             </div>
+            </fieldset>
           </form>
         )}
 
@@ -509,11 +528,12 @@ function FichaAnimal() {
             <button type="submit">Aplicar intervalo</button>
           </form>
 
-          {producoesPorDia.length === 0 && (
+          {carregandoHistorico && <p role="status">Carregando histórico de produção...</p>}
+          {!carregandoHistorico && producoesPorDia.length === 0 && (
             <div className="empty-state"><p>Nenhuma produção encontrada para o período.</p></div>
           )}
 
-          <div className="milk-days-list">
+          <div hidden={carregandoHistorico} className="milk-days-list">
             {producoesPorDia.map((grupo) => (
               <article className="panel milk-day-card" key={grupo.data}>
                 <header>
@@ -526,8 +546,8 @@ function FichaAnimal() {
                       <div><strong>{ROTULOS_TURNO[producao.turno] || producao.turno}</strong><span>{formatarLitros(producao.quantidade_litros)}</span></div>
                       <p>{producao.observacao || "Sem observação"}</p>
                       <div className="record-actions">
-                        <button className="button-secondary button-small" type="button" onClick={() => editarProducao(producao)}>Editar</button>
-                        <button className="button-danger button-small" type="button" onClick={() => excluirProducao(producao.id)}>Excluir</button>
+                        <button disabled={processando} className="button-secondary button-small" type="button" onClick={() => editarProducao(producao)}>Editar</button>
+                        <button disabled={processando} className="button-danger button-small" type="button" onClick={() => excluirProducao(producao.id)}>Excluir</button>
                       </div>
                     </div>
                   ))}

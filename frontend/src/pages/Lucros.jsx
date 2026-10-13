@@ -53,6 +53,8 @@ function Lucros() {
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [salvando, setSalvando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
 
   const parametrosAtuais = useMemo(() => {
     const parametros = {
@@ -87,6 +89,8 @@ function Lucros() {
         if (!ativo) return;
         console.error("Falha em uma operação de receitas");
         setErro(falha.response?.data?.mensagem || "Erro ao carregar receitas");
+      } finally {
+        if (ativo) setCarregando(false);
       }
     }
     carregarDados();
@@ -132,6 +136,8 @@ function Lucros() {
 
   async function salvarReceita(evento) {
     evento.preventDefault();
+    if (salvando || processandoExclusao) return;
+    setSalvando(true);
     setMensagem("");
     setErro("");
     const dados = {
@@ -149,10 +155,13 @@ function Lucros() {
         setMensagem("Receita cadastrada com sucesso!");
       }
       limparFormulario();
+      setCarregando(true);
       setRefreshKey((atual) => atual + 1);
     } catch (falha) {
       console.error("Falha em uma operação de receitas");
       setErro(falha.response?.data?.mensagem || "Erro ao salvar receita");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -190,6 +199,11 @@ function Lucros() {
   function aplicarFiltros(evento) {
     evento.preventDefault();
     setMensagem("");
+    if (filtros.periodo === "personalizado" && filtros.data_inicio > filtros.data_fim) {
+      setErro("A data inicial não pode ser posterior à data final.");
+      return;
+    }
+    setCarregando(true);
     setFiltrosAplicados({ ...filtros });
   }
 
@@ -207,10 +221,11 @@ function Lucros() {
         <VoltarInicio />
       </header>
 
-      {mensagem && <p className="notice">{mensagem}</p>}
-      {erro && <p className="notice notice-error">{erro}</p>}
+      {mensagem && <p className="notice" role="status">{mensagem}</p>}
+      {erro && <div className="notice notice-error" role="alert">{erro} <button type="button" onClick={() => { setErro(""); setCarregando(true); setRefreshKey((atual) => atual + 1); }}>Tentar novamente</button></div>}
 
-      <section className="profit-summary-grid" aria-label="Resumo financeiro">
+      {carregando && <p role="status">Carregando receitas e resumo financeiro...</p>}
+      <section hidden={carregando || Boolean(erro)} className="profit-summary-grid" aria-label="Resumo financeiro">
         <article className="stat-card stat-card-finance">
           <div><span>Receita total</span><strong>{formatarMoeda(resumo.receita_total)}</strong><small>Entradas no período</small></div>
         </article>
@@ -223,6 +238,7 @@ function Lucros() {
       </section>
 
       <form className="panel data-form revenue-form" onSubmit={salvarReceita}>
+        <fieldset className="form-fields" disabled={salvando || processandoExclusao || carregando}>
         <div>
           <label htmlFor="receita-descricao">Descrição</label>
           <input id="receita-descricao" maxLength="150" required value={formulario.descricao} onChange={(e) => alterarFormulario("descricao", e.target.value)} />
@@ -234,7 +250,7 @@ function Lucros() {
         </div>
         <div>
           <label htmlFor="receita-valor">Valor</label>
-          <input id="receita-valor" type="number" min="0.01" max="1000000000000" step="0.01" required value={formulario.valor} onChange={(e) => alterarFormulario("valor", e.target.value)} />
+          <input id="receita-valor" type="number" min="0.01" max="999999999999.99" step="0.01" required value={formulario.valor} onChange={(e) => alterarFormulario("valor", e.target.value)} />
         </div>
         <div>
           <label htmlFor="receita-data">Data</label>
@@ -257,9 +273,10 @@ function Lucros() {
           <textarea id="receita-observacao" maxLength="500" value={formulario.observacao} onChange={(e) => alterarFormulario("observacao", e.target.value)} />
         </div>
         <div className="form-actions revenue-form-actions">
-          <button type="submit">{editandoId ? "Salvar alterações" : "Cadastrar receita"}</button>
+          <button type="submit">{salvando ? "Salvando..." : editandoId ? "Salvar alterações" : "Cadastrar receita"}</button>
           {editandoId && <button className="button-secondary" type="button" onClick={limparFormulario}>Cancelar</button>}
         </div>
+        </fieldset>
       </form>
 
       <div className="section-heading">
@@ -302,8 +319,8 @@ function Lucros() {
         <button type="submit">Aplicar filtros</button>
       </form>
 
-      {!receitas.length && <div className="empty-state"><p>Nenhuma receita encontrada para os filtros selecionados.</p></div>}
-      <div className="record-grid revenue-grid">
+      {!carregando && !erro && !receitas.length && <div className="empty-state"><p>Nenhuma receita encontrada para os filtros selecionados.</p></div>}
+      <div hidden={carregando || Boolean(erro)} className="record-grid revenue-grid">
         {receitas.map((receita) => (
           <article className="record-card revenue-card" key={receita.id}>
             <span className="record-icon" aria-hidden="true"><IconeImagem nome="producao" className="record-icon-image" /></span>

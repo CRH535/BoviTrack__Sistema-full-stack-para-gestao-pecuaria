@@ -113,8 +113,6 @@ function TutorialOverlay({
   }, [step.id, targetReady]);
 
   useEffect(() => {
-    if (!targetReady) return undefined;
-
     const frame = requestAnimationFrame(() => {
       tooltipRef.current?.querySelector("[data-tour-primary]")?.focus();
     });
@@ -262,10 +260,12 @@ function TutorialOverlay({
           </section>
         </>
       ) : (
-        <div className="tutorial-loading" role="status">
+        <section ref={tooltipRef} className="tutorial-loading" role="dialog" aria-modal="true" aria-label="Etapa indisponível">
           <span className="tutorial-loading-spinner" aria-hidden="true" />
-          Preparando esta etapa…
-        </div>
+          <p role="status">Preparando esta etapa. Se ela não aparecer, você pode continuar.</p>
+          <button type="button" onClick={onExit}>Sair do tutorial</button>
+          <button type="button" onClick={onNext} data-tour-primary="true">{stepIndex === totalSteps - 1 ? "Concluir tutorial" : "Pular etapa"}</button>
+        </section>
       )}
     </div>,
     document.body,

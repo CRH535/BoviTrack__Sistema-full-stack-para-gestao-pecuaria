@@ -20,6 +20,7 @@ function Cadastro() {
 
   async function criarConta(evento) {
     evento.preventDefault();
+    if (enviando || carregando) return;
     setMensagem("");
 
     const nomeLimpo = nome.trim();
@@ -88,7 +89,7 @@ function Cadastro() {
         <h1>Crie sua conta</h1>
         <p>Crie sua conta e mantenha as informações da sua propriedade organizadas.</p>
 
-        {mensagem && <p className="form-message">{mensagem}</p>}
+        {mensagem && <p className="form-message" role="alert">{mensagem}</p>}
 
         <form onSubmit={criarConta}>
           <label htmlFor="cadastro-nome">Nome</label>
@@ -134,8 +135,8 @@ function Cadastro() {
             required
           />
 
-          <button type="submit" disabled={enviando}>
-            {enviando ? "Criando conta..." : "Criar conta"}
+          <button type="submit" disabled={enviando || carregando}>
+            {carregando ? "Verificando sessão..." : enviando ? "Criando conta..." : "Criar conta"}
           </button>
         </form>
 
