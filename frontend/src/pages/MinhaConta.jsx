@@ -35,6 +35,11 @@ function MinhaConta() {
 
     try {
       const resposta = await api.put("/usuarios/me", { nome, email });
+      if (resposta.data.usuario.email_verificado === false) {
+        await logout();
+        navigate('/login', { replace: true, state: { mensagem: 'E-mail alterado. Entre novamente para verificar o novo endereço.' } });
+        return;
+      }
       atualizarUsuario(resposta.data.usuario);
       setNome(resposta.data.usuario.nome);
       setEmail(resposta.data.usuario.email);

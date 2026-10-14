@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
+import { prepararCodigoEmail } from './email-fixtures';
 const require = createRequire(import.meta.url);
 const { Pool } = require("../../../backend/node_modules/pg");
 const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
@@ -84,8 +85,13 @@ test("cadastro, login, refresh/F5, cookie privado, logout e novo login", async (
   await page.getByLabel("Confirmar senha", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Acesse sua conta" }),
+    page.getByRole("heading", { name: "Verifique seu e-mail" }),
   ).toBeVisible();
+  const codigo = await prepararCodigoEmail(db, email);
+  await page.getByLabel('Código de 6 dígitos').fill(codigo);
+  await page.getByRole('button', { name:'Verificar e-mail', exact:true }).click();
+  await expect(page.getByRole('heading', { name:'E-mail verificado', exact:true })).toBeVisible();
+  await page.getByRole('button', { name:'Ir para o login', exact:true }).click();
   await login(page, email);
   const cookies = await context.cookies();
   expect(

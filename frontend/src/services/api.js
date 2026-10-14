@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_URL = (import.meta.env?.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, "");
 const CHAVES_AUTH_LEGADAS = ["bovitrack_token", "bovitrack_usuario", "agrocontrol_token", "agrocontrol_usuario"];
-const ROTAS_SEM_RENOVACAO = new Set(["/auth/login", "/auth/cadastro", "/auth/refresh", "/auth/logout", "/auth/logout-all"]);
+const ROTAS_SEM_RENOVACAO = new Set(["/auth/login", "/auth/cadastro", "/auth/refresh", "/auth/logout", "/auth/logout-all", "/auth/email/reenviar", "/auth/email/verificar"]);
 
 // A preferência visual continua no localStorage. Somente artefatos antigos de
 // autenticação são removidos durante a migração para token em memória.
@@ -106,6 +106,10 @@ api.interceptors.response.use(
       return Promise.reject(new axios.CanceledError("Resposta de sessão anterior"));
     }
     const rota = String(requisicaoOriginal?.url || "").split("?")[0];
+    if (error.response?.data?.codigo === 'EMAIL_NOT_VERIFIED' && !ROTAS_SEM_RENOVACAO.has(rota)) {
+      notificarSessaoEncerrada();
+      return Promise.reject(error);
+    }
     const podeRenovar = !logoutEmAndamento && error.response?.status === 401 && requisicaoOriginal &&
       !requisicaoOriginal.ignorarRenovacao && !requisicaoOriginal.tentouRenovar && !ROTAS_SEM_RENOVACAO.has(rota);
 

@@ -24,7 +24,7 @@ export default defineConfig({
     [1920, 1080], [1366, 768], [1024, 768], [768, 1024], [430, 932], [390, 844], [360, 800],
   ].map(([width, height]) => ({ name: `${width}x${height}`, use: { viewport: { width, height } } })),
   webServer: [
-    { command: "node ../backend/server.js", url: "http://127.0.0.1:3005", reuseExistingServer: false },
+    { command: "node --require ../backend/tests/helpers/email.js ../backend/server.js", url: "http://127.0.0.1:3005", reuseExistingServer: false },
     { command: "node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5175 --strictPort", url: "http://127.0.0.1:5175", reuseExistingServer: false },
   ],
 });
