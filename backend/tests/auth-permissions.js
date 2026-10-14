@@ -162,6 +162,9 @@ async function executar() {
   );
   const usuarioA = usuariosCriados.rows.find((usuario) => usuario.email === emailA);
   const usuarioB = usuariosCriados.rows.find((usuario) => usuario.email === emailB);
+  const { verificarFixture } = require('./helpers/email');
+  await verificarFixture(emailA);
+  await verificarFixture(emailB);
   confirmar("cadastro público ignora perfil admin", usuarioA?.perfil === "usuario");
   confirmar("cadastro público ignora ativo false", usuarioA?.ativo === true);
 

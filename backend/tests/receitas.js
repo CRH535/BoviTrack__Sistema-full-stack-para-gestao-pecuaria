@@ -83,6 +83,8 @@ async function executar() {
     [emailA, emailB, hash],
   );
 
+  // Fixtures desta suíte de negócio não cobrem cadastro; verificação tem suíte própria.
+  await pool.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=CURRENT_TIMESTAMP WHERE email=ANY($1)', [[emailA, emailB]]);
   servidor = app.listen(0);
   await new Promise((resolve) => servidor.once("listening", resolve));
   baseUrl = `http://127.0.0.1:${servidor.address().port}`;

@@ -9,7 +9,7 @@ const bcrypt = require("../backend/node_modules/bcryptjs");
 
 const root = path.resolve(__dirname, "..");
 const mode = process.argv[2] || "all";
-if (!["all", "integration", "e2e", "offline"].includes(mode)) throw new Error("Modo inválido");
+if (!["all", "integration", "e2e", "offline", 'email'].includes(mode)) throw new Error("Modo inválido");
 const adminUrl = new URL(process.env.BOVITRACK_TEST_POSTGRES_URL || "postgresql://postgres@127.0.0.1:55432/postgres");
 if (adminUrl.search || adminUrl.hash || !['postgres:', 'postgresql:'].includes(adminUrl.protocol) || !["127.0.0.1", "localhost", "[::1]"].includes(adminUrl.hostname)) {
   throw new Error("Testes exigem PostgreSQL em loopback; URLs externas são recusadas");
@@ -25,12 +25,15 @@ const env = {
   FRONTEND_URL: "http://127.0.0.1:5175", CORS_ALLOW_LOCALHOST: "false",
   CSRF_ALLOW_NO_ORIGIN: "true", COOKIE_SECURE: "false", COOKIE_SAME_SITE: "lax",
   APP_TIMEZONE: "America/Sao_Paulo", ALLOW_TEST_DB_WRITES: "true",
+  RESEND_API_KEY: 're_mock_isolated_no_network', EMAIL_VERIFICATION_PEPPER: crypto.randomBytes(48).toString('hex'),
+  EMAIL_FROM: 'BoviTrack <onboarding@resend.dev>',
   TEST_ADMIN_EMAIL: "admin@example.test", TEST_ADMIN_SENHA: "IsolatedAdmin#2026",
   BOVITRACK_E2E_ISOLATED: "true", PORT: "3005", VITE_API_URL: "http://127.0.0.1:3005",
 };
 
 function run(relativeFile, cwd = "backend", args = []) {
-  const result = spawnSync(process.execPath, [relativeFile, ...args], { cwd: path.join(root, cwd), env, stdio: "inherit" });
+  const preload = cwd === 'backend' && relativeFile.startsWith('tests/') && !relativeFile.includes('security-hardening') ? ['--require', './tests/helpers/email.js'] : [];
+  const result = spawnSync(process.execPath, [...preload, relativeFile, ...args], { cwd: path.join(root, cwd), env, stdio: "inherit" });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Falhou: ${relativeFile} (exit ${result.status})`);
 }
@@ -54,12 +57,16 @@ async function main() {
         "supabase/001_schema_bovitrack.sql", "supabase/003_sessoes_refresh.sql",
         "migrations/007_criar_producoes_leiteiras.sql", "migrations/008_criar_pesagens_desmamas.sql",
         "migrations/009_seguranca_sessoes_rate_limit.sql", "migrations/012_integridade_parentesco_indices.sql",
+        'migrations/013_verificacao_email.sql',
       ]) await client.query(readFileSync(path.join(root, "backend/database", file), "utf8"));
       // A nova migration precisa ser reaplicável sem perda de dados.
       await client.query(readFileSync(path.join(root, "backend/database/migrations/012_integridade_parentesco_indices.sql"), "utf8"));
+      await client.query(readFileSync(path.join(root, 'backend/database/migrations/013_verificacao_email.sql'), 'utf8'));
       const hash = await bcrypt.hash(env.TEST_ADMIN_SENHA, 12);
       await client.query("INSERT INTO usuarios(nome,email,senha,perfil) VALUES ('Admin de teste',$1,$2,'admin')", [env.TEST_ADMIN_EMAIL, hash]);
       await client.query("INSERT INTO usuarios(nome,email,senha,perfil) VALUES ('Produtor E2E','e2e-owner@example.test',$1,'usuario')", [hash]);
+      // Fixtures pré-verificadas de negócio; contas pendentes têm suíte própria.
+      await client.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=CURRENT_TIMESTAMP');
       const prop = await client.query("INSERT INTO propriedades(nome,cidade,estado,area,usuario_id) SELECT 'Fazenda E2E','Uberaba','MG',120,id FROM usuarios WHERE email='e2e-owner@example.test' RETURNING id");
       const propId = prop.rows[0].id;
       const animal = await client.query("INSERT INTO animais(nome,especie,raca,sexo,peso,propriedade_id,numero_brinco,data_nascimento) VALUES ('Mimosa E2E','Bovino','Holandesa','F',450,$1,'E2E-001','2024-01-01') RETURNING id", [propId]);
@@ -71,11 +78,12 @@ async function main() {
       await client.query("INSERT INTO receitas(descricao,categoria,valor,data,propriedade_id) VALUES ('Leite E2E','VENDA_LEITE',250,'2026-01-01',$1)", [propId]);
     } finally { await client.end(); }
     if (mode !== "e2e") {
-      for (const file of ["auth-permissions", "milk-production", "receitas", "calf-management-integration", "backend-regressions-integration"]) run(`tests/${file}.js`);
+      const suites = mode === 'email' ? ['email-verification'] : ['email-verification', "auth-permissions", "milk-production", "receitas", "calf-management-integration", "backend-regressions-integration"];
+      for (const file of suites) run(`tests/${file}.js`);
       run("scripts/check-database.js");
       run("scripts/check-deletion-integrity.js");
     }
-    if (mode !== "integration") run("node_modules/@playwright/test/cli.js", "frontend", ["test", ...process.argv.slice(3)]);
+    if (['all', 'e2e'].includes(mode)) run("node_modules/@playwright/test/cli.js", "frontend", ["test", ...process.argv.slice(3)]);
     console.log(`OK: ${mode}; banco isolado será removido`);
   } finally {
     if (created) await admin.query(`DROP DATABASE "${database}" WITH (FORCE)`);

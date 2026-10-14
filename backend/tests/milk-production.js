@@ -120,6 +120,9 @@ async function executar() {
     corpo: { nome: "Produtor Leite B", email: emailB, senha },
   });
   confirmar("criação dos usuários de teste", cadastroA.status === 202 && cadastroB.status === 202);
+  const { verificarFixture } = require('./helpers/email');
+  await verificarFixture(emailA);
+  await verificarFixture(emailB);
 
   const [sessaoA, sessaoB] = await Promise.all([
     login(emailA, senha),

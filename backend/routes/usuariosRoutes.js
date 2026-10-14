@@ -70,7 +70,7 @@ router.put("/usuarios/me", async (req, res) => {
           SET nome = $1,
               email = $2
         WHERE id = $3
-        RETURNING id, nome, email, perfil, ativo, created_at`,
+        RETURNING id, nome, email, perfil, ativo, created_at, email_verificado`,
       [nome, email, req.usuario.id],
     );
 
@@ -211,7 +211,7 @@ router.put("/usuarios/:id", somenteAdmin, async (req, res) => {
           SET nome = $1,
               email = $2
         WHERE id = $3
-        RETURNING id, nome, email, perfil, ativo, created_at`,
+        RETURNING id, nome, email, perfil, ativo, created_at, email_verificado`,
       [nome, email, req.params.id],
     );
 

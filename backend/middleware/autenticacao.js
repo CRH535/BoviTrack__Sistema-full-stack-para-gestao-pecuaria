@@ -49,7 +49,7 @@ async function autenticar(req, res, next) {
     }
 
     const resultado = await pool.query(
-      `SELECT u.id, u.nome, u.email, u.perfil, u.ativo
+      `SELECT u.id, u.nome, u.email, u.perfil, u.ativo, u.email_verificado
          FROM usuarios u
          JOIN sessoes_refresh sr
            ON sr.usuario_id = u.id
@@ -68,6 +68,9 @@ async function autenticar(req, res, next) {
       });
     }
 
+    if (resultado.rows[0].email_verificado !== true) {
+      return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail. Entre novamente para continuar.' });
+    }
     req.usuario = resultado.rows[0];
     req.autenticacao = {
       sessionId: dados.sid,

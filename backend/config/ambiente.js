@@ -1,4 +1,5 @@
 const dotenv = require("dotenv");
+const { obterConfiguracaoEmail } = require('./email');
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ function validarAmbiente(ambiente = process.env) {
   }
 
   if (producao) {
+    obterConfiguracaoEmail(ambiente);
     if (!urlBanco) throw new Error("DATABASE_URL não foi configurada em produção");
     if (Buffer.byteLength(segredo, "utf8") < 32) {
       throw new Error("JWT_SECRET deve possuir pelo menos 32 bytes em produção");

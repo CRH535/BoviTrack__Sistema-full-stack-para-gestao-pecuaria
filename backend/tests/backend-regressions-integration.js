@@ -108,6 +108,7 @@ async function testarDesmamaConcorrente(id, destino) {
     [email, await bcrypt.hash(senha, 4)],
   );
   usuarioId = resultado.rows[0].id;
+  await pool.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=CURRENT_TIMESTAMP WHERE id=$1', [usuarioId]);
   servidor = await new Promise((resolve) => { const instancia = app.listen(0, "127.0.0.1", () => resolve(instancia)); });
   base = `http://127.0.0.1:${servidor.address().port}`;
   async function login() {

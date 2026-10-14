@@ -138,7 +138,7 @@ async function criarSessaoRefresh(pool, usuarioId) {
   try {
     await cliente.query("BEGIN");
     const usuarioAtivo = await cliente.query(
-      "SELECT id FROM usuarios WHERE id = $1 AND ativo = TRUE FOR SHARE",
+      "SELECT id FROM usuarios WHERE id = $1 AND ativo = TRUE AND email_verificado = TRUE FOR SHARE",
       [usuarioId],
     );
     if (!usuarioAtivo.rows[0]) {
@@ -188,10 +188,13 @@ async function renovarSessaoRefresh(pool, tokenAtual) {
 
   try {
     await cliente.query("BEGIN");
+    // Ordem de locks: usuário antes da sessão, igual à alteração de e-mail.
+    await cliente.query(`SELECT u.id FROM usuarios u JOIN sessoes_refresh sr ON sr.usuario_id = u.id
+      WHERE sr.token_hash = $1 FOR SHARE OF u`, [tokenAtualHash]);
     const atualResultado = await cliente.query(
       `SELECT sr.id, sr.session_id, sr.family_id, sr.expires_at,
               sr.last_authenticated_at, sr.revoked_at,
-              u.id AS usuario_id, u.nome, u.email, u.perfil, u.ativo
+              u.id AS usuario_id, u.nome, u.email, u.perfil, u.ativo, u.email_verificado
          FROM sessoes_refresh sr
          JOIN usuarios u ON u.id = sr.usuario_id
         WHERE sr.token_hash = $1
@@ -235,6 +238,13 @@ async function renovarSessaoRefresh(pool, tokenAtual) {
     ) {
       await cliente.query("ROLLBACK");
       return null;
+    }
+
+    if (atual.email_verificado !== true) {
+      await cliente.query(`UPDATE sessoes_refresh SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'EMAIL_NOT_VERIFIED'
+        WHERE usuario_id = $1 AND revoked_at IS NULL`, [atual.usuario_id]);
+      await cliente.query('COMMIT');
+      return { emailNaoVerificado: true };
     }
 
     await cliente.query(

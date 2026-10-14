@@ -6,6 +6,7 @@ const TABELAS = [
   "usuarios",
   "sessoes_refresh",
   "sessoes_refresh_usados",
+  'verificacoes_email',
   "limites_requisicao",
   "propriedades",
   "animais",
@@ -21,7 +22,7 @@ const TABELAS = [
 ];
 
 const TABELAS_COM_SEQUENCE = TABELAS.filter(
-  (tabela) => !["animais_lotes", "sessoes_refresh_usados", "limites_requisicao"].includes(tabela),
+    (tabela) => !["animais_lotes", "sessoes_refresh_usados", "limites_requisicao", 'verificacoes_email'].includes(tabela),
 );
 
 async function verificar(cliente) {
