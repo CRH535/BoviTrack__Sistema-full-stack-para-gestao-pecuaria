@@ -2,14 +2,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const { Client } = require('../backend/node_modules/pg');
 const { carregar, configuracaoAdmin, confirmarDestino } = require('./prepare-supabase-homologacao.cjs');
 const { validarUrl, inspecionar } = require('./check-supabase-homologacao.cjs');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'outputs/rls-etapa2');
-const hex = () => crypto.randomBytes(32).toString('hex');
 const sqlFile = (file) => fs.readFileSync(path.join(root, 'backend/database', file), 'utf8');
 let checks = 0;
 async function check(name, fn) {

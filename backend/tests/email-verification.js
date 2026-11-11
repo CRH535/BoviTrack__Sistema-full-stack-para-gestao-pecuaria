@@ -8,7 +8,6 @@ const service = require('../services/verificacaoEmail');
 const { VERIFICACAO_EMAIL: config, obterConfiguracaoEmail } = require('../config/email');
 const { criarSessaoRefresh, criarTokenAcesso, hashToken } = require('../services/sessoes');
 const { templateVerificacaoEmail } = require('../emails/verificacaoEmail');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 let server, base;
 let total = 0;
