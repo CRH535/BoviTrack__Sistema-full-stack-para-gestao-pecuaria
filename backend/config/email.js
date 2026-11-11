@@ -17,6 +17,14 @@ const VERIFICACAO_EMAIL = Object.freeze({
   validacaoIpPorMinuto: 60,
 });
 
+function verificacaoEmailObrigatoria(ambiente = process.env) {
+  const valor = ambiente.EMAIL_VERIFICATION_REQUIRED ?? 'false';
+  if (valor !== 'true' && valor !== 'false') {
+    throw new Error('EMAIL_VERIFICATION_REQUIRED deve ser true ou false');
+  }
+  return valor === 'true';
+}
+
 function obterConfiguracaoEmail(ambiente = process.env) {
   const apiKey = ambiente.RESEND_API_KEY || '';
   const pepper = ambiente.EMAIL_VERIFICATION_PEPPER || '';
@@ -31,4 +39,4 @@ function obterConfiguracaoEmail(ambiente = process.env) {
   return { apiKey, pepper, from };
 }
 
-module.exports = { VERIFICACAO_EMAIL, obterConfiguracaoEmail };
+module.exports = { VERIFICACAO_EMAIL, obterConfiguracaoEmail, verificacaoEmailObrigatoria };

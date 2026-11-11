@@ -9,7 +9,7 @@ const bcrypt = require("../backend/node_modules/bcryptjs");
 
 const root = path.resolve(__dirname, "..");
 const mode = process.argv[2] || "all";
-if (!["all", "integration", "e2e", "offline", "email", "rls"].includes(mode)) throw new Error("Modo inválido");
+if (!["all", "integration", "e2e", "offline", "email", "email-flag", "rls"].includes(mode)) throw new Error("Modo inválido");
 const adminUrl = new URL(process.env.BOVITRACK_TEST_POSTGRES_URL || "postgresql://postgres@127.0.0.1:55432/postgres");
 if (adminUrl.search || adminUrl.hash || !['postgres:', 'postgresql:'].includes(adminUrl.protocol) || !["127.0.0.1", "localhost", "[::1]"].includes(adminUrl.hostname)) {
   throw new Error("Testes exigem PostgreSQL em loopback; URLs externas são recusadas");
@@ -36,6 +36,7 @@ const env = {
   CSRF_ALLOW_NO_ORIGIN: "true", COOKIE_SECURE: "false", COOKIE_SAME_SITE: "lax",
   APP_TIMEZONE: "America/Sao_Paulo", ALLOW_TEST_DB_WRITES: "true",
   RESEND_API_KEY: 're_mock_isolated_no_network', EMAIL_VERIFICATION_PEPPER: crypto.randomBytes(48).toString('hex'),
+  EMAIL_VERIFICATION_REQUIRED: mode === 'email-flag' ? 'false' : (process.env.BOVITRACK_TEST_EMAIL_REQUIRED || 'true'),
   EMAIL_FROM: 'BoviTrack <onboarding@resend.dev>',
   TEST_ADMIN_EMAIL: "admin@example.test", TEST_ADMIN_SENHA: "IsolatedAdmin#2026",
   BOVITRACK_E2E_ISOLATED: "true", PORT: "3005", VITE_API_URL: "http://127.0.0.1:3005",
@@ -97,12 +98,14 @@ async function main() {
         "supabase/001_schema_bovitrack.sql", "supabase/003_sessoes_refresh.sql",
         "migrations/007_criar_producoes_leiteiras.sql", "migrations/008_criar_pesagens_desmamas.sql",
         "migrations/009_seguranca_sessoes_rate_limit.sql", "migrations/012_integridade_parentesco_indices.sql",
-        'migrations/013_verificacao_email.sql',
+        mode === 'email' ? 'migrations/013_verificacao_email.sql' : 'migrations/020_estrutura_email_sem_revogar_sessoes.sql',
       ]) await client.query(readFileSync(path.join(root, "backend/database", file), "utf8"));
       // A nova migration precisa ser reaplicável sem perda de dados.
       await client.query(readFileSync(path.join(root, "backend/database/migrations/012_integridade_parentesco_indices.sql"), "utf8"));
-      await client.query(readFileSync(path.join(root, 'backend/database/migrations/013_verificacao_email.sql'), 'utf8'));
+      await client.query(readFileSync(path.join(root, 'backend/database/migrations', mode === 'email' ? '013_verificacao_email.sql' : '020_estrutura_email_sem_revogar_sessoes.sql'), 'utf8'));
       for (const name of preparacaoRls) await client.query(lerSql(`migrations/${name}`));
+      await client.query(lerSql('migrations/021_email_verificacao_configuravel.sql'));
+      await client.query('UPDATE bovitrack_seg.configuracao_email SET obrigatoria=$1',[env.EMAIL_VERIFICATION_REQUIRED === 'true']);
       await client.query("INSERT INTO bovitrack_seg.chaves_contexto VALUES (decode($1, 'hex'))", [env.DB_RLS_CONTEXT_KEY]);
       await client.query(`CREATE ROLE "${loginDominio}" LOGIN IN ROLE bovitrack_runtime; CREATE ROLE "${loginAuth}" LOGIN IN ROLE bovitrack_auth_runtime;`);
       logins = true;
@@ -127,6 +130,7 @@ async function main() {
         "receitas", "calf-management-integration", "backend-regressions-integration"];
       const suites = {
         email: ["email-verification"],
+        'email-flag': ['email-feature-flag'],
         rls: ["rls-isolamento"],
       }[mode] || suiteCompleta;
       for (const file of suites) run(`tests/${file}.js`);

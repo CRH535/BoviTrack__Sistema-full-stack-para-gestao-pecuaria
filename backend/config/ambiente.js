@@ -1,5 +1,5 @@
 const dotenv = require("dotenv");
-const { obterConfiguracaoEmail } = require('./email');
+const { obterConfiguracaoEmail, verificacaoEmailObrigatoria } = require('./email');
 
 dotenv.config();
 
@@ -14,6 +14,7 @@ function duracaoEmSegundos(valor, nome) {
 }
 
 function validarAmbiente(ambiente = process.env) {
+  const emailObrigatorio = verificacaoEmailObrigatoria(ambiente);
   const producao = ambiente.NODE_ENV === "production";
   const segredo = ambiente.JWT_SECRET || "";
   const expiracaoAcesso =
@@ -42,7 +43,7 @@ function validarAmbiente(ambiente = process.env) {
   }
 
   if (producao) {
-    obterConfiguracaoEmail(ambiente);
+    if (emailObrigatorio) obterConfiguracaoEmail(ambiente);
     if (!urlBanco) throw new Error("DATABASE_URL não foi configurada em produção");
     if (!/^[0-9a-f]{64}$/.test(ambiente.DB_RLS_CONTEXT_KEY || "") ||
         ambiente.DB_RLS_CONTEXT_KEY === segredo ||

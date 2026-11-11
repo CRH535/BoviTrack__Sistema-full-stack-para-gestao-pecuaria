@@ -49,7 +49,7 @@ async function autenticar(req, res, next) {
     }
 
     const ator = await comAtor({ id: usuarioId, sessionId: dados.sid }, (_, usuario) => usuario, { permitirPendente: true });
-    if (ator.email_verificado !== true) {
+    if (require('../config/email').verificacaoEmailObrigatoria() && ator.email_verificado !== true) {
       return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail. Entre novamente para continuar.' });
     }
     req.usuario = ator;
@@ -59,6 +59,7 @@ async function autenticar(req, res, next) {
     };
     next();
   } catch (erro) {
+    if (erro.codigo === 'EMAIL_POLICY_MISMATCH') return res.status(503).json({ codigo: 'AUTH_CONFIG_UNAVAILABLE', mensagem: 'Autenticacao temporariamente indisponivel' });
     if (erro.codigo === "SESSAO_INVALIDA") {
       return res.status(401).json({ mensagem: erro.message, codigo: erro.codigo });
     }

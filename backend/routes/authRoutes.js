@@ -21,7 +21,8 @@ const { obterIpCliente } = require("../utils/rede");
 const { validarCamposPermitidos } = require("../utils/validacoes");
 const { consumirLimite } = require("../services/limitesRequisicao");
 const verificacaoEmail = require('../services/verificacaoEmail');
-const { VERIFICACAO_EMAIL } = require('../config/email');
+const { VERIFICACAO_EMAIL, verificacaoEmailObrigatoria } = require('../config/email');
+const { politicaEmail } = require('../middleware/politicaEmail');
 
 const router = express.Router();
 const MINUTO = 60 * 1000;
@@ -64,7 +65,13 @@ const limitarRefresh = limitarRequisicoes({
   obterChave: (req) => `${obterIpCliente(req)}|${lerRefreshToken(req) || "sem-cookie"}`,
 });
 
-router.post("/auth/cadastro", protegerContraCsrf, limitarCadastro, limitarCadastroEmail, limitarEnvioIp, async (req, res) => {
+router.get('/auth/config', politicaEmail, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ verificacaoEmailObrigatoria: verificacaoEmailObrigatoria() });
+});
+
+router.post("/auth/cadastro", protegerContraCsrf, politicaEmail, limitarCadastro, limitarCadastroEmail,
+  (req, res, next) => verificacaoEmailObrigatoria() ? limitarEnvioIp(req, res, next) : next(), async (req, res) => {
   await responderCriacaoUsuario(
     req,
     res,
@@ -73,7 +80,7 @@ router.post("/auth/cadastro", protegerContraCsrf, limitarCadastro, limitarCadast
   );
 });
 
-router.post("/auth/login", protegerContraCsrf, limitarLoginIp, limitarLoginConta, async (req, res) => {
+router.post("/auth/login", protegerContraCsrf, politicaEmail, limitarLoginIp, limitarLoginConta, async (req, res) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["email", "senha"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
@@ -126,7 +133,7 @@ router.post("/auth/login", protegerContraCsrf, limitarLoginIp, limitarLoginConta
       });
     }
 
-    if (usuario.email_verificado !== true) {
+    if (verificacaoEmailObrigatoria() && usuario.email_verificado !== true) {
       limparCookieRefresh(res);
       const resultado = await consumirLimite({ escopo: 'EMAIL_ENVIO_IP', chave: obterIpCliente(req),
         limite: VERIFICACAO_EMAIL.envioIpPorHora, janelaMs: 60 * MINUTO });
@@ -168,6 +175,7 @@ router.post("/auth/login", protegerContraCsrf, limitarLoginIp, limitarLoginConta
 router.post(
   "/auth/refresh",
   protegerContraCsrf,
+  politicaEmail,
   limitarRefresh,
   async (req, res) => {
     try {

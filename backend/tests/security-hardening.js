@@ -139,13 +139,15 @@ function respostaFake() {
       FRONTEND_URL: "https://bovitrack.example",
       COOKIE_SECURE: "true",
       COOKIE_SAME_SITE: "none",
-      RESEND_API_KEY: 're_fake_test_only', EMAIL_VERIFICATION_PEPPER: 'p'.repeat(48),
+      RESEND_API_KEY: 're_fake_test_only', EMAIL_VERIFICATION_PEPPER: 'p'.repeat(48), EMAIL_VERIFICATION_REQUIRED: 'true',
     };
     assert.doesNotThrow(() => validarAmbiente(base));
     assert.throws(() => validarAmbiente({ ...base, DATABASE_AUTH_URL: base.DATABASE_URL }));
     assert.throws(() => validarAmbiente({ ...base, DB_RLS_CONTEXT_KEY: "" }));
     assert.throws(() => validarAmbiente({ ...base, RESEND_API_KEY: '' }));
     assert.throws(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_PEPPER: '' }));
+    assert.doesNotThrow(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_REQUIRED: 'false', RESEND_API_KEY: '', EMAIL_VERIFICATION_PEPPER: '' }));
+    for (const invalido of ['1','0','yes','FALSE','']) assert.throws(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_REQUIRED: invalido }));
     assert.throws(() => validarAmbiente({ ...base, JWT_SECRET: "fraco" }));
     assert.throws(() => validarAmbiente({ ...base, JWT_ACCESS_EXPIRES_IN: "8h" }));
     assert.throws(() => validarAmbiente({ ...base, JWT_REFRESH_EXPIRES_IN: "365d" }));

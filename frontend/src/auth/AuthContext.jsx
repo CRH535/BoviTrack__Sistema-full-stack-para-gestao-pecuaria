@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [verificacaoPendente, setVerificacaoPendente] = useState(null);
+  const [verificacaoEmailObrigatoria, setVerificacaoEmailObrigatoria] = useState(null);
   const canalRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +56,11 @@ export function AuthProvider({ children }) {
       const geracao = obterGeracaoSessao();
       const vigente = () => ativo && geracao === obterGeracaoSessao();
       try {
+        const config = await api.get('/auth/config', { ignorarRenovacao: true });
+        if (vigente()) {
+          setVerificacaoEmailObrigatoria(config.data.verificacaoEmailObrigatoria);
+          if (config.data.verificacaoEmailObrigatoria === false) setVerificacaoPendente(null);
+        }
         if (lerStorage(CHAVE_LOGOUT_PENDENTE)) {
           await api.post("/auth/logout", null, { ignorarRenovacao: true });
           if (vigente()) {
@@ -185,6 +191,7 @@ export function AuthProvider({ children }) {
       finalizarLogoutVisual,
       atualizarUsuario,
       verificacaoPendente,
+      verificacaoEmailObrigatoria,
       iniciarVerificacao,
       concluirVerificacao,
     }}>

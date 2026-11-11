@@ -41,7 +41,7 @@ async function testarHttpSemBanco() {
     if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { command: sql };
     if (sql.includes("bovitrack_seg.desafio")) return { rows: [{ desafio: "1" }] };
     if (sql.includes("set_config")) return { rows: [{}] };
-    if (sql.includes("sessao_atual")) return { rows: [{ id: 7, perfil: "usuario", email_verificado: true }] };
+    if (sql.includes("sessao_atual")) return { rows: [{ id: 7, perfil: "usuario", email_verificado: true, verificacao_email_obrigatoria: process.env.EMAIL_VERIFICATION_REQUIRED === 'true' }] };
     consultas.push({ sql, valores });
     if (sql.includes("to_regclass")) return { rows: [{ existe: false }] };
     if (sql.includes("AS bezerros_aleitamento")) {

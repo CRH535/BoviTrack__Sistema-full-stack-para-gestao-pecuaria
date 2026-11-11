@@ -14,7 +14,7 @@ function mensagemInicial(envio) {
 }
 
 export default function VerificarEmail() {
-  const { verificacaoPendente, carregando, autenticado, concluirVerificacao, logout } = useAuth();
+  const { verificacaoPendente, verificacaoEmailObrigatoria, carregando, autenticado, concluirVerificacao, logout } = useAuth();
   const navigate = useNavigate();
   const [codigo, setCodigo] = useState('');
   const [ocupado, setOcupado] = useState('');
@@ -32,6 +32,7 @@ export default function VerificarEmail() {
 
   if (carregando) return <p className="session-loading">Verificando sessão...</p>;
   if (autenticado) return <Navigate to="/" replace />;
+  if (verificacaoEmailObrigatoria === false) return <Navigate to="/login" replace />;
   if (!verificacaoPendente && !sucesso) return <Navigate to="/login" replace state={{ mensagem: 'Entre para continuar a verificação do e-mail.' }} />;
 
   const opcoes = { headers: { 'X-Email-Verification': verificacaoPendente?.ticket }, ignorarRenovacao: true };
@@ -53,6 +54,11 @@ export default function VerificarEmail() {
   }
 
   function tratarFalha(erro) {
+    if (erro.response?.data?.codigo === 'EMAIL_VERIFICATION_DISABLED') {
+      concluirVerificacao();
+      navigate('/login', { replace: true });
+      return;
+    }
     setErroMensagem(true);
     const retryAfter = Number(erro.response?.headers?.['retry-after'] || erro.response?.data?.retryAfter);
     if (Number.isFinite(retryAfter) && retryAfter > 0) setReenviarEm(Date.now() + retryAfter * 1000);

@@ -202,6 +202,10 @@ test("cadastro real de propriedade/animal, ficha, pesagem e modal por teclado", 
     .locator("form")
     .getByRole("button", { name: /Salvar|Cadastrar/ })
     .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Propriedade cadastrada com sucesso!" }),
+  ).toBeVisible();
+  await page.getByRole("searchbox", { name: "Pesquisar registros", exact: true }).fill(name);
   const card = page.locator(".property-card").filter({ hasText: name });
   await expect(card).toBeVisible();
   await card.getByRole("button", { name: /Excluir/ }).click();
@@ -246,6 +250,12 @@ test("cadastro real de propriedade/animal, ficha, pesagem e modal por teclado", 
     .locator("form")
     .getByRole("button", { name: /Salvar|Cadastrar/ })
     .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Animal cadastrado com sucesso!" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Carregando registros..." }),
+  ).not.toBeVisible();
   await page.getByLabel("Buscar animal", { exact: true }).fill(animalName);
   await page
     .locator(".animal-card")

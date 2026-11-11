@@ -57,8 +57,12 @@ function Cadastro() {
         senha,
       });
 
-      iniciarVerificacao(emailLimpo, resposta.data.verificacao);
-      navigate('/verificar-email', { replace: true });
+      if (resposta.data.verificacao) {
+        iniciarVerificacao(emailLimpo, resposta.data.verificacao);
+        navigate('/verificar-email', { replace: true });
+      } else {
+        navigate('/login', { replace: true, state: { mensagem: resposta.data.mensagem } });
+      }
     } catch (erro) {
       setMensagem(
         erro.response?.data?.mensagem ||

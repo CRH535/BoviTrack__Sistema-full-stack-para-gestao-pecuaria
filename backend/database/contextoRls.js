@@ -1,5 +1,7 @@
 const { createHmac } = require("node:crypto");
 const pool = require("./pool");
+const { verificacaoEmailObrigatoria } = require('../config/email');
+const { conferirPoliticaEmail } = require('../middleware/politicaEmail');
 
 async function transacao(banco, executar) {
   const cliente = await banco.connect();
@@ -59,8 +61,9 @@ async function comAtor(identidade, executar, { permitirPendente = false, finalid
               pg_catalog.set_config('bovitrack.finalidade', $4, true)`,
       [String(id), sessionId, assinatura, finalidade],
     );
-    const ator = (await cliente.query("SELECT * FROM bovitrack_seg.sessao_atual()")).rows[0];
-    if (!ator || (!permitirPendente && !ator.email_verificado) ||
+    const ator = (await cliente.query("SELECT *, bovitrack_seg.email_verificacao_obrigatoria() AS verificacao_email_obrigatoria FROM bovitrack_seg.sessao_atual()")).rows[0];
+    if (ator) conferirPoliticaEmail(ator.verificacao_email_obrigatoria);
+    if (!ator || (!permitirPendente && verificacaoEmailObrigatoria() && !ator.email_verificado) ||
         (identidade.perfil && ator.perfil !== identidade.perfil)) throw erroSessao();
     return executar(cliente, ator);
   });

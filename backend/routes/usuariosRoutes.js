@@ -76,6 +76,7 @@ router.put("/usuarios/me", rotaComBanco(async (req, res, cliente, responder) => 
 
     responder(200, {
       mensagem: "Conta atualizada com sucesso!",
+      verificacaoEmailObrigatoria: require('../config/email').verificacaoEmailObrigatoria(),
       usuario: resultado.rows[0],
     });
   } catch (erro) {
