@@ -1,5 +1,7 @@
 # Runbook de implantação e rollback — BoviTrack RLS
 
+> **Histórico da etapa 3.** Para o novo corte com e-mail opcional, seguir `DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md`. A ordem antiga que executa 013 e exige entrega Resend não se aplica ao release opcional. Não executar a 013 original nesse corte: usar 020 para preservar sessões legadas e 021 para a política administrativa.
+
 Preparado em 11/11/2026. **Documento para execução futura autorizada; nenhuma operação de produção abaixo foi executada nesta etapa.** Estado atual: BLOQUEADO. Resultados e limitações: `PREPARACAO_PRODUCAO_RLS_BOVITRACK.md`.
 
 ## 0. Autorização, operadores e condições de início
