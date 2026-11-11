@@ -1,6 +1,4 @@
-const pool = require("../database/pool");
-
-async function buscarAnimalPermitido(animalId, usuario, cliente = pool, bloquear = false) {
+async function buscarAnimalPermitido(animalId, usuario, cliente, bloquear = false) {
   const resultado = await cliente.query(
     `SELECT a.id, a.nome, a.numero_brinco, a.data_nascimento, a.peso,
             a.propriedade_id, a.mae_id, p.usuario_id
@@ -15,7 +13,7 @@ async function buscarAnimalPermitido(animalId, usuario, cliente = pool, bloquear
   return resultado.rows[0] || null;
 }
 
-async function buscarLoteCompativel(loteId, propriedadeId, usuario, cliente = pool) {
+async function buscarLoteCompativel(loteId, propriedadeId, usuario, cliente) {
   if (!loteId) return null;
   const resultado = await cliente.query(
     `SELECT l.id, l.nome
@@ -29,7 +27,7 @@ async function buscarLoteCompativel(loteId, propriedadeId, usuario, cliente = po
   return resultado.rows[0] || null;
 }
 
-async function buscarMaeCompativel(maeId, animal, usuario, cliente = pool) {
+async function buscarMaeCompativel(maeId, animal, usuario, cliente) {
   if (!maeId) return null;
   const resultado = await cliente.query(
     `SELECT m.id, m.nome, m.numero_brinco

@@ -2,12 +2,13 @@ require("dotenv").config();
 
 const assert = require("assert/strict");
 const pool = require("../database/pool");
+const { transacao } = require("../database/contextoRls");
 
 async function testarRollbackDaPropriedade() {
   const consultas = [];
   let liberado = false;
   const connectOriginal = pool.connect;
-  const cliente = {
+  const cliente = Object.assign(new (require('node:events').EventEmitter)(), {
     async query(sql) {
       const texto = String(sql).replace(/\s+/g, " ").trim();
       consultas.push(texto);
@@ -33,7 +34,7 @@ async function testarRollbackDaPropriedade() {
     release() {
       liberado = true;
     },
-  };
+  });
 
   pool.connect = async () => cliente;
   delete require.cache[require.resolve("../services/impactoExclusao")];
@@ -41,7 +42,7 @@ async function testarRollbackDaPropriedade() {
 
   try {
     await assert.rejects(
-      excluirPropriedadeComDados(10, { usuarioId: 7, perfil: "usuario" }),
+      transacao(pool, (cliente) => excluirPropriedadeComDados(10, { usuarioId: 7, perfil: "usuario" }, cliente)),
       /falha simulada/,
     );
     assert.ok(consultas.includes("BEGIN"), "a transação deve iniciar");

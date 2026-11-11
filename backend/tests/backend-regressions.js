@@ -7,7 +7,7 @@ process.env.JWT_SECRET ||= "chave-exclusiva-dos-testes-offline";
 const assert = require("node:assert/strict");
 const express = require("express");
 const pool = require("../database/pool");
-const { encerrarSessaoRefresh } = require("../services/sessoes");
+const { encerrarSessaoRefresh, hashToken } = require("../services/sessoes");
 const { alterarAtivoUsuario, criarUsuarioComum } = require("../services/usuarios");
 const {
   converterId, normalizarNumeroFinito, normalizarPaginacao,
@@ -16,76 +16,44 @@ const {
   dataHojeNoFuso,
 } = require("../utils/validacoes");
 
-function bancoFake(responder) {
-  const consultas = [];
-  let liberado = false;
-  return {
-    consultas,
-    get liberado() { return liberado; },
-    async connect() {
-      return {
-        async query(sql, valores) {
-          consultas.push({ sql, valores });
-          return responder(sql, valores);
-        },
-        release() { liberado = true; },
-      };
-    },
-  };
-}
-
 async function testarSessoes() {
-  let revogado;
-  const banco = bancoFake(async (sql, valores) => {
-    if (sql.includes("JOIN sessoes_refresh_usados")) return { rows: [{ id: 17 }] };
-    if (sql.startsWith("UPDATE sessoes_refresh")) revogado = valores[0];
-    return { rows: [] };
-  });
-  await encerrarSessaoRefresh(banco, "cookie-rotacionado".repeat(3));
-  assert.equal(revogado, 17, "logout deve revogar a sessao associada ao cookie antigo");
-  assert.equal(banco.consultas[0].sql, "BEGIN");
-  assert.equal(banco.consultas.at(-1).sql, "COMMIT");
-  assert.equal(banco.liberado, true);
-
-  const comFalha = bancoFake(async (sql) => {
-    if (sql.includes("JOIN sessoes_refresh_usados")) throw new Error("falha simulada");
-    return { rows: [] };
-  });
+  const banco = { query: async (sql, [hash]) => {
+    assert.equal(sql, "SELECT bovitrack_seg.encerrar_refresh($1)");
+    assert.equal(hash, hashToken("cookie-rotacionado"));
+  } };
+  await encerrarSessaoRefresh(banco, "cookie-rotacionado");
+  const comFalha = { query: async () => { throw new Error("falha simulada"); } };
   await assert.rejects(encerrarSessaoRefresh(comFalha, "cookie"), /falha simulada/);
-  assert.equal(comFalha.consultas.at(-1).sql, "ROLLBACK");
-  assert.equal(comFalha.liberado, true);
-
-  let ativo = true;
-  let revogacoes = 0;
-  const usuarios = bancoFake(async (sql, valores) => {
-    if (sql.startsWith("SELECT")) return { rows: [{ id: 9, perfil: "usuario" }] };
-    if (sql.startsWith("UPDATE usuarios")) { ativo = valores[0]; return { rows: [{ id: 9, ativo }] }; }
-    if (sql.includes("USUARIO_DESATIVADO")) revogacoes++;
-    return { rows: [] };
-  });
-  assert.equal((await alterarAtivoUsuario(9, false, usuarios)).ativo, false);
-  await alterarAtivoUsuario(9, true, usuarios);
-  assert.equal(revogacoes, 1, "reativacao nao deve desfazer revogacao anterior");
-  const admin = bancoFake(async () => ({ rows: [{ id: 1, perfil: "admin" }] }));
+  const usuario = { query: async (sql, valores) => {
+    if (sql.includes("alterar_ativo")) return { rows: [{ id: 9, ativo: valores[1] }] };
+    return { rows: [{ id: 9, perfil: "usuario" }] };
+  } };
+  assert.equal((await alterarAtivoUsuario(9, false, usuario)).ativo, false);
+  const admin = { query: async () => ({ rows: [{ id: 1, perfil: "admin" }] }) };
   await assert.rejects(alterarAtivoUsuario(1, false, admin), { status: 403 });
-  assert.equal(admin.consultas.at(-1).sql, "ROLLBACK");
 }
 
 async function testarHttpSemBanco() {
-  const queryOriginal = pool.query;
+  const connectOriginal = pool.connect;
+  process.env.DB_RLS_CONTEXT_KEY = "a".repeat(64);
   const consultas = [];
-  pool.query = async (sql, valores) => {
+  const query = async (sql, valores) => {
+    if (["BEGIN", "COMMIT", "ROLLBACK"].includes(sql)) return { command: sql };
+    if (sql.includes("bovitrack_seg.desafio")) return { rows: [{ desafio: "1" }] };
+    if (sql.includes("set_config")) return { rows: [{}] };
+    if (sql.includes("sessao_atual")) return { rows: [{ id: 7, perfil: "usuario", email_verificado: true, verificacao_email_obrigatoria: process.env.EMAIL_VERIFICATION_REQUIRED === 'true' }] };
     consultas.push({ sql, valores });
-    if (sql.includes("AS total_receitas")) throw Object.assign(new Error("tabela ausente simulada"), { code: "42P01" });
+    if (sql.includes("to_regclass")) return { rows: [{ existe: false }] };
     if (sql.includes("AS bezerros_aleitamento")) {
       return { rows: [{ propriedades: 1, animais: 1, lotes: 0, vacinas: 0, total_despesas: "10", bezerros_aleitamento: 0, desmamas_planejadas: 0, desmamas_proximas: 0, desmamados_ano: 0, animais_sem_pesagem_recente: 0 }] };
     }
     // Nenhum dos IDs privados do teste pertence ao usuario simulado.
     return { rows: [], rowCount: 0 };
   };
+  pool.connect = async () => Object.assign(new (require('node:events').EventEmitter)(), { query, release() {} });
   const app = express();
   app.use(express.json());
-  app.use((req, res, next) => { req.usuario = { id: 7, perfil: "usuario" }; next(); });
+  app.use((req, res, next) => { req.usuario = { id: 7, perfil: "usuario" }; req.autenticacao = { sessionId: "b".repeat(64) }; next(); });
   for (const nome of ["propriedades", "animais", "lotes", "vacinas", "vacinacoes", "despesas", "receitas"]) {
     app.use(require(`../routes/${nome}Routes`));
   }
@@ -127,7 +95,7 @@ async function testarHttpSemBanco() {
     assert.equal(dados.resumo.total_despesas, 10);
     assert.equal(dados.receitas_disponiveis, false);
   } finally {
-    pool.query = queryOriginal;
+    pool.connect = connectOriginal;
     await new Promise((resolve) => servidor.close(resolve));
   }
 }

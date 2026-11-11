@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
+const { assinarContexto, transacao } = require("../database/contextoRls");
 const {
   audience,
   expiracaoAcesso,
@@ -10,7 +11,6 @@ const COOKIE_REFRESH = "bovitrack_refresh";
 const COOKIE_REFRESH_LEGADO = "agrocontrol_refresh";
 const DURACAO_REFRESH_PADRAO = "7d";
 const ALGORITMO_JWT = "HS256";
-const JANELA_CONCORRENCIA_REPLAY_MS = 5000;
 
 function duracaoEmMilissegundos(valor) {
   const partes = /^(\d+)\s*([smhd])$/i.exec(String(valor || "").trim());
@@ -123,7 +123,7 @@ function limparCookieRefresh(res) {
   res.clearCookie(COOKIE_REFRESH_LEGADO, opcoesCookie());
 }
 
-async function criarSessaoRefresh(pool, usuarioId) {
+async function criarSessaoRefresh(pool, usuarioId, senhaObservada) {
   const token = gerarRefreshToken();
   const tokenHash = hashToken(token);
   const sessionId = gerarIdentificadorSessao();
@@ -133,48 +133,18 @@ async function criarSessaoRefresh(pool, usuarioId) {
   );
   const expiresAt = new Date(Date.now() + duracao);
   const lastAuthenticatedAt = new Date();
-  const cliente = await pool.connect();
-
-  try {
-    await cliente.query("BEGIN");
-    const usuarioAtivo = await cliente.query(
-      "SELECT id FROM usuarios WHERE id = $1 AND ativo = TRUE FOR SHARE",
-      [usuarioId],
+  const aberta = await transacao(pool, async (cliente) => {
+    const { rows: [{ desafio }] } = await cliente.query("SELECT bovitrack_seg.desafio() AS desafio");
+    const prova = assinarContexto(`bovitrack-login-v1:${desafio}:${usuarioId}:${tokenHash}:${sessionId}:${familyId}`);
+    const resultado = await cliente.query(
+      "SELECT bovitrack_seg.abrir_sessao($1,$2,$3,$4,$5,$6,$7,$8) AS aberta",
+      [usuarioId, senhaObservada, tokenHash, sessionId, familyId, expiresAt, lastAuthenticatedAt, prova],
     );
-    if (!usuarioAtivo.rows[0]) {
-      const erro = new Error("Usuário desativado. Entre em contato com o administrador");
-      erro.status = 403;
-      throw erro;
-    }
-    await cliente.query(
-      "DELETE FROM sessoes_refresh WHERE expires_at <= CURRENT_TIMESTAMP",
-    );
-    await cliente.query(
-      `INSERT INTO sessoes_refresh
-              (usuario_id, token_hash, session_id, family_id, expires_at,
-               last_authenticated_at)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [usuarioId, tokenHash, sessionId, familyId, expiresAt, lastAuthenticatedAt],
-    );
-    await cliente.query(
-      `DELETE FROM sessoes_refresh
-        WHERE usuario_id = $1
-          AND id NOT IN (
-            SELECT id FROM sessoes_refresh
-             WHERE usuario_id = $1
-             ORDER BY created_at DESC, id DESC
-             LIMIT 10
-          )`,
-      [usuarioId],
-    );
-    await cliente.query("COMMIT");
-  } catch (erro) {
-    await cliente.query("ROLLBACK").catch(() => {});
-    throw erro;
-  } finally {
-    cliente.release();
+    return resultado.rows[0]?.aberta;
+  });
+  if (!aberta) {
+    throw Object.assign(new Error("Usuário desativado. Entre em contato com o administrador"), { status: 403 });
   }
-
   return { token, expiresAt, sessionId, familyId, lastAuthenticatedAt };
 }
 
@@ -184,140 +154,25 @@ async function renovarSessaoRefresh(pool, tokenAtual) {
   const tokenAtualHash = hashToken(tokenAtual);
   const novoToken = gerarRefreshToken();
   const novoHash = hashToken(novoToken);
-  const cliente = await pool.connect();
-
-  try {
-    await cliente.query("BEGIN");
-    const atualResultado = await cliente.query(
-      `SELECT sr.id, sr.session_id, sr.family_id, sr.expires_at,
-              sr.last_authenticated_at, sr.revoked_at,
-              u.id AS usuario_id, u.nome, u.email, u.perfil, u.ativo
-         FROM sessoes_refresh sr
-         JOIN usuarios u ON u.id = sr.usuario_id
-        WHERE sr.token_hash = $1
-        FOR UPDATE OF sr`,
-      [tokenAtualHash],
-    );
-    const atual = atualResultado.rows[0];
-
-    if (!atual) {
-      const usadoResultado = await cliente.query(
-        `SELECT su.family_id, su.used_at, sr.revoked_at
-           FROM sessoes_refresh_usados su
-           LEFT JOIN sessoes_refresh sr ON sr.id = su.sessao_id
-          WHERE su.token_hash = $1`,
-        [tokenAtualHash],
-      );
-      const usado = usadoResultado.rows[0];
-      if (usado && !usado.revoked_at) {
-        const idade = Date.now() - new Date(usado.used_at).getTime();
-        if (idade > JANELA_CONCORRENCIA_REPLAY_MS) {
-          await cliente.query(
-            `UPDATE sessoes_refresh
-                SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'REPLAY'
-              WHERE family_id = $1 AND revoked_at IS NULL`,
-            [usado.family_id],
-          );
-          await cliente.query("COMMIT");
-          return { replay: true };
-        }
-        await cliente.query("ROLLBACK");
-        return { concorrente: true };
-      }
-      await cliente.query("ROLLBACK");
-      return null;
-    }
-
-    if (
-      atual.revoked_at ||
-      !atual.ativo ||
-      new Date(atual.expires_at).getTime() <= Date.now()
-    ) {
-      await cliente.query("ROLLBACK");
-      return null;
-    }
-
-    await cliente.query(
-      `INSERT INTO sessoes_refresh_usados
-              (token_hash, sessao_id, family_id, expires_at)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (token_hash) DO NOTHING`,
-      [tokenAtualHash, atual.id, atual.family_id, atual.expires_at],
-    );
-    await cliente.query(
-      `UPDATE sessoes_refresh
-          SET token_hash = $1, rotated_at = CURRENT_TIMESTAMP
-        WHERE id = $2`,
-      [novoHash, atual.id],
-    );
-    await cliente.query("COMMIT");
-
-    return {
-      token: novoToken,
-      expiresAt: atual.expires_at,
-      sessionId: atual.session_id,
-      familyId: atual.family_id,
-      lastAuthenticatedAt: atual.last_authenticated_at,
-      usuario: {
-        id: atual.usuario_id,
-        nome: atual.nome,
-        email: atual.email,
-        perfil: atual.perfil,
-        ativo: atual.ativo,
-      },
-    };
-  } catch (erro) {
-    await cliente.query("ROLLBACK").catch(() => {});
-    throw erro;
-  } finally {
-    cliente.release();
-  }
+  const { rows: [atual] } = await pool.query(
+    "SELECT * FROM bovitrack_seg.rodar_refresh($1,$2)", [tokenAtualHash, novoHash],
+  );
+  if (!atual) return null;
+  if (atual.estado !== "ok") return { [atual.estado]: true };
+  return {
+    token: novoToken, expiresAt: atual.expires_at, sessionId: atual.session_id,
+    familyId: atual.family_id, lastAuthenticatedAt: atual.last_authenticated_at,
+    usuario: { id: atual.usuario_id, nome: atual.nome, email: atual.email, perfil: atual.perfil, ativo: atual.ativo },
+  };
 }
 
 async function encerrarSessaoRefresh(pool, token) {
   if (typeof token !== "string" || !token) return;
-  const tokenHash = hashToken(token);
-  const cliente = await pool.connect();
-  try {
-    await cliente.query("BEGIN");
-    // O lock espera uma rotacao em andamento. A consulta seguinte ganha um novo
-    // snapshot e encontra o hash antigo no historico que acabou de ser gravado.
-    let resultado = await cliente.query(
-      "SELECT id FROM sessoes_refresh WHERE token_hash = $1 FOR UPDATE",
-      [tokenHash],
-    );
-    if (!resultado.rows[0]) {
-      resultado = await cliente.query(
-        `SELECT sr.id FROM sessoes_refresh sr
-          JOIN sessoes_refresh_usados su ON su.sessao_id = sr.id
-         WHERE su.token_hash = $1 FOR UPDATE OF sr`,
-        [tokenHash],
-      );
-    }
-    if (resultado.rows[0]) {
-      await cliente.query(
-        `UPDATE sessoes_refresh
-            SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'LOGOUT'
-          WHERE id = $1 AND revoked_at IS NULL`,
-        [resultado.rows[0].id],
-      );
-    }
-    await cliente.query("COMMIT");
-  } catch (erro) {
-    await cliente.query("ROLLBACK").catch(() => {});
-    throw erro;
-  } finally {
-    cliente.release();
-  }
+  await pool.query("SELECT bovitrack_seg.encerrar_refresh($1)", [hashToken(token)]);
 }
 
-async function encerrarTodasSessoes(pool, usuarioId) {
-  await pool.query(
-    `UPDATE sessoes_refresh
-        SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'LOGOUT_ALL'
-      WHERE usuario_id = $1 AND revoked_at IS NULL`,
-    [usuarioId],
-  );
+async function encerrarTodasSessoes(cliente) {
+  await cliente.query("SELECT bovitrack_seg.encerrar_minhas_sessoes()");
 }
 
 module.exports = {

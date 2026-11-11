@@ -9,6 +9,7 @@ const { autenticar } = require("./middleware/autenticacao");
 const { contextoRequisicao } = require("./middleware/contextoRequisicao");
 const { rotaNaoEncontrada, tratarErros } = require("./middleware/erros");
 const authRoutes = require("./routes/authRoutes");
+const verificacaoEmailRoutes = require("./routes/verificacaoEmailRoutes");
 const usuariosRoutes = require("./routes/usuariosRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const propriedadesRoutes = require("./routes/propriedadesRoutes");
@@ -54,6 +55,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(authRoutes);
+app.use(verificacaoEmailRoutes);
 app.use(autenticar);
 app.use(usuariosRoutes);
 app.use(dashboardRoutes);

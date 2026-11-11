@@ -13,7 +13,7 @@ function Cadastro() {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const { autenticado, carregando } = useAuth();
+  const { autenticado, carregando, iniciarVerificacao } = useAuth();
   const navigate = useNavigate();
 
   if (!carregando && autenticado) {
@@ -57,10 +57,12 @@ function Cadastro() {
         senha,
       });
 
-      navigate("/login", {
-        replace: true,
-        state: { mensagem: resposta.data.mensagem },
-      });
+      if (resposta.data.verificacao) {
+        iniciarVerificacao(emailLimpo, resposta.data.verificacao);
+        navigate('/verificar-email', { replace: true });
+      } else {
+        navigate('/login', { replace: true, state: { mensagem: resposta.data.mensagem } });
+      }
     } catch (erro) {
       setMensagem(
         erro.response?.data?.mensagem ||

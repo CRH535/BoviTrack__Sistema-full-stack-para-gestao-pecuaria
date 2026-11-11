@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool");
+const { rotaComBanco } = require("../database/contextoRls");
 const {
   converterId,
   idOpcionalInformado,
@@ -42,12 +42,12 @@ function normalizarDadosAnimal(dados) {
   } };
 }
 
-router.get("/animais", async (req, res) => {
+router.get("/animais", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
-    const resultado = await pool.query(`
+    const resultado = await cliente.query(`
             SELECT
                 animais.id,
                 animais.nome,
@@ -84,21 +84,21 @@ router.get("/animais", async (req, res) => {
             LIMIT $3 OFFSET $4
         `, [req.usuario.perfil, req.usuario.id, limite + 1, offset]);
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar animais",
     });
   }
-});
+}));
 
-router.get("/animais/:id", async (req, res) => {
+router.get("/animais/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT
                 animais.id,
                 animais.nome,
@@ -136,29 +136,29 @@ router.get("/animais/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    res.json(resultado.rows[0]);
+    responder(200, resultado.rows[0]);
   } catch (erro) {
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar animal",
     });
   }
-});
+}));
 
-router.get("/propriedades/:id/animais", async (req, res) => {
+router.get("/propriedades/:id/animais", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const { id } = req.params;
 
-    const propriedadeExiste = await pool.query(
+    const propriedadeExiste = await cliente.query(
       `SELECT id
          FROM propriedades
         WHERE id = $1
@@ -167,12 +167,12 @@ router.get("/propriedades/:id/animais", async (req, res) => {
     );
 
     if (propriedadeExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT *
              FROM animais
              WHERE propriedade_id = $1
@@ -181,27 +181,27 @@ router.get("/propriedades/:id/animais", async (req, res) => {
       [id, limite + 1, offset],
     );
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar animais da propriedade",
     });
   }
-});
+}));
 
-router.post("/animais", async (req, res) => {
+router.post("/animais", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "numero_brinco", "data_nascimento", "especie", "raca", "sexo", "peso", "propriedade_id", "mae_id"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const dados = normalizarDadosAnimal(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const { nome, numero_brinco, data_nascimento, especie, raca, sexo, peso, propriedade_id, mae_id: maeId } = dados.valor;
     const numeroBrinco = { valor: numero_brinco };
     const dataNascimento = { valor: data_nascimento };
 
-    const propriedadeExiste = await pool.query(
+    const propriedadeExiste = await cliente.query(
       `SELECT id, usuario_id
          FROM propriedades
         WHERE id = $1
@@ -210,24 +210,24 @@ router.post("/animais", async (req, res) => {
     );
 
     if (propriedadeExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
     if (maeId) {
-      const maeExiste = await pool.query(
+      const maeExiste = await cliente.query(
         `SELECT id FROM animais
           WHERE id = $1 AND propriedade_id = $2 AND sexo = 'F'`,
         [maeId, propriedade_id],
       );
       if (!maeExiste.rows.length) {
-        return res.status(400).json({ mensagem: "A mãe deve ser uma fêmea da mesma propriedade" });
+        return responder(400, { mensagem: "A mãe deve ser uma fêmea da mesma propriedade" });
       }
     }
 
     if (numeroBrinco.valor) {
-      const brincoExistente = await pool.query(
+      const brincoExistente = await cliente.query(
         `SELECT 1
            FROM animais
           WHERE propriedade_id = $1
@@ -236,14 +236,14 @@ router.post("/animais", async (req, res) => {
       );
 
       if (brincoExistente.rows.length > 0) {
-        return res.status(409).json({
+        return responder(409, {
           mensagem:
             "Ja existe um animal com este numero de brinco nesta propriedade",
         });
       }
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO animais
             (nome, numero_brinco, data_nascimento, especie, raca, sexo, peso, propriedade_id, mae_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -261,19 +261,19 @@ router.post("/animais", async (req, res) => {
       ],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Animal cadastrado com sucesso!",
       animal: resultado.rows[0],
     });
   } catch (erro) {
     if (erro.code === "23514" && ["animais_parentesco_consistente", "desmamas_referencias_consistentes"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
+      return responder(400, { mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
     }
     if (
       erro.code === "23505" &&
       erro.constraint === "animais_propriedade_numero_brinco_uidx"
     ) {
-      return res.status(409).json({
+      return responder(409, {
         mensagem:
           "Ja existe um animal com este numero de brinco nesta propriedade",
       });
@@ -281,25 +281,25 @@ router.post("/animais", async (req, res) => {
 
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao cadastrar animal",
     });
   }
-});
+}));
 
-router.put("/animais/:id", async (req, res) => {
+router.put("/animais/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "numero_brinco", "data_nascimento", "especie", "raca", "sexo", "peso", "propriedade_id", "mae_id"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const { id } = req.params;
 
     const dados = normalizarDadosAnimal(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const { nome, numero_brinco, data_nascimento, especie, raca, sexo, peso, propriedade_id, mae_id: maeId } = dados.valor;
     const numeroBrinco = { valor: numero_brinco };
     const dataNascimento = { valor: data_nascimento };
 
-    const animalAtual = await pool.query(
+    const animalAtual = await cliente.query(
       `SELECT a.id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -309,10 +309,10 @@ router.put("/animais/:id", async (req, res) => {
     );
 
     if (animalAtual.rows.length === 0) {
-      return res.status(404).json({ mensagem: "Animal não encontrado" });
+      return responder(404, { mensagem: "Animal não encontrado" });
     }
 
-    const propriedadeExiste = await pool.query(
+    const propriedadeExiste = await cliente.query(
       `SELECT id, usuario_id
          FROM propriedades
         WHERE id = $1
@@ -321,27 +321,27 @@ router.put("/animais/:id", async (req, res) => {
     );
 
     if (propriedadeExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
     if (maeId === Number(id)) {
-      return res.status(400).json({ mensagem: "Um animal não pode ser sua própria mãe" });
+      return responder(400, { mensagem: "Um animal não pode ser sua própria mãe" });
     }
     if (maeId) {
-      const maeExiste = await pool.query(
+      const maeExiste = await cliente.query(
         `SELECT id FROM animais
           WHERE id = $1 AND propriedade_id = $2 AND sexo = 'F'`,
         [maeId, propriedade_id],
       );
       if (!maeExiste.rows.length) {
-        return res.status(400).json({ mensagem: "A mãe deve ser uma fêmea da mesma propriedade" });
+        return responder(400, { mensagem: "A mãe deve ser uma fêmea da mesma propriedade" });
       }
     }
 
     if (numeroBrinco.valor) {
-      const brincoExistente = await pool.query(
+      const brincoExistente = await cliente.query(
         `SELECT 1
            FROM animais
           WHERE propriedade_id = $1
@@ -351,14 +351,14 @@ router.put("/animais/:id", async (req, res) => {
       );
 
       if (brincoExistente.rows.length > 0) {
-        return res.status(409).json({
+        return responder(409, {
           mensagem:
             "Ja existe um animal com este numero de brinco nesta propriedade",
         });
       }
     }
 
-    const vinculoIncompativel = await pool.query(
+    const vinculoIncompativel = await cliente.query(
       `SELECT 1
          FROM animais_lotes al
          JOIN lotes l ON l.id = al.lote_id
@@ -388,12 +388,12 @@ router.put("/animais/:id", async (req, res) => {
     );
 
     if (vinculoIncompativel.rows.length > 0) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "O animal possui lote ou vacinação incompatível com a nova propriedade",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE animais
              SET nome = $1,
                  numero_brinco = $2,
@@ -432,24 +432,24 @@ router.put("/animais/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Animal atualizado com sucesso!",
       animal: resultado.rows[0],
     });
   } catch (erro) {
     if (erro.code === "23514" && ["animais_parentesco_consistente", "desmamas_referencias_consistentes"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
+      return responder(400, { mensagem: "O parentesco e o histórico de manejo devem permanecer compatíveis com o animal" });
     }
     if (
       erro.code === "23505" &&
       erro.constraint === "animais_propriedade_numero_brinco_uidx"
     ) {
-      return res.status(409).json({
+      return responder(409, {
         mensagem:
           "Ja existe um animal com este numero de brinco nesta propriedade",
       });
@@ -457,17 +457,17 @@ router.put("/animais/:id", async (req, res) => {
 
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao atualizar animal",
     });
   }
-});
+}));
 
-router.delete("/animais/:id", async (req, res) => {
+router.delete("/animais/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM animais a
              USING propriedades p
              WHERE a.id = $1
@@ -478,23 +478,23 @@ router.delete("/animais/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Animal excluído com sucesso!",
       animal: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("animais_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao excluir animal",
     });
   }
-});
+}));
 // =========================
 // LOTES
 // =========================

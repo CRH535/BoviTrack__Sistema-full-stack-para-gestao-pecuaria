@@ -7,6 +7,12 @@ const databaseUrl = new URL(process.env.DATABASE_URL);
 if (databaseUrl.search || databaseUrl.hash || !['postgres:', 'postgresql:'].includes(databaseUrl.protocol) || !['127.0.0.1', 'localhost', '[::1]'].includes(databaseUrl.hostname) || !databaseUrl.pathname.startsWith('/bovitrack_test_')) {
   throw new Error("Banco E2E deve ser local e criado pelo runner isolado");
 }
+const fixtureUrl = new URL(process.env.BOVITRACK_TEST_ADMIN_URL || "http://ausente.invalid");
+if (fixtureUrl.protocol !== databaseUrl.protocol || fixtureUrl.search || fixtureUrl.hash ||
+    fixtureUrl.host !== databaseUrl.host || fixtureUrl.pathname !== databaseUrl.pathname ||
+    fixtureUrl.username === databaseUrl.username) {
+  throw new Error("Credencial de fixture E2E deve ser separada e apontar ao mesmo banco isolado");
+}
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -24,7 +30,7 @@ export default defineConfig({
     [1920, 1080], [1366, 768], [1024, 768], [768, 1024], [430, 932], [390, 844], [360, 800],
   ].map(([width, height]) => ({ name: `${width}x${height}`, use: { viewport: { width, height } } })),
   webServer: [
-    { command: "node ../backend/server.js", url: "http://127.0.0.1:3005", reuseExistingServer: false },
+    { command: "node --require ../backend/tests/helpers/email.js ../backend/server.js", url: "http://127.0.0.1:3005", reuseExistingServer: false },
     { command: "node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5175 --strictPort", url: "http://127.0.0.1:5175", reuseExistingServer: false },
   ],
 });

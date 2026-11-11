@@ -2,7 +2,8 @@ require("dotenv").config();
 
 const assert = require("assert/strict");
 const bcrypt = require("bcryptjs");
-const { app, pool } = require("../server");
+const { app } = require("../server");
+const pool = require("./helpers/bancoFixture");
 
 const adminEmail = process.env.TEST_ADMIN_EMAIL;
 const adminSenha = process.env.TEST_ADMIN_SENHA;
@@ -162,6 +163,9 @@ async function executar() {
   );
   const usuarioA = usuariosCriados.rows.find((usuario) => usuario.email === emailA);
   const usuarioB = usuariosCriados.rows.find((usuario) => usuario.email === emailB);
+  const { verificarFixture } = require('./helpers/email');
+  await verificarFixture(emailA);
+  await verificarFixture(emailB);
   confirmar("cadastro público ignora perfil admin", usuarioA?.perfil === "usuario");
   confirmar("cadastro público ignora ativo false", usuarioA?.ativo === true);
 

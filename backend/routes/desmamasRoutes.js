@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool");
+const { rotaComBanco } = require("../database/contextoRls");
 const { registrarErro } = require("../utils/log");
 const {
   buscarAnimalPermitido,
@@ -24,7 +24,7 @@ const router = express.Router();
 router.param("animalId", validarParametroId);
 router.param("id", validarParametroId);
 
-async function buscarDesmamaPermitida(id, usuario, cliente = pool, bloquear = false) {
+async function buscarDesmamaPermitida(id, usuario, cliente, bloquear = false) {
   const resultado = await cliente.query(
     `SELECT d.*, a.propriedade_id, a.data_nascimento, a.nome AS animal,
             a.numero_brinco, a.mae_id AS mae_cadastrada_id
@@ -39,7 +39,7 @@ async function buscarDesmamaPermitida(id, usuario, cliente = pool, bloquear = fa
   return resultado.rows[0] || null;
 }
 
-async function validarReferencias(dados, animal, usuario, cliente = pool) {
+async function validarReferencias(dados, animal, usuario, cliente) {
   if (dados.maeId && !(await buscarMaeCompativel(dados.maeId, animal, usuario, cliente))) {
     return "A mãe deve ser uma fêmea da mesma propriedade e diferente do animal";
   }
@@ -49,7 +49,7 @@ async function validarReferencias(dados, animal, usuario, cliente = pool) {
   return null;
 }
 
-async function buscarAlertasManejo(animalId, dataReferencia, cliente = pool) {
+async function buscarAlertasManejo(animalId, dataReferencia, cliente) {
   if (!dataReferencia) return [];
   const resultado = await cliente.query(
     `SELECT vc.id, vc.proxima_dose, v.nome AS vacina
@@ -67,7 +67,7 @@ async function buscarAlertasManejo(animalId, dataReferencia, cliente = pool) {
   }));
 }
 
-async function buscarAlertasHistorico(animalId, cliente = pool) {
+async function buscarAlertasHistorico(animalId, cliente) {
   const resultado = await cliente.query(
     `SELECT DISTINCT vc.id, vc.proxima_dose, v.nome AS vacina
        FROM desmamas d
@@ -111,15 +111,15 @@ const SELECT_DESMAMA = `
        ORDER BY px.data_pesagem DESC, px.id DESC LIMIT 1
     ) up ON TRUE`;
 
-router.get("/animais/:animalId/desmamas", async (req, res) => {
+router.get("/animais/:animalId/desmamas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const animalId = converterId(req.params.animalId);
-    if (!animalId) return res.status(400).json({ mensagem: "ID do animal inválido" });
+    if (!animalId) return responder(400, { mensagem: "ID do animal inválido" });
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
-    const animal = await buscarAnimalPermitido(animalId, req.usuario);
-    if (!animal) return res.status(404).json({ mensagem: "Animal não encontrado" });
-    const resultado = await pool.query(
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
+    const animal = await buscarAnimalPermitido(animalId, req.usuario, cliente);
+    if (!animal) return responder(404, { mensagem: "Animal não encontrado" });
+    const resultado = await cliente.query(
       `${SELECT_DESMAMA}
         WHERE d.animal_id = $1
         ORDER BY d.data_planejada DESC, d.id DESC
@@ -127,8 +127,8 @@ router.get("/animais/:animalId/desmamas", async (req, res) => {
       [animalId, paginacao.valor.limite + 1, paginacao.valor.offset],
     );
     const eventos = responderPagina(res, resultado.rows, paginacao.valor);
-    const alertas = await buscarAlertasHistorico(animalId);
-    const definitivaResultado = await pool.query(
+    const alertas = await buscarAlertasHistorico(animalId, cliente);
+    const definitivaResultado = await cliente.query(
       `${SELECT_DESMAMA}
         WHERE d.animal_id = $1
           AND d.status = 'CONCLUIDA'
@@ -138,7 +138,7 @@ router.get("/animais/:animalId/desmamas", async (req, res) => {
       [animalId],
     );
     const definitiva = definitivaResultado.rows[0] || null;
-    res.json({
+    responder(200, {
       eventos: eventos.map((item) => ({
         ...item,
         peso_desmama: item.peso_desmama == null ? null : Number(item.peso_desmama),
@@ -150,37 +150,37 @@ router.get("/animais/:animalId/desmamas", async (req, res) => {
     });
   } catch (erro) {
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao buscar histórico de desmama" });
+    responder(500, { mensagem: "Erro ao buscar histórico de desmama" });
   }
-});
+}));
 
-router.post("/animais/:animalId/desmamas", async (req, res) => {
+router.post("/animais/:animalId/desmamas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const animalId = converterId(req.params.animalId);
-    if (!animalId) return res.status(400).json({ mensagem: "ID do animal inválido" });
-    const animal = await buscarAnimalPermitido(animalId, req.usuario);
-    if (!animal) return res.status(404).json({ mensagem: "Animal não encontrado" });
+    if (!animalId) return responder(400, { mensagem: "ID do animal inválido" });
+    const animal = await buscarAnimalPermitido(animalId, req.usuario, cliente);
+    if (!animal) return responder(404, { mensagem: "Animal não encontrado" });
     const normalizada = normalizarDesmama(req.body);
-    if (normalizada.erro) return res.status(400).json({ mensagem: normalizada.erro });
+    if (normalizada.erro) return responder(400, { mensagem: normalizada.erro });
     const dados = normalizada.valor;
     dados.maeId = dados.maeId || animal.mae_id || null;
-    const erroReferencias = await validarReferencias(dados, animal, req.usuario);
-    if (erroReferencias) return res.status(400).json({ mensagem: erroReferencias });
+    const erroReferencias = await validarReferencias(dados, animal, req.usuario, cliente);
+    if (erroReferencias) return responder(400, { mensagem: erroReferencias });
 
     if (dados.tipoDesmama !== "TEMPORARIA") {
-      const ativa = await pool.query(
+      const ativa = await cliente.query(
         `SELECT 1 FROM desmamas
           WHERE animal_id = $1 AND tipo_desmama <> 'TEMPORARIA'
             AND status <> 'CANCELADA' LIMIT 1`,
         [animalId],
       );
-      if (ativa.rows.length) return res.status(409).json({ mensagem: "O animal já possui uma desmama definitiva registrada" });
+      if (ativa.rows.length) return responder(409, { mensagem: "O animal já possui uma desmama definitiva registrada" });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO desmamas
               (animal_id, mae_id, data_planejada, data_inicio, data_fim,
                tipo_desmama, lote_destino_id, status, suplementacao,
@@ -191,44 +191,39 @@ router.post("/animais/:animalId/desmamas", async (req, res) => {
         dados.tipoDesmama, dados.loteDestinoId, dados.status,
         dados.suplementacao, dados.observacao, req.usuario.id],
     );
-    const alertas = await buscarAlertasManejo(animalId, dados.dataPlanejada);
-    res.status(201).json({ mensagem: "Desmama planejada com sucesso!", desmama: resultado.rows[0], alertas });
+    const alertas = await buscarAlertasManejo(animalId, dados.dataPlanejada, cliente);
+    responder(201, { mensagem: "Desmama planejada com sucesso!", desmama: resultado.rows[0], alertas });
   } catch (erro) {
     if (erro.code === "23505" && erro.constraint === "desmamas_definitiva_unica_idx") {
-      return res.status(409).json({ mensagem: "O animal já possui uma desmama definitiva registrada" });
+      return responder(409, { mensagem: "O animal já possui uma desmama definitiva registrada" });
     }
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao planejar desmama" });
+    responder(500, { mensagem: "Erro ao planejar desmama" });
   }
-});
+}));
 
-router.put("/desmamas/:id", async (req, res) => {
-  let cliente;
+router.put("/desmamas/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const id = converterId(req.params.id);
-    if (!id) return res.status(400).json({ mensagem: "ID da desmama inválido" });
-    cliente = await pool.connect();
-    await cliente.query("BEGIN");
+    if (!id) return responder(400, { mensagem: "ID da desmama inválido" });
     const atual = await buscarDesmamaPermitida(id, req.usuario, cliente, true);
-    if (!atual) { await cliente.query("ROLLBACK"); return res.status(404).json({ mensagem: "Desmama não encontrada" }); }
+    if (!atual) { return responder(404, { mensagem: "Desmama não encontrada" }); }
     if (["CONCLUIDA", "CANCELADA"].includes(atual.status)) {
-      await cliente.query("ROLLBACK");
-      return res.status(409).json({ mensagem: "Eventos concluídos ou cancelados permanecem somente no histórico" });
+      return responder(409, { mensagem: "Eventos concluídos ou cancelados permanecem somente no histórico" });
     }
     const normalizada = normalizarDesmama(req.body);
-    if (normalizada.erro) { await cliente.query("ROLLBACK"); return res.status(400).json({ mensagem: normalizada.erro }); }
+    if (normalizada.erro) { return responder(400, { mensagem: normalizada.erro }); }
     const dados = normalizada.valor;
     dados.maeId = dados.maeId || atual.mae_cadastrada_id || null;
     const animal = await buscarAnimalPermitido(atual.animal_id, req.usuario, cliente, true);
     if (!animal) {
-      await cliente.query("ROLLBACK");
-      return res.status(404).json({ mensagem: "Desmama não encontrada" });
+      return responder(404, { mensagem: "Desmama não encontrada" });
     }
     const erroReferencias = await validarReferencias(dados, animal, req.usuario, cliente);
-    if (erroReferencias) { await cliente.query("ROLLBACK"); return res.status(400).json({ mensagem: erroReferencias }); }
+    if (erroReferencias) { return responder(400, { mensagem: erroReferencias }); }
 
     const resultado = await cliente.query(
       `UPDATE desmamas SET mae_id=$1, data_planejada=$2, data_inicio=$3,
@@ -243,73 +238,58 @@ router.put("/desmamas/:id", async (req, res) => {
         dados.suplementacao, dados.observacao, id, req.usuario.perfil, req.usuario.id],
     );
     if (!resultado.rows[0]) {
-      await cliente.query("ROLLBACK");
-      return res.status(404).json({ mensagem: "Desmama ativa não encontrada" });
+      return responder(404, { mensagem: "Desmama ativa não encontrada" });
     }
     const alertas = await buscarAlertasManejo(atual.animal_id, dados.dataPlanejada, cliente);
-    await cliente.query("COMMIT");
-    res.json({ mensagem: "Planejamento atualizado com sucesso!", desmama: resultado.rows[0], alertas });
+    responder(200, { mensagem: "Planejamento atualizado com sucesso!", desmama: resultado.rows[0], alertas });
   } catch (erro) {
-    if (cliente) await cliente.query("ROLLBACK").catch(() => {});
     if (erro.code === "23505" && erro.constraint === "desmamas_definitiva_unica_idx") {
-      return res.status(409).json({ mensagem: "O animal já possui uma desmama definitiva registrada" });
+      return responder(409, { mensagem: "O animal já possui uma desmama definitiva registrada" });
     }
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao atualizar desmama" });
-  } finally {
-    cliente?.release();
+    responder(500, { mensagem: "Erro ao atualizar desmama" });
   }
-});
+}));
 
-router.post("/desmamas/:id/concluir", async (req, res) => {
-  let cliente;
+router.post("/desmamas/:id/concluir", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["data_desmama", "data_fim", "peso_kg", "metodo", "lote_destino_id", "observacao"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const observacao = normalizarTextoOpcional(req.body.observacao, "Observação", 1000);
-    if (observacao.erro) return res.status(400).json({ mensagem: observacao.erro });
+    if (observacao.erro) return responder(400, { mensagem: observacao.erro });
     const id = converterId(req.params.id);
-    if (!id) return res.status(400).json({ mensagem: "ID da desmama inválido" });
-    cliente = await pool.connect();
-    await cliente.query("BEGIN");
+    if (!id) return responder(400, { mensagem: "ID da desmama inválido" });
     const atual = await buscarDesmamaPermitida(id, req.usuario, cliente, true);
     if (!atual) {
-      await cliente.query("ROLLBACK");
-      return res.status(404).json({ mensagem: "Desmama não encontrada" });
+      return responder(404, { mensagem: "Desmama não encontrada" });
     }
     if (atual.status === "CONCLUIDA") {
-      await cliente.query("ROLLBACK");
-      return res.status(409).json({ mensagem: "A desmama já foi concluída" });
+      return responder(409, { mensagem: "A desmama já foi concluída" });
     }
     if (atual.status === "CANCELADA") {
-      await cliente.query("ROLLBACK");
-      return res.status(409).json({ mensagem: "Uma desmama cancelada não pode ser concluída" });
+      return responder(409, { mensagem: "Uma desmama cancelada não pode ser concluída" });
     }
 
     const animal = await buscarAnimalPermitido(atual.animal_id, req.usuario, cliente, true);
     if (!animal) {
-      await cliente.query("ROLLBACK");
-      return res.status(404).json({ mensagem: "Desmama não encontrada" });
+      return responder(404, { mensagem: "Desmama não encontrada" });
     }
     const loteInformado = idOpcionalInformado(req.body.lote_destino_id);
     const loteId = loteInformado ? converterId(req.body.lote_destino_id) : atual.lote_destino_id;
     if (loteInformado && !loteId) {
-      await cliente.query("ROLLBACK");
-      return res.status(400).json({ mensagem: "Lote de destino inválido" });
+      return responder(400, { mensagem: "Lote de destino inválido" });
     }
     if (loteId && !(await buscarLoteCompativel(loteId, animal.propriedade_id, req.usuario, cliente))) {
-      await cliente.query("ROLLBACK");
-      return res.status(400).json({ mensagem: "Lote de destino não pertence à propriedade do animal" });
+      return responder(400, { mensagem: "Lote de destino não pertence à propriedade do animal" });
     }
 
     if (atual.tipo_desmama === "TEMPORARIA") {
       const dataFim = normalizarDataCalendario(req.body.data_fim, "Data de fim");
       if (dataFim.erro || !atual.data_inicio || dataFim.valor < String(atual.data_inicio)) {
-        await cliente.query("ROLLBACK");
-        return res.status(400).json({ mensagem: dataFim.erro || "Data de fim inválida para a desmama temporária" });
+        return responder(400, { mensagem: dataFim.erro || "Data de fim inválida para a desmama temporária" });
       }
       const resultado = await cliente.query(
         `UPDATE desmamas SET data_fim=$1, lote_destino_id=$2, status='CONCLUIDA',
@@ -317,8 +297,8 @@ router.post("/desmamas/:id/concluir", async (req, res) => {
           WHERE id=$4 RETURNING *`,
         [dataFim.valor, loteId, observacao.valor, id],
       );
-      await cliente.query("COMMIT");
-      return res.json({ mensagem: "Período de desmama temporária concluído; o animal não foi marcado como definitivamente desmamado.", desmama: resultado.rows[0] });
+      if (resultado.rowCount !== 1) throw new Error("Desmama temporária não atualizada");
+      return responder(200, { mensagem: "Período de desmama temporária concluído; o animal não foi marcado como definitivamente desmamado.", desmama: resultado.rows[0] });
     }
 
     const data = normalizarDataCalendario(req.body.data_desmama, "Data da desmama");
@@ -328,12 +308,10 @@ router.post("/desmamas/:id/concluir", async (req, res) => {
     const metodo = typeof req.body.metodo === "string" ? req.body.metodo.trim().toUpperCase() || null : null;
     const metodoInvalido = req.body.metodo !== undefined && req.body.metodo !== null && typeof req.body.metodo !== "string";
     if (data.erro || pesoValidado.erro || !Number.isFinite(peso) || peso <= 0 || peso > 1e6 || (metodoInvalido || (metodo && !metodos.has(metodo)))) {
-      await cliente.query("ROLLBACK");
-      return res.status(400).json({ mensagem: data.erro || "Informe um peso válido e um método permitido" });
+      return responder(400, { mensagem: data.erro || "Informe um peso válido e um método permitido" });
     }
     if (animal.data_nascimento && data.valor < animal.data_nascimento) {
-      await cliente.query("ROLLBACK");
-      return res.status(400).json({ mensagem: "A desmama não pode ser anterior ao nascimento" });
+      return responder(400, { mensagem: "A desmama não pode ser anterior ao nascimento" });
     }
 
     const pesagem = await cliente.query(
@@ -351,6 +329,7 @@ router.post("/desmamas/:id/concluir", async (req, res) => {
         WHERE id=$5 RETURNING *`,
       [data.valor, pesagem.rows[0].id, loteId, observacao.valor, id],
     );
+    if (resultado.rowCount !== 1) throw new Error("Desmama não atualizada");
     if (loteId) {
       await cliente.query(
         `INSERT INTO animais_lotes (animal_id, lote_id) VALUES ($1,$2)
@@ -359,29 +338,25 @@ router.post("/desmamas/:id/concluir", async (req, res) => {
       );
     }
     await sincronizarPesoAtual(cliente, animal.id);
-    await cliente.query("COMMIT");
-    res.json({ mensagem: "Desmama concluída e pesagem registrada com sucesso!", desmama: resultado.rows[0], pesagem: pesagem.rows[0] });
+    responder(200, { mensagem: "Desmama concluída e pesagem registrada com sucesso!", desmama: resultado.rows[0], pesagem: pesagem.rows[0] });
   } catch (erro) {
-    if (cliente) await cliente.query("ROLLBACK").catch(() => {});
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao concluir desmama" });
-  } finally {
-    cliente?.release();
+    responder(500, { mensagem: "Erro ao concluir desmama" });
   }
-});
+}));
 
-router.post("/desmamas/:id/cancelar", async (req, res) => {
+router.post("/desmamas/:id/cancelar", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["observacao"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const observacao = normalizarTextoOpcional(req.body.observacao, "Observação", 1000);
-    if (observacao.erro) return res.status(400).json({ mensagem: observacao.erro });
+    if (observacao.erro) return responder(400, { mensagem: observacao.erro });
     const id = converterId(req.params.id);
-    if (!id) return res.status(400).json({ mensagem: "ID da desmama inválido" });
-    const resultado = await pool.query(
+    if (!id) return responder(400, { mensagem: "ID da desmama inválido" });
+    const resultado = await cliente.query(
       `UPDATE desmamas d SET status='CANCELADA',
               observacao=COALESCE($1, observacao), updated_at=CURRENT_TIMESTAMP
         WHERE d.id=$2 AND d.status IN ('PLANEJADA','EM_ANDAMENTO')
@@ -391,41 +366,41 @@ router.post("/desmamas/:id/cancelar", async (req, res) => {
           ) RETURNING d.*`,
       [observacao.valor, id, req.usuario.perfil, req.usuario.id],
     );
-    if (!resultado.rows[0]) return res.status(404).json({ mensagem: "Desmama ativa não encontrada" });
-    res.json({ mensagem: "Planejamento cancelado e mantido no histórico.", desmama: resultado.rows[0] });
+    if (!resultado.rows[0]) return responder(404, { mensagem: "Desmama ativa não encontrada" });
+    responder(200, { mensagem: "Planejamento cancelado e mantido no histórico.", desmama: resultado.rows[0] });
   } catch (erro) {
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao cancelar desmama" });
+    responder(500, { mensagem: "Erro ao cancelar desmama" });
   }
-});
+}));
 
-router.get("/desmamas", async (req, res) => {
+router.get("/desmamas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const propriedadeId = req.query.propriedade_id ? converterId(req.query.propriedade_id) : null;
     const loteId = req.query.lote_id ? converterId(req.query.lote_id) : null;
-    if (req.query.status !== undefined && typeof req.query.status !== "string") return res.status(400).json({ mensagem: "Filtro invalido" });
+    if (req.query.status !== undefined && typeof req.query.status !== "string") return responder(400, { mensagem: "Filtro invalido" });
     const status = req.query.status ? String(req.query.status).toUpperCase() : null;
-    if (req.query.tipo !== undefined && typeof req.query.tipo !== "string") return res.status(400).json({ mensagem: "Filtro invalido" });
+    if (req.query.tipo !== undefined && typeof req.query.tipo !== "string") return responder(400, { mensagem: "Filtro invalido" });
     const tipo = req.query.tipo ? String(req.query.tipo).toUpperCase() : null;
-    if (req.query.busca !== undefined && typeof req.query.busca !== "string") return res.status(400).json({ mensagem: "Busca invalida" });
+    if (req.query.busca !== undefined && typeof req.query.busca !== "string") return responder(400, { mensagem: "Busca invalida" });
     const busca = (req.query.busca || "").trim();
-    if (busca.length > 120) return res.status(400).json({ mensagem: "Busca acima do limite permitido" });
+    if (busca.length > 120) return responder(400, { mensagem: "Busca acima do limite permitido" });
     if ((req.query.propriedade_id && !propriedadeId) || (req.query.lote_id && !loteId)) {
-      return res.status(400).json({ mensagem: "Filtro de ID inválido" });
+      return responder(400, { mensagem: "Filtro de ID inválido" });
     }
     if (status && !["PLANEJADA", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"].includes(status)) {
-      return res.status(400).json({ mensagem: "Status de desmama inválido" });
+      return responder(400, { mensagem: "Status de desmama inválido" });
     }
     if (tipo && !["CONVENCIONAL", "LADO_A_LADO", "ABRUPTA", "PRECOCE", "TEMPORARIA", "CONTROLADA", "OUTRA"].includes(tipo)) {
-      return res.status(400).json({ mensagem: "Tipo de desmama inválido" });
+      return responder(400, { mensagem: "Tipo de desmama inválido" });
     }
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `${SELECT_DESMAMA}
         WHERE ($1='admin' OR p.usuario_id=$2)
           AND ($3::integer IS NULL OR p.id=$3)
@@ -438,18 +413,18 @@ router.get("/desmamas", async (req, res) => {
       [req.usuario.perfil, req.usuario.id, propriedadeId, loteId, status, tipo, busca, limite + 1, offset],
     );
     const linhas = responderPagina(res, resultado.rows, paginacao.valor);
-    res.json(linhas.map((item) => ({
+    responder(200, linhas.map((item) => ({
       ...item,
       peso_desmama: item.peso_desmama == null ? null : Number(item.peso_desmama),
       ultimo_peso: item.ultimo_peso == null ? null : Number(item.ultimo_peso),
     })));
   } catch (erro) {
     if (erro.code === "23514" && ["desmamas_referencias_consistentes", "desmamas_periodo_check", "desmamas_conclusao_check"].includes(erro.constraint)) {
-      return res.status(400).json({ mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
+      return responder(400, { mensagem: "Datas e referencias da desmama devem permanecer compativeis com o animal" });
     }
     registrarErro("desmamas_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao buscar desmamas" });
+    responder(500, { mensagem: "Erro ao buscar desmamas" });
   }
-});
+}));
 
 module.exports = router;

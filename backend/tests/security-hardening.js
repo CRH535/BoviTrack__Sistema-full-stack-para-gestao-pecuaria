@@ -6,6 +6,7 @@ const path = require("node:path");
 const jwt = require("jsonwebtoken");
 const { validarAmbiente } = require("../config/ambiente");
 const { criarConfiguracaoPorUrl } = require("../database/config");
+const { transacao } = require("../database/contextoRls");
 const { exigirAutenticacaoRecente } = require("../middleware/autenticacao");
 const { protegerContraCsrf } = require("../middleware/csrf");
 const { consumirLimite } = require("../services/limitesRequisicao");
@@ -62,45 +63,18 @@ function respostaFake() {
     assert.equal(req.refreshCookieInvalido, true);
   });
 
-  await teste("refresh rotaciona hash e replay antigo revoga a família", async () => {
-    const criarPool = (responder) => ({
-      connect: async () => ({
-        query: responder,
-        release() {},
-      }),
-    });
-    const consultasRotacao = [];
-    const poolRotacao = criarPool(async (sql) => {
-      consultasRotacao.push(sql);
-      if (/SELECT sr\.id/.test(sql)) return { rows: [{
-        id: 9, session_id: "sessao", family_id: "familia",
-        expires_at: new Date(Date.now() + 60000), last_authenticated_at: new Date(),
-        revoked_at: null, usuario_id: 1, nome: "Teste", email: "t@e.st",
-        perfil: "usuario", ativo: true,
-      }] };
-      return { rows: [], rowCount: 1 };
-    });
-    const rotacao = await renovarSessaoRefresh(poolRotacao, "a".repeat(64));
-    assert.equal(rotacao.sessionId, "sessao");
-    assert.notEqual(rotacao.token, "a".repeat(64));
-    assert.ok(consultasRotacao.some((sql) => /sessoes_refresh_usados/.test(sql)));
-
-    let familiaRevogada = false;
-    const poolReplay = criarPool(async (sql) => {
-      if (/SELECT sr\.id/.test(sql)) return { rows: [] };
-      if (/SELECT su\.family_id/.test(sql)) return { rows: [{ family_id: "familia", used_at: new Date(Date.now() - 10000), revoked_at: null }] };
-      if (/revoke_reason = 'REPLAY'/.test(sql)) familiaRevogada = true;
-      return { rows: [], rowCount: 1 };
-    });
-    assert.equal((await renovarSessaoRefresh(poolReplay, "b".repeat(64))).replay, true);
-    assert.equal(familiaRevogada, true);
-
-    let logoutTodos = false;
-    await encerrarTodasSessoes({ query: async (sql, valores) => {
-      logoutTodos = /usuario_id = \$1/.test(sql) && valores[0] === 1;
-      return { rowCount: 2 };
-    } }, 1);
-    assert.equal(logoutTodos, true);
+  await teste("refresh usa operacao SQL restrita e trata os estados", async () => {
+    const banco = { query: async (sql, [anterior, novo]) => {
+      assert.equal(sql, "SELECT * FROM bovitrack_seg.rodar_refresh($1,$2)");
+      assert.match(anterior, /^[0-9a-f]{64}$/);
+      assert.match(novo, /^[0-9a-f]{64}$/);
+      return { rows: [{ estado: "ok", session_id: "sessao", usuario_id: 1 }] };
+    } };
+    assert.equal((await renovarSessaoRefresh(banco, "a".repeat(64))).sessionId, "sessao");
+    for (const estado of ["replay", "concorrente", "emailNaoVerificado"]) {
+      assert.deepEqual(await renovarSessaoRefresh({ query: async () => ({ rows: [{ estado }] }) }, "b".repeat(64)), { [estado]: true });
+    }
+    await encerrarTodasSessoes({ query: async (sql) => assert.equal(sql, "SELECT bovitrack_seg.encerrar_minhas_sessoes()") });
   });
 
   await teste("JWT rejeita algoritmo, issuer, audience e expiração incorretos", () => {
@@ -117,10 +91,46 @@ function respostaFake() {
     }
   });
 
+  await teste("executor descarta cliente em falha de rollback ou timeout do driver", async () => {
+    for (const erro of [new Error("falha de consulta"), new Error("Query read timeout")]) {
+      let descartado = false;
+      const chamadas = [];
+      const banco = { connect: async () => Object.assign(new (require('node:events').EventEmitter)(), {
+        query: async (sql) => {
+          chamadas.push(sql);
+          if (sql === "ROLLBACK") throw new Error("conexão fechada");
+        },
+        release: (destruir) => { descartado = destruir; },
+      }) };
+      await assert.rejects(transacao(banco, () => { throw erro; }), erro);
+      assert.equal(descartado, true);
+      assert.equal(chamadas.includes("ROLLBACK"), erro.message !== "Query read timeout");
+    }
+  });
+
+  await teste("executor captura desconexão assíncrona e descarta o cliente sem COMMIT", async () => {
+    const { EventEmitter } = require('node:events');
+    const chamadas = [];
+    let descartado;
+    const cliente = Object.assign(new EventEmitter(), {
+      query: async sql => { chamadas.push(sql); return { command: sql }; },
+      release: destruir => { descartado = destruir; },
+    });
+    const falha = new Error('Connection terminated unexpectedly');
+    await assert.rejects(transacao({ connect: async () => cliente }, async () => {
+      cliente.emit('error', falha);
+    }), falha);
+    assert.equal(descartado, true);
+    assert.deepEqual(chamadas, ['BEGIN']);
+    assert.equal(cliente.listenerCount('error'), 0);
+  });
+
   await teste("produção falha com segredo fraco, access token longo e TLS inseguro", () => {
     const base = {
       NODE_ENV: "production",
       DATABASE_URL: "postgresql://user:pass@db.example.com/postgres?sslmode=verify-full",
+      DATABASE_AUTH_URL: "postgresql://auth:pass@db.example.com/postgres?sslmode=verify-full",
+      DB_RLS_CONTEXT_KEY: "a".repeat(64),
       JWT_SECRET: "uma-chave-realmente-forte-com-mais-de-trinta-e-dois-bytes-2026",
       JWT_ACCESS_EXPIRES_IN: "15m",
       JWT_REFRESH_EXPIRES_IN: "7d",
@@ -129,7 +139,15 @@ function respostaFake() {
       FRONTEND_URL: "https://bovitrack.example",
       COOKIE_SECURE: "true",
       COOKIE_SAME_SITE: "none",
+      RESEND_API_KEY: 're_fake_test_only', EMAIL_VERIFICATION_PEPPER: 'p'.repeat(48), EMAIL_VERIFICATION_REQUIRED: 'true',
     };
+    assert.doesNotThrow(() => validarAmbiente(base));
+    assert.throws(() => validarAmbiente({ ...base, DATABASE_AUTH_URL: base.DATABASE_URL }));
+    assert.throws(() => validarAmbiente({ ...base, DB_RLS_CONTEXT_KEY: "" }));
+    assert.throws(() => validarAmbiente({ ...base, RESEND_API_KEY: '' }));
+    assert.throws(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_PEPPER: '' }));
+    assert.doesNotThrow(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_REQUIRED: 'false', RESEND_API_KEY: '', EMAIL_VERIFICATION_PEPPER: '' }));
+    for (const invalido of ['1','0','yes','FALSE','']) assert.throws(() => validarAmbiente({ ...base, EMAIL_VERIFICATION_REQUIRED: invalido }));
     assert.throws(() => validarAmbiente({ ...base, JWT_SECRET: "fraco" }));
     assert.throws(() => validarAmbiente({ ...base, JWT_ACCESS_EXPIRES_IN: "8h" }));
     assert.throws(() => validarAmbiente({ ...base, JWT_REFRESH_EXPIRES_IN: "365d" }));
@@ -186,7 +204,8 @@ function respostaFake() {
   await teste("rate limit usa atualização atômica e bloqueia após o limite", async () => {
     let contador = 0;
     const executor = { query: async (sql) => {
-      assert.match(sql, /ON CONFLICT[\s\S]*DO UPDATE/);
+      if (sql.includes("limpar_limites")) return;
+      assert.match(sql, /bovitrack_seg\.consumir_limite/);
       contador += 1;
       return { rows: [{ contador }] };
     } };
@@ -199,7 +218,7 @@ function respostaFake() {
     const consultas = [];
     const cliente = { query: async (sql) => {
       consultas.push(sql);
-      return { rows: [{ id: 1 }] };
+      return { rows: [{ id: 1 }], rowCount: 1 };
     } };
     await sincronizarPesoAtual(cliente, 1);
     assert.match(consultas[0], /FOR UPDATE/);

@@ -1,0 +1,10 @@
+{
+  "projectRef": "atlcangotqhtgybjsdau",
+  "region": "sa-east-1",
+  "poolerHost": "aws-1-sa-east-1.pooler.supabase.com",
+  "database": "postgres",
+  "databaseMarker": "bovitrack-homologacao:atlcangotqhtgybjsdau:9d5b8f20c6454e60930ad7a4bf5031bfa16d3d047d4a4d179a24373d3b654f9e",
+  "adminRole": "postgres",
+  "domainRole": "bovitrack_homolog_dominio",
+  "authRole": "bovitrack_homolog_auth"
+}

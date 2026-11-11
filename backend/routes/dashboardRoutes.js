@@ -1,15 +1,15 @@
 const express = require("express");
-const pool = require("../database/pool")
+const { rotaComBanco } = require("../database/contextoRls");
 const { registrarErro, registrarEvento } = require("../utils/log");
 
 const router = express.Router();
 
-router.get("/dashboard", async (req, res) => {
+router.get("/dashboard", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const parametros = [req.usuario.perfil, req.usuario.id];
     const parametrosComFuso = [...parametros, process.env.APP_TIMEZONE || "America/Sao_Paulo"];
 
-    const resumoResultado = await pool.query(
+    const resumoResultado = await cliente.query(
       `SELECT
         (SELECT COUNT(*)
            FROM propriedades p
@@ -66,8 +66,8 @@ router.get("/dashboard", async (req, res) => {
     );
 
     let totalReceitas = null;
-    try {
-      const receitasResultado = await pool.query(
+    if ((await cliente.query("SELECT to_regclass('public.receitas') IS NOT NULL AS existe")).rows[0].existe) {
+      const receitasResultado = await cliente.query(
         `SELECT COALESCE(SUM(r.valor), 0) AS total_receitas
            FROM receitas r
            JOIN propriedades p ON p.id = r.propriedade_id
@@ -75,8 +75,7 @@ router.get("/dashboard", async (req, res) => {
         parametros,
       );
       totalReceitas = Number(receitasResultado.rows[0].total_receitas);
-    } catch (erro) {
-      if (erro.code !== "42P01") throw erro;
+    } else {
 
       registrarEvento("aviso", "receitas_schema_pendente", {
         request_id: req.id,
@@ -84,7 +83,7 @@ router.get("/dashboard", async (req, res) => {
       });
     }
 
-    const proximasResultado = await pool.query(
+    const proximasResultado = await cliente.query(
       `SELECT vc.id,
               vc.animal_id,
               a.nome AS animal,
@@ -109,7 +108,7 @@ router.get("/dashboard", async (req, res) => {
 
     const resumo = resumoResultado.rows[0];
 
-    res.json({
+    responder(200, {
       resumo: {
         propriedades: Number(resumo.propriedades),
         animais: Number(resumo.animais),
@@ -129,9 +128,9 @@ router.get("/dashboard", async (req, res) => {
     });
   } catch (erro) {
     registrarErro("dashboard_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao carregar o dashboard" });
+    responder(500, { mensagem: "Erro ao carregar o dashboard" });
   }
-});
+}));
 
 // =========================
 // PROPRIEDADES

@@ -1,4 +1,3 @@
-const pool = require("../database/pool");
 const { converterId } = require("../utils/validacoes");
 
 function criarErroHttp(mensagem, status = 400) {
@@ -253,28 +252,17 @@ async function executarExclusaoPropriedade(executor, propriedadeId) {
   return exclusoes;
 }
 
-async function excluirPropriedadeComDados(propriedadeId, acesso) {
+async function excluirPropriedadeComDados(propriedadeId, acesso, cliente) {
   const id = normalizarId(propriedadeId, "Propriedade");
-  const cliente = await pool.connect();
-
-  try {
-    await cliente.query("BEGIN");
-    const impacto = await obterImpactoExclusaoPropriedade(
-      cliente,
-      id,
-      acesso,
-      { bloquear: true },
-    );
-    const exclusoes = await executarExclusaoPropriedade(cliente, id);
-    await cliente.query("COMMIT");
-
-    return { propriedade: impacto.entidade, impacto, exclusoes };
-  } catch (erro) {
-    await cliente.query("ROLLBACK");
-    throw erro;
-  } finally {
-    cliente.release();
-  }
+  const impacto = await obterImpactoExclusaoPropriedade(
+    cliente,
+    id,
+    acesso,
+    { bloquear: true },
+  );
+  const exclusoes = await executarExclusaoPropriedade(cliente, id);
+  if (exclusoes.propriedades !== 1) throw criarErroHttp("Propriedade não encontrada", 404);
+  return { propriedade: impacto.entidade, impacto, exclusoes };
 }
 
 function agregarGrupos(gruposPorPropriedade) {
@@ -403,38 +391,22 @@ async function obterImpactoExclusaoUsuario(
   }
   adicionarSemDuplicar(grupoVacinacoes, vacinacoesPorVacina.rows);
 
-  const sessoesResultado = await executor.query(
-    `SELECT id
-       FROM sessoes_refresh
-      WHERE usuario_id = $1
-      ORDER BY id`,
-    [id],
-  );
+  const { rows: [contagem] } = opcoes.contarSessoes
+    ? await opcoes.contarSessoes(executor, id)
+    : await executor.query("SELECT sessoes, usados FROM bovitrack_seg.contar_sessoes($1)", [id]);
   grupos.push(
     criarGrupo(
       "sessoes_refresh",
       "Sessões de acesso",
-      sessoesResultado.rows.map((_, indice) => ({
-        id: indice + 1,
-      })),
+      Array.from({ length: contagem?.sessoes ?? 0 }, (_, indice) => ({ id: indice + 1 })),
     ),
   );
 
-  const sessoesUsadasResultado = await executor.query(
-    `SELECT su.sessao_id
-       FROM sessoes_refresh_usados su
-       JOIN sessoes_refresh sr ON sr.id = su.sessao_id
-      WHERE sr.usuario_id = $1
-      ORDER BY su.used_at DESC`,
-    [id],
-  );
   grupos.push(
     criarGrupo(
       "sessoes_refresh_usados",
       "Histórico técnico das sessões",
-      sessoesUsadasResultado.rows.map((registro, indice) => ({
-        id: indice + 1,
-      })),
+      Array.from({ length: contagem?.usados ?? 0 }, (_, indice) => ({ id: indice + 1 })),
     ),
   );
 
@@ -543,7 +515,6 @@ async function executarExclusaoUsuario(executor, usuarioId) {
     ],
     ["vacinas", "DELETE FROM vacinas WHERE usuario_id = $1"],
     ["propriedades", "DELETE FROM propriedades WHERE usuario_id = $1"],
-    ["sessoes_refresh", "DELETE FROM sessoes_refresh WHERE usuario_id = $1"],
     ["usuarios", "DELETE FROM usuarios WHERE id = $1"],
   ];
 
@@ -555,25 +526,14 @@ async function executarExclusaoUsuario(executor, usuarioId) {
   return exclusoes;
 }
 
-async function excluirUsuarioComDados(usuarioId) {
+async function excluirUsuarioComDados(usuarioId, cliente) {
   const id = normalizarId(usuarioId, "Usuário");
-  const cliente = await pool.connect();
-
-  try {
-    await cliente.query("BEGIN");
-    const impacto = await obterImpactoExclusaoUsuario(cliente, id, {
-      bloquear: true,
-    });
-    const exclusoes = await executarExclusaoUsuario(cliente, id);
-    await cliente.query("COMMIT");
-
-    return { usuario: impacto.entidade, impacto, exclusoes };
-  } catch (erro) {
-    await cliente.query("ROLLBACK");
-    throw erro;
-  } finally {
-    cliente.release();
-  }
+  const impacto = await obterImpactoExclusaoUsuario(cliente, id, {
+    bloquear: true,
+  });
+  const exclusoes = await executarExclusaoUsuario(cliente, id);
+  if (exclusoes.usuarios !== 1) throw criarErroHttp("Usuário não encontrado", 404);
+  return { usuario: impacto.entidade, impacto, exclusoes };
 }
 
 module.exports = {

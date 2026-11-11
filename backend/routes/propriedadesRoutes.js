@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool")
+const { rotaComBanco } = require("../database/contextoRls");
 const { normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarNumeroFinito, normalizarEstado } = require("../utils/validacoes");
 const { validarParametroId } = require("../middleware/validacao");
 const { registrarErro, registrarEvento } = require("../utils/log");
@@ -33,12 +33,12 @@ function serializarPropriedade(linha, ehAdmin) {
   };
 }
 
-router.get("/propriedades", async (req, res) => {
+router.get("/propriedades", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT p.id,
               p.nome,
               p.cidade,
@@ -62,21 +62,21 @@ router.get("/propriedades", async (req, res) => {
       serializarPropriedade(linha, req.usuario.perfil === "admin"),
     );
 
-    res.json(responderPagina(res, propriedades, paginacao.valor));
+    responder(200, responderPagina(res, propriedades, paginacao.valor));
   } catch (erro) {
     registrarErro("propriedades_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar propriedades",
     });
   }
-});
+}));
 
-router.get("/propriedades/:id", async (req, res) => {
+router.get("/propriedades/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT p.id,
               p.nome,
               p.cidade,
@@ -96,12 +96,12 @@ router.get("/propriedades/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
-    res.json(
+    responder(200,
       serializarPropriedade(
         resultado.rows[0],
         req.usuario.perfil === "admin",
@@ -110,16 +110,16 @@ router.get("/propriedades/:id", async (req, res) => {
   } catch (erro) {
     registrarErro("propriedades_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar propriedade",
     });
   }
-});
+}));
 
-router.get("/propriedades/:id/exclusao-preview", async (req, res) => {
+router.get("/propriedades/:id/exclusao-preview", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const impacto = await obterImpactoExclusaoPropriedade(
-      pool,
+      cliente,
       req.params.id,
       {
         usuarioId: req.usuario.id,
@@ -127,63 +127,63 @@ router.get("/propriedades/:id/exclusao-preview", async (req, res) => {
       },
     );
 
-    res.json(impacto);
+    responder(200, impacto);
   } catch (erro) {
     if (erro.status) {
-      return res.status(erro.status).json({ mensagem: erro.message });
+      return responder(erro.status, { mensagem: erro.message });
     }
 
     registrarErro("propriedade_exclusao_preview_erro", erro, req);
-    res.status(500).json({
+    responder(500, {
       mensagem: "Não foi possível verificar os registros relacionados",
     });
   }
-});
+}));
 
-router.post("/propriedades", async (req, res) => {
+router.post("/propriedades", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "cidade", "estado", "area"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
     const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 100);
     const estado = normalizarEstado(req.body.estado);
     const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 99999999.99 });
     const erro = nome.erro || cidade.erro || estado.erro || area.erro;
-    if (erro) return res.status(400).json({ mensagem: erro });
+    if (erro) return responder(400, { mensagem: erro });
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO propriedades (nome, cidade, estado, area, usuario_id)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
       [nome.valor, cidade.valor, estado.valor.toUpperCase(), area.valor, req.usuario.id],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Propriedade cadastrada com sucesso!",
       propriedade: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("propriedades_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao cadastrar propriedade",
     });
   }
-});
+}));
 
-router.put("/propriedades/:id", async (req, res) => {
+router.put("/propriedades/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "cidade", "estado", "area"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const { id } = req.params;
     const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
     const cidade = normalizarTextoObrigatorio(req.body.cidade, "Cidade", 100);
     const estado = normalizarEstado(req.body.estado);
     const area = normalizarNumeroFinito(req.body.area, "Área", { minimo: 0.01, maximo: 99999999.99 });
     const erro = nome.erro || cidade.erro || estado.erro || area.erro;
-    if (erro) return res.status(400).json({ mensagem: erro });
+    if (erro) return responder(400, { mensagem: erro });
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE propriedades
              SET nome = $1,
                  cidade = $2,
@@ -204,55 +204,53 @@ router.put("/propriedades/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Propriedade atualizada com sucesso!",
       propriedade: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("propriedades_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao atualizar propriedade",
     });
   }
-});
+}));
 
-router.delete("/propriedades/:id", async (req, res) => {
+router.delete("/propriedades/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const resultado = await excluirPropriedadeComDados(req.params.id, {
       usuarioId: req.usuario.id,
       perfil: req.usuario.perfil,
-    });
+    }, cliente);
 
-    registrarEvento("aviso", "propriedade_excluida_com_dependencias", {
+    responder(200, {
+      mensagem: "Propriedade e registros relacionados excluídos com sucesso.",
+      propriedade: resultado.propriedade,
+      exclusoes: resultado.exclusoes,
+    }, () => registrarEvento("aviso", "propriedade_excluida_com_dependencias", {
       request_id: req.id,
       usuario_id: req.usuario.id,
       propriedade_id: Number(req.params.id),
       exclusoes: resultado.exclusoes,
-    });
-
-    res.json({
-      mensagem: "Propriedade e registros relacionados excluídos com sucesso.",
-      propriedade: resultado.propriedade,
-      exclusoes: resultado.exclusoes,
-    });
+    }));
   } catch (erro) {
     if (erro.status) {
-      return res.status(erro.status).json({ mensagem: erro.message });
+      return responder(erro.status, { mensagem: erro.message });
     }
 
     registrarErro("propriedades_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Não foi possível excluir a propriedade. Nenhum dado foi removido",
     });
   }
-});
+}, { finalidade: "exclusao" }));
 // =========================
 // ANIMAIS
 // =========================

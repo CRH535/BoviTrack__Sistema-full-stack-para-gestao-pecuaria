@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const pool = require("../database/pool");
+const { obterPoolAutenticacao } = require("../database/poolAutenticacao");
+const { comAtor, identidadeDaRequisicao } = require("../database/contextoRls");
 const { responderCriacaoUsuario } = require("../controllers/usuariosController");
 const { autenticar } = require("../middleware/autenticacao");
 const { protegerContraCsrf } = require("../middleware/csrf");
@@ -19,6 +20,9 @@ const { registrarErro, registrarEvento } = require("../utils/log");
 const { obterIpCliente } = require("../utils/rede");
 const { validarCamposPermitidos } = require("../utils/validacoes");
 const { consumirLimite } = require("../services/limitesRequisicao");
+const verificacaoEmail = require('../services/verificacaoEmail');
+const { VERIFICACAO_EMAIL, verificacaoEmailObrigatoria } = require('../config/email');
+const { politicaEmail } = require('../middleware/politicaEmail');
 
 const router = express.Router();
 const MINUTO = 60 * 1000;
@@ -48,6 +52,12 @@ const limitarCadastro = limitarRequisicoes({
   janelaMs: 60 * MINUTO,
   obterChave: (req) => obterIpCliente(req),
 });
+const limitarCadastroEmail = limitarRequisicoes({
+  escopo: 'CADASTRO_EMAIL', limite: 5, janelaMs: 60 * MINUTO,
+  obterChave: emailNormalizado,
+});
+const limitarEnvioIp = limitarRequisicoes({ escopo: 'EMAIL_ENVIO_IP', limite: VERIFICACAO_EMAIL.envioIpPorHora,
+  janelaMs: 60 * MINUTO, obterChave: obterIpCliente });
 const limitarRefresh = limitarRequisicoes({
   escopo: "REFRESH_SESSAO_IP",
   limite: 30,
@@ -55,7 +65,13 @@ const limitarRefresh = limitarRequisicoes({
   obterChave: (req) => `${obterIpCliente(req)}|${lerRefreshToken(req) || "sem-cookie"}`,
 });
 
-router.post("/auth/cadastro", limitarCadastro, async (req, res) => {
+router.get('/auth/config', politicaEmail, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ verificacaoEmailObrigatoria: verificacaoEmailObrigatoria() });
+});
+
+router.post("/auth/cadastro", protegerContraCsrf, politicaEmail, limitarCadastro, limitarCadastroEmail,
+  (req, res, next) => verificacaoEmailObrigatoria() ? limitarEnvioIp(req, res, next) : next(), async (req, res) => {
   await responderCriacaoUsuario(
     req,
     res,
@@ -64,7 +80,7 @@ router.post("/auth/cadastro", limitarCadastro, async (req, res) => {
   );
 });
 
-router.post("/auth/login", limitarLoginIp, limitarLoginConta, async (req, res) => {
+router.post("/auth/login", protegerContraCsrf, politicaEmail, limitarLoginIp, limitarLoginConta, async (req, res) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["email", "senha"]);
     if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
@@ -81,14 +97,24 @@ router.post("/auth/login", limitarLoginIp, limitarLoginConta, async (req, res) =
       return res.status(400).json({ mensagem: "Email e senha são obrigatórios" });
     }
 
-    const resultado = await pool.query(
-      `SELECT id, nome, email, senha, perfil, ativo
-         FROM usuarios
-        WHERE email = $1`,
+    const resultado = await obterPoolAutenticacao().query(
+      "SELECT * FROM bovitrack_seg.credencial_login($1)",
       [email],
     );
     const usuario = resultado.rows[0];
-    if (usuario?.perfil === "admin") {
+    const comparacao = await bcrypt.compare(senha, usuario?.senha || HASH_LOGIN_INEXISTENTE);
+    const senhaCorreta = Boolean(usuario && comparacao);
+
+    if (!senhaCorreta) {
+      registrarEvento("aviso", "login_falhou", {
+        request_id: req.id,
+        chave: emailNormalizado(req).slice(0, 3),
+      });
+      return res.status(401).json({ mensagem: "Email ou senha inválidos" });
+    }
+    // O limitador específico de admin não deve revelar a role em senha errada.
+    // Tentativas sem credenciais válidas continuam nos limitadores conta/IP.
+    if (usuario.perfil === "admin") {
       const limiteAdmin = await consumirLimite({
         escopo: "LOGIN_ADMIN",
         chave: `${obterIpCliente(req)}|${email}`,
@@ -101,23 +127,24 @@ router.post("/auth/login", limitarLoginIp, limitarLoginConta, async (req, res) =
         return res.status(429).json({ mensagem: "Muitas tentativas. Aguarde antes de tentar novamente" });
       }
     }
-    const comparacao = await bcrypt.compare(senha, usuario?.senha || HASH_LOGIN_INEXISTENTE);
-    const senhaCorreta = Boolean(usuario && comparacao);
-
-    if (!senhaCorreta) {
-      registrarEvento("aviso", "login_falhou", {
-        request_id: req.id,
-        chave: emailNormalizado(req).slice(0, 3),
-      });
-      return res.status(401).json({ mensagem: "Email ou senha inválidos" });
-    }
     if (!usuario.ativo) {
       return res.status(403).json({
         mensagem: "Usuário desativado. Entre em contato com o administrador",
       });
     }
 
-    const sessaoRefresh = await criarSessaoRefresh(pool, usuario.id);
+    if (verificacaoEmailObrigatoria() && usuario.email_verificado !== true) {
+      limparCookieRefresh(res);
+      const resultado = await consumirLimite({ escopo: 'EMAIL_ENVIO_IP', chave: obterIpCliente(req),
+        limite: VERIFICACAO_EMAIL.envioIpPorHora, janelaMs: 60 * MINUTO });
+      const envio = resultado.permitido ? await verificacaoEmail.solicitarCodigo(email) : { estado: 'RATE_LIMIT', retryAfter: resultado.retryAfter };
+      return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail para continuar.',
+        verificacao: { ticket: verificacaoEmail.criarTicket(email, true), emailMascarado: verificacaoEmail.mascararEmail(email),
+          validadeMinutos: VERIFICACAO_EMAIL.validadeMs / 60000,
+          envio: envio.estado, retryAfter: envio.retryAfter } });
+    }
+
+    const sessaoRefresh = await criarSessaoRefresh(obterPoolAutenticacao(), usuario.id, usuario.senha);
     const token = criarTokenAcesso(usuario, sessaoRefresh);
     definirCookieRefresh(res, sessaoRefresh.token, sessaoRefresh.expiresAt);
 
@@ -148,6 +175,7 @@ router.post("/auth/login", limitarLoginIp, limitarLoginConta, async (req, res) =
 router.post(
   "/auth/refresh",
   protegerContraCsrf,
+  politicaEmail,
   limitarRefresh,
   async (req, res) => {
     try {
@@ -157,7 +185,11 @@ router.post(
         return res.status(400).json({ mensagem: "Cookie de sessão inválido" });
       }
 
-      const sessao = await renovarSessaoRefresh(pool, refreshToken);
+      const sessao = await renovarSessaoRefresh(obterPoolAutenticacao(), refreshToken);
+      if (sessao?.emailNaoVerificado) {
+        limparCookieRefresh(res);
+        return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail. Entre novamente para continuar.' });
+      }
       if (sessao?.replay) {
         limparCookieRefresh(res);
         registrarEvento("aviso", "refresh_replay_detectado", {
@@ -195,7 +227,7 @@ router.post(
 router.post("/auth/logout", protegerContraCsrf, async (req, res) => {
   try {
     const refreshToken = lerRefreshToken(req);
-    await encerrarSessaoRefresh(pool, refreshToken);
+    await encerrarSessaoRefresh(obterPoolAutenticacao(), refreshToken);
     limparCookieRefresh(res);
     if (req.refreshCookieInvalido) {
       return res.status(400).json({ mensagem: "Cookie de sessão inválido" });
@@ -214,7 +246,7 @@ router.post(
   autenticar,
   async (req, res) => {
     try {
-      await encerrarTodasSessoes(pool, req.usuario.id);
+      await comAtor(identidadeDaRequisicao(req), encerrarTodasSessoes);
       limparCookieRefresh(res);
       registrarEvento("info", "logout_todos_dispositivos", {
         request_id: req.id,

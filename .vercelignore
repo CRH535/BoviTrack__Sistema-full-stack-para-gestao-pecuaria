@@ -1,0 +1,10 @@
+.git
+.codex
+graphify-out
+outputs
+**/node_modules
+**/.env*
+**/tests/*
+!**/tests/icons.test.js
+**/test-results
+**/playwright-report

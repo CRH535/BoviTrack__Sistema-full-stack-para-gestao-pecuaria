@@ -1,7 +1,8 @@
 require("dotenv").config();
 
 const assert = require("assert/strict");
-const { app, pool } = require("../server");
+const { app } = require("../server");
+const pool = require("./helpers/bancoFixture");
 
 const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const emailA = `leite-a-${sufixo}@bovitrack.local`;
@@ -120,6 +121,9 @@ async function executar() {
     corpo: { nome: "Produtor Leite B", email: emailB, senha },
   });
   confirmar("criação dos usuários de teste", cadastroA.status === 202 && cadastroB.status === 202);
+  const { verificarFixture } = require('./helpers/email');
+  await verificarFixture(emailA);
+  await verificarFixture(emailB);
 
   const [sessaoA, sessaoB] = await Promise.all([
     login(emailA, senha),

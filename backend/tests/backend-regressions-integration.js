@@ -10,8 +10,10 @@ if (process.env.ALLOW_TEST_DB_WRITES !== "true" || process.env.NODE_ENV === "pro
 }
 process.env.DB_POOL_MAX = "6";
 const bcrypt = require("bcryptjs");
-const { app, pool } = require("../app");
-const { alterarAtivoUsuario } = require("../services/usuarios");
+const { app } = require("../app");
+const pool = require("./helpers/bancoFixture");
+const { obterPoolAutenticacao } = require("../database/poolAutenticacao");
+const { transacao } = require("../database/contextoRls");
 const { excluirUsuarioComDados } = require("../services/impactoExclusao");
 const { encerrarSessaoRefresh, renovarSessaoRefresh, hashToken } = require("../services/sessoes");
 let servidor;
@@ -58,10 +60,10 @@ async function testarLogoutConcorrente(cookie) {
   try {
     await bloqueador.query("BEGIN");
     await bloqueador.query("SELECT id FROM sessoes_refresh WHERE token_hash=$1 FOR UPDATE", [hashToken(refresh)]);
-    renovacao = renovarSessaoRefresh(pool, refresh);
-    await esperarLocks("sessoes_refresh");
-    logout = encerrarSessaoRefresh(pool, refresh);
-    await esperarLocks("sessoes_refresh", 2);
+    renovacao = renovarSessaoRefresh(obterPoolAutenticacao(), refresh);
+    await esperarLocks("rodar_refresh");
+    logout = encerrarSessaoRefresh(obterPoolAutenticacao(), refresh);
+    await esperarLocks("encerrar_refresh");
     await bloqueador.query("COMMIT");
     const sessao = await renovacao;
     await logout;
@@ -108,6 +110,7 @@ async function testarDesmamaConcorrente(id, destino) {
     [email, await bcrypt.hash(senha, 4)],
   );
   usuarioId = resultado.rows[0].id;
+  await pool.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=CURRENT_TIMESTAMP WHERE id=$1', [usuarioId]);
   servidor = await new Promise((resolve) => { const instancia = app.listen(0, "127.0.0.1", () => resolve(instancia)); });
   base = `http://127.0.0.1:${servidor.address().port}`;
   async function login() {
@@ -119,9 +122,15 @@ async function testarDesmamaConcorrente(id, destino) {
   let sessao = await login();
   await testarLogoutConcorrente(sessao.cookie);
   sessao = await login();
-  await alterarAtivoUsuario(usuarioId, false);
+  const admin = await requisitar("/auth/login", { metodo: "POST", autenticacao: null,
+    corpo: { email: process.env.TEST_ADMIN_EMAIL, senha: process.env.TEST_ADMIN_SENHA } });
+  assert.equal(admin.status, 200);
+  const statusAtivo = (ativo) => requisitar(`/usuarios/${usuarioId}/ativo`, {
+    metodo: "PUT", corpo: { ativo }, autenticacao: admin.dados.token,
+  });
+  assert.equal((await statusAtivo(false)).status, 200);
   confirmar("desativacao bloqueia access token", (await requisitar("/auth/me")).status === 401);
-  await alterarAtivoUsuario(usuarioId, true);
+  assert.equal((await statusAtivo(true)).status, 200);
   confirmar("reativacao nao recupera access token anterior", (await requisitar("/auth/me")).status === 401);
   confirmar("reativacao nao recupera refresh anterior", (await requisitar("/auth/refresh", { metodo: "POST", cookie: sessao.cookie })).status === 401);
   await login();
@@ -156,7 +165,7 @@ async function testarDesmamaConcorrente(id, destino) {
   confirmar("vacinacoes proximas aceita periodo todos com timezone", (await requisitar("/vacinacoes/proximas?periodo=todos")).status === 200);
   console.log(`${verificacoes} regressoes backend com PostgreSQL local validadas.`);
 })().catch((erro) => { console.error(erro); process.exitCode = 1; }).finally(async () => {
-  if (usuarioId) await excluirUsuarioComDados(usuarioId).catch((erro) => { console.error("Falha ao limpar fixture", erro.code); process.exitCode = 1; });
+  if (usuarioId) await transacao(pool, (cliente) => excluirUsuarioComDados(usuarioId, cliente)).catch((erro) => { console.error("Falha ao limpar fixture", erro.code); process.exitCode = 1; });
   if (servidor) await new Promise((resolve) => servidor.close(resolve));
   await pool.end();
 });

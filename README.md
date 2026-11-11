@@ -94,6 +94,7 @@ O navegador não acessa o PostgreSQL diretamente. O Supabase é utilizado como b
 - A renovação utiliza cookie HttpOnly e sessões no PostgreSQL, com rotação e revogação. O cliente Axios envia cookies com `withCredentials` e tenta renovar a sessão quando recebe um erro de autenticação apropriado.
 - Os tokens de autenticação não são persistidos pelo cliente atual em Local Storage. Preferências visuais podem usar esse armazenamento.
 - O cadastro público cria o perfil `usuario`. O administrador inicial é criado por script administrativo; rotas administrativas também verificam o perfil no backend.
+- E-mail verificado é obrigatório para contas novas e antigas, inclusive admin. Código de seis dígitos via Resend, validade de dez minutos, cinco tentativas e cooldown persistente. Consulte [implantação e verificação de e-mail](docs/VERIFICACAO_EMAIL.md) antes de ativar a migration `013`.
 - A autorização de dados privados ocorre no backend. Propriedades e vacinas têm vínculo direto com o usuário; os demais registros herdam o acesso pelos relacionamentos.
 - Listagens, alterações, vínculos entre entidades e agregações devem respeitar esse escopo. Recursos de terceiros são tratados como indisponíveis, inclusive diante de IDs manipulados.
 - CORS, validação de origem nas rotas de sessão, limites de requisições, limites de corpo JSON e cabeçalhos de segurança complementam as verificações de acesso.
@@ -179,7 +180,9 @@ npm run dev
 
 Abra o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Se a porta estiver ocupada e o Vite escolher outra, ajuste a configuração de origem quando necessário.
 
-Entre com a conta administrativa criada no passo anterior ou utilize o cadastro público para criar um usuário comum. Valide os registros e o isolamento entre contas em um banco de desenvolvimento.
+Antes de utilizar a autenticação nova, aplique a migration `013` e configure os secrets de e-mail somente no backend, conforme [o guia de verificação](docs/VERIFICACAO_EMAIL.md). Use um e-mail administrativo real: endereços `.local` não recebem códigos. Com `onboarding@resend.dev`, somente o endereço da conta Resend pode receber o teste.
+
+Entre com a conta administrativa ou utilize o cadastro público para criar um usuário comum, confirme o código e faça novo login. Valide os registros e o isolamento entre contas em um banco de desenvolvimento.
 
 ## Variáveis de ambiente
 
@@ -290,6 +293,9 @@ Não combine parâmetros SSL na URI, como `sslmode`, com `DB_SSL` e as variávei
 | `npm run migrate:sessions` | Estrutura inicial das sessões de renovação. |
 | `npm run migrate:security` | Migrações `009` e `010`, via conexão administrativa do Supabase. |
 | `npm run migrate:integrity` | Migração `012`: proteção de parentesco e índices, via conexão administrativa explícita. |
+| `npm run migrate:email-verification -- --check` | Auditoria somente leitura de contas/e-mails antes da migration `013`. |
+| `npm run migrate:email-verification` | Migração `013`, com auditoria prévia, via conexão administrativa. |
+| `npm run test:email` | Suíte de e-mail com Resend mock e PostgreSQL local descartável. |
 | `npm run migrate:supabase` | Backup e cópia do banco de origem para Supabase. |
 | `npm test` | Suíte de autenticação e permissões. |
 | `npm run test:milk` | Produção leiteira. |

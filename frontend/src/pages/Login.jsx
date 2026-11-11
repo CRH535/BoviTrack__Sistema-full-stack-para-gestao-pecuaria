@@ -15,7 +15,7 @@ function Login() {
     Boolean(location.state?.mensagem),
   );
   const [enviando, setEnviando] = useState(false);
-  const { autenticado, carregando, login } = useAuth();
+  const { autenticado, carregando, login, verificacaoPendente } = useAuth();
   const { iniciarTransicao, sinalizarDestinoPronto, transicaoAtiva } =
     useBlackHoleTransition();
 
@@ -26,6 +26,7 @@ function Login() {
   if (!carregando && autenticado && !enviando && !transicaoAtiva) {
     return <Navigate to="/" replace />;
   }
+  if (!carregando && verificacaoPendente) return <Navigate to="/verificar-email" replace />;
 
   async function entrar(evento) {
     evento.preventDefault();

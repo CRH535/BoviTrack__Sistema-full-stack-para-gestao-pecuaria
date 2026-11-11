@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 
 function ProtectedRoute() {
-  const { autenticado, carregando } = useAuth();
+  const { autenticado, carregando, verificacaoPendente } = useAuth();
   const location = useLocation();
 
   if (carregando) {
@@ -10,6 +10,7 @@ function ProtectedRoute() {
   }
 
   if (!autenticado) {
+    if (verificacaoPendente) return <Navigate to="/verificar-email" replace />;
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

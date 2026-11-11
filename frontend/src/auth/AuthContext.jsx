@@ -27,6 +27,8 @@ function salvarStorage(chave, valor) {
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [verificacaoPendente, setVerificacaoPendente] = useState(null);
+  const [verificacaoEmailObrigatoria, setVerificacaoEmailObrigatoria] = useState(null);
   const canalRef = useRef(null);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export function AuthProvider({ children }) {
       limparTokenAcesso();
       if (!ativo) return;
       setUsuario(null);
+      setVerificacaoPendente(null);
       setCarregando(false);
     };
 
@@ -53,6 +56,11 @@ export function AuthProvider({ children }) {
       const geracao = obterGeracaoSessao();
       const vigente = () => ativo && geracao === obterGeracaoSessao();
       try {
+        const config = await api.get('/auth/config', { ignorarRenovacao: true });
+        if (vigente()) {
+          setVerificacaoEmailObrigatoria(config.data.verificacaoEmailObrigatoria);
+          if (config.data.verificacaoEmailObrigatoria === false) setVerificacaoPendente(null);
+        }
         if (lerStorage(CHAVE_LOGOUT_PENDENTE)) {
           await api.post("/auth/logout", null, { ignorarRenovacao: true });
           if (vigente()) {
@@ -93,17 +101,27 @@ export function AuthProvider({ children }) {
   async function login(email, senha) {
     limparTokenAcesso();
     definirLogoutEmAndamento(false);
-    const resposta = await api.post("/auth/login", { email, senha });
+    let resposta;
+    try {
+      resposta = await api.post("/auth/login", { email, senha });
+    } catch (erro) {
+      if (erro.response?.data?.codigo === 'EMAIL_NOT_VERIFIED' && erro.response.data.verificacao) {
+        iniciarVerificacao(email, erro.response.data.verificacao);
+      }
+      throw erro;
+    }
     salvarStorage(CHAVE_LOGOUT_PENDENTE, null);
     // O cookie é compartilhado entre abas. Um login novo invalida as interfaces
     // antigas antes que possam renovar a sessão usando a outra conta.
     avisarOutrasAbas();
     definirTokenAcesso(resposta.data.token, resposta.data.usuario.id);
     setUsuario(resposta.data.usuario);
+    setVerificacaoPendente(null);
     setCarregando(false);
   }
 
   async function logout({ manterInterface = false } = {}) {
+    setVerificacaoPendente(null);
     const token = obterTokenAcesso();
     definirLogoutEmAndamento(true);
     limparTokenAcesso();
@@ -150,6 +168,19 @@ export function AuthProvider({ children }) {
     setUsuario(usuarioAtualizado);
   }
 
+  function iniciarVerificacao(email, dados) {
+    limparTokenAcesso();
+    setUsuario(null);
+    setVerificacaoEmailObrigatoria(true);
+    // Contexto restrito apenas em memória: sem URL, localStorage ou senha.
+    setVerificacaoPendente({ email: email.trim().toLowerCase(), ...dados,
+      reenviarEm: Date.now() + (Number(dados.retryAfter) || 0) * 1000 });
+  }
+
+  function concluirVerificacao() {
+    setVerificacaoPendente(null);
+  }
+
   return (
     <AuthContext.Provider value={{
       usuario,
@@ -160,6 +191,10 @@ export function AuthProvider({ children }) {
       logoutTodosDispositivos,
       finalizarLogoutVisual,
       atualizarUsuario,
+      verificacaoPendente,
+      verificacaoEmailObrigatoria,
+      iniciarVerificacao,
+      concluirVerificacao,
     }}>
       {children}
     </AuthContext.Provider>

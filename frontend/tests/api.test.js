@@ -98,3 +98,29 @@ test("cookie de outra conta não substitui silenciosamente a identidade ativa", 
   assert.deepEqual(events, ["bovitrack:sessao-encerrada"]);
   delete globalThis.window;
 });
+
+test('conta não verificada encerra sessão completa e endpoints de código não tentam refresh', async () => {
+  const events = [];
+  globalThis.window = { dispatchEvent: (event) => events.push(event.type) };
+  definirTokenAcesso('sessao-antiga', 1);
+  const calls=[];
+  api.defaults.adapter=async(config)=>{
+    calls.push(config.url);
+    const response={...resposta(config,{codigo:'EMAIL_NOT_VERIFIED'}),status:403};
+    throw new axios.AxiosError('Bloqueado',axios.AxiosError.ERR_BAD_REQUEST,config,null,response);
+  };
+  await assert.rejects(api.get('/dashboard'));
+  assert.equal(obterTokenAcesso(),null);
+  assert.deepEqual(events,['bovitrack:sessao-encerrada']);
+  assert.deepEqual(calls,['/dashboard']);
+  for (const path of ['/auth/email/verificar','/auth/email/reenviar']) {
+    api.defaults.adapter=async(config)=>{
+      calls.push(config.url);
+      const response={...resposta(config,{codigo:'VERIFICATION_CONTEXT_EXPIRED'}),status:401};
+      throw new axios.AxiosError('Expirado',axios.AxiosError.ERR_BAD_REQUEST,config,null,response);
+    };
+    await assert.rejects(api.post(path,{email:'fixture@example.test'}));
+  }
+  assert.ok(!calls.includes('/auth/refresh'));
+  delete globalThis.window;
+});

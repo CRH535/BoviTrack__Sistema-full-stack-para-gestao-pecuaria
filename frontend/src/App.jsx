@@ -18,6 +18,7 @@ const Pesagens = lazy(() => import("./pages/Pesagens"));
 const Desmamas = lazy(() => import("./pages/Desmamas"));
 const Login = lazy(() => import("./pages/Login"));
 const Cadastro = lazy(() => import("./pages/Cadastro"));
+const VerificarEmail = lazy(() => import('./pages/VerificarEmail'));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const MinhaConta = lazy(() => import("./pages/MinhaConta"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
@@ -39,6 +40,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/verificar-email" element={<VerificarEmail />} />
 
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
