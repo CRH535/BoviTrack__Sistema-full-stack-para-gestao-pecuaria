@@ -1,5 +1,18 @@
 # Continuidade da implementação RLS
 
+## Limpeza final local — 11/11/2026
+
+Nova tarefa de manutenção na branch `chore/limpeza-final-bovitrack`, criada sobre `origin/main` `4e0f4ce`. A branch anterior `feat/rls-bovitrack` foi preservada em `6a5137f`, com tree idêntica à base main no início. O outro worktree permaneceu em `fazendo-audit-de-segurança`, `8b502ba`.
+
+- Foram enviados à Lixeira 6.360 arquivos gerados em cinco pastas, totalizando 115.078.723 bytes. Recibos e hashes em `outputs/limpeza-final-20261111/`. Backups, bancos locais, migrations, originais visuais, evidências e material privado foram preservados.
+- Removidas três declarações sem uso em testes/scripts. A falha real do CI foi reproduzida em PostgreSQL 17.6 com SCRAM e corrigida gerando senhas temporárias distintas para os logins do runner. Integração completa e 26 grupos de e-mail passaram em SCRAM. CI recebeu limite de 60 minutos, healthcheck explícito e cobertura de flag/FALSE.
+- Dois relatórios foram arquivados em `docs/archive/`, com links ajustados. `docs/README.md` indexa a documentação. README e guias históricos agora indicam RLS, dois logins, e-mail opcional e o registro da publicação atual.
+- Audits completos retornaram zero vulnerabilidades em ambos os projetos. Node 24.15.0 compatível com os requisitos dos locks, árvores npm sem problemas, override minimatch 11.0.7 mantido. Zero dependências removidas. Frontend com 11 testes, lint/build aprovados e bundle final idêntico por SHA-256 ao baseline, com 55 arquivos e 935.913 bytes.
+- Passaram offline, RLS, integração, flag FALSE/TRUE/transições, e-mail legado e guardas de isolamento/homologação. E2E integral TRUE passou 147/147 em 32,6 minutos. E2E FALSE em SCRAM passou 7/7 em 1,6 minuto. Ambos cobriram sete resoluções, saída 0 e zero retries. Relatórios preservados em `outputs/limpeza-final-20261111/e2e-true-report/` e `e2e-false-report/`. O cluster SCRAM foi encerrado após conferir zero bancos/logins temporários remanescentes.
+- Produção consultada em leitura estava READY no SHA `4e0f4ce`, Supabase ACTIVE_HEALTHY com 16 tabelas RLS e flag SQL false. GET `/auth/config` respondeu 200/false às 18h11 UTC. A manutenção foi local. O CI remoto atualizado exige uma publicação posterior dos commits para execução no GitHub.
+- Commits locais `6f8540e` para declarações sem uso, `af8f8d7` para SCRAM/CI e `8f7d309` para documentação. O relatório final registra as provas e candidatos preservados.
+- Os seis arquivos Graphify já modificados foram copiados com hashes para `outputs/limpeza-final-20261111/graph-before/`. `graphify update .` terminou com saída 0, 2.038 nós e 3.611 arestas. Os gerados continuam fora dos commits. Avisos de extração SQL opcional e nomes de comunidades permanecem registrados no log local.
+
 ## Produção publicada — 11/11/2026
 
 O usuário aprovou expressamente o corte SQL e a publicação de `79f65c7f52c992364f42016688fdb6a82568d67c`, com três contas sintéticas e limpeza. As seções seguintes são registros anteriores à publicação.
