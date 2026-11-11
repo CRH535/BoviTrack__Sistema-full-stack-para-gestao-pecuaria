@@ -1,5 +1,18 @@
 # Continuidade da implementação RLS
 
+## Produção publicada — 11/11/2026
+
+O usuário aprovou expressamente o corte SQL e a publicação de `79f65c7f52c992364f42016688fdb6a82568d67c`, com três contas sintéticas e limpeza. As seções seguintes são registros anteriores à publicação.
+
+- Frontend https://bovitrack-xi.vercel.app e API https://bovitrack-api.vercel.app promovidos. IDs iniciais `dpl_CStSJwtf6gpCBgDyyYogmtWgLtLi` e `dpl_E9YuntSkLRBKuaSZWyQ3LW8CbUCe`. A integração Git preserva as trees da aplicação aprovada. Conferir os IDs posteriores em `outputs/rls-email-flag/production-release-final.json`.
+- Produção Supabase ACTIVE_HEALTHY PG17.6, migrations 012/020/014–018/021/019 registradas, 16 tabelas com RLS e policies. Flag SQL false e EMAIL_VERIFICATION_REQUIRED=false em produção. Os dois logins novos passaram TLS/roles/grants e a checagem estrita de zero linhas sem contexto no Supavisor real. Advisor de segurança sem apontamentos.
+- Manutenção, freeze do login legado e backup fresco de84.211bytes com restore validado foram executados antes das migrations. As15tabelas e as sessões foram preservadas no corte. DPAPI protege backup, credenciais novas e estado das fixtures fora do Git. Os logins/segredos atuais já existem; reexecução de provisionamento exige inspeção do estado.
+- Cadastro/login/browser/F5/cookies/tema/ficha/dashboard, isolamento com12leituras concorrentes, expiração/refresh/logout/revogação e rate limit passaram em produção. O refresh gerado pelo backend legado continuou válido. O access token da mesma sessão havia expirado naturalmente ao ser consultado. Zero desafios de e-mail foram gerados.
+- O índice de administrador único rejeitou a promoção da terceira fixture. As três permaneceram comuns e o usuário validou o login do administrador principal e a tela Usuários. Sua sessão ativa e e-mail não verificado foram confirmados por catálogo. A regra de administrador único permaneceu ativa.
+- Limpeza terminou pelas rotas de exclusão própria. As seis contas originais e os dados das11tabelas de negócio conferiram com o snapshot congelado. Nenhuma fixture restou. Uma tentativa inicial de navegação visual terminou com erro genérico; a repetição com diagnóstico ampliado passou em desktop/mobile e não houve alteração na aplicação. Causa inicial indeterminada.
+- Logs disponíveis de20min sem erros/fatais nem5xx; a janela inicial de1h foi recusada pela retenção Hobby. A credencial de automação criada automaticamente por vercel curl foi revogada, com zero bypasses restantes. JWT/cookies/Resend preservados. Os arquivos Graphify já sujos seguem separados do release.
+- Para operações futuras do executor, usar o checkout do SHA aprovado79f65c7, pois o cofre e o marcador SQL ficam vinculados a ele. O registro pós-publicação altera somente documentação. Restaurar dados de produção após novas gravações continua exigindo decisão própria e reconciliação.
+
 ## Estado mais recente — release com e-mail opcional, 11/11/2026
 
 Preparação em `feat/rls-bovitrack`. A seção 10 da solicitação de deploy exige aprovação específica do corte SQL. Essa aprovação continua pendente. Produção foi reativada pelo usuário e está ACTIVE_HEALTHY, PostgreSQL 17.6. Homologação remota está INACTIVE. A consulta atual encontrou 15 tabelas públicas com RLS OFF, zero policies, seis contas ativas e ausência da estrutura nova. Os estados descritos abaixo deste bloco são históricos.

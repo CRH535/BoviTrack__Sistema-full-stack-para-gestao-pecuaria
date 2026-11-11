@@ -2,7 +2,25 @@
 
 Preparado em 11/11/2026 na branch `feat/rls-bovitrack`, a partir de `0402506f65de40b8d06f5f9a455d55276da8e1d8`. O commit `97a1cf2` consolida a auditoria de ignore e preserva os arquivos locais retirados do índice. O commit `30f0414` contém a feature flag, as migrations aditivas e os testes. O commit `316fe97` contém os executores de backup, ensaio e corte coordenado. O commit `ca8785f` mantém os ensaios históricos compatíveis com a política SQL nova. O commit `6b6cf1b` inclui o teste de ícones necessário ao prebuild no pacote Vercel. O commit `9d700a5` cobre a aba que recebeu false antes de a API passar a exigir verificação. O SHA candidato completo será obtido de HEAD após o registro final das provas.
 
-**Estado deste registro: preparação e validação; corte SQL e publicação ainda não executados.** A autorização específica da seção 10 da tarefa continua obrigatória antes de migrations, alteração de roles/grants ou ativação de RLS em produção. O remetente Resend não bloqueia o release opcional, pois nenhum fluxo ativo depende dele com a flag false.
+**Publicado em produção em 11/11/2026, com RLS ativo e obrigatoriedade de e-mail desativada.** O usuário autorizou expressamente o corte do candidato `79f65c7f52c992364f42016688fdb6a82568d67c` e as três fixtures com limpeza. O remetente Resend permanece reservado à futura ativação da verificação.
+
+## Resultado observado da publicação
+
+- Frontend em https://bovitrack-xi.vercel.app, promoção inicial `dpl_CStSJwtf6gpCBgDyyYogmtWgLtLi`.
+- API em https://bovitrack-api.vercel.app, promoção inicial `dpl_E9YuntSkLRBKuaSZWyQ3LW8CbUCe`.
+- Supabase `znpmzebrryqtjkgnvlcw` ACTIVE_HEALTHY, PostgreSQL17.6, 16 tabelas com RLS/policies, dois logins de aplicação distintos e restritos, TLS verify-full no Transaction pooler. Advisor de segurança sem apontamentos.
+- Aplicadas via ledger as migrations 012, 020, 014, 015, 016, 017, 018, 021 e 019. A 013 original permaneceu preservada. Configuração SQL false e `EMAIL_VERIFICATION_REQUIRED=false` confirmadas por HTTP na API candidata protegida e no domínio canônico.
+- O login legado `bovitrack_app_login` foi bloqueado e suas conexões encerradas. Os novos logins são `bovitrack_app_rls_login` e `bovitrack_app_auth_login`, com pool3 por role. JWT, cookies e credenciais de e-mail existentes foram conservados.
+- O backup fresco de 84.211 bytes, incluindo a primeira fixture autorizada, foi restaurado e validado antes das migrations. As 15 tabelas legadas e as sessões foram comparadas antes da abertura do tráfego. O backup e o cofre de release estão cifrados por DPAPI.
+- Cadastro e login reais, refresh/F5, cookies HttpOnly/Secure/SameSite=None, propriedades, animais, ficha, dashboard, isolamento HTTP, 12 leituras concorrentes com reuso de contexto, expiração de sessão, logout/revogação e rate limiting passaram em produção.
+- A sessão criada pela primeira fixture no backend legado renovou com sucesso no backend RLS. Seu access token já estava naturalmente expirado ao ser consultado e retornou401; o refresh legado retornou200 e o token renovado acessou `/auth/me` com200.
+- A interface passou cadastro/login e navegação em1366×768, além de navegação, F5, ficha, tema escuro, responsividade e logout em1366×768 e390×844. Os relatórios concluídos não registraram pageerrors nem falhas de imagens. Uma primeira tentativa de navegação terminou com erro genérico sem diagnóstico suficiente; a repetição com diagnóstico ampliado passou nas duas resoluções sem mudança na aplicação. A causa inicial não foi determinada.
+- A tentativa autorizada de tornar a terceira fixture administrativa foi rejeitada por `usuarios_admin_unico_idx`. A transação foi revertida e as três fixtures permaneceram comuns. A regra de administrador único foi preservada. O usuário confirmou o login do administrador principal e o carregamento da tela Usuários; o catálogo confirmou sua sessão ativa e e-mail ainda não verificado.
+- As três fixtures foram excluídas pela própria API, com sessões invalidadas. As seis contas originais mantiveram seus campos legados e os dados das 11 tabelas de negócio conferiram com o snapshot congelado. A tabela de desafios permaneceu vazia e há um único administrador.
+- A consulta disponível dos últimos20min retornou zero erros/fatais de runtime e zero respostas5xx no deployment API. A consulta inicial de1h excedeu a retenção Hobby e foi reduzida ao período disponível.
+- `vercel curl` criou automaticamente uma credencial de automação para testar o candidato protegido. Ela foi revogada após o smoke test, com zero bypasses de automação restantes. A chamada usou autenticação existente, e os valores permaneceram em memória/cofre. As opções próprias do comando foram conferidas no help e na documentação oficial. [Documentação do comando](https://vercel.com/docs/cli/curl), [revogação de bypass](https://vercel.com/docs/rest-api/projects/update-protection-bypass-for-automation).
+
+Evidências sanitizadas em `outputs/rls-email-flag/production-*.json`, `candidate-*.json`, `cut-*.log`, `production-ui-*.json` e screenshots. Os registros brutos de runtime foram cifrados fora do checkout. A integração Git mantém as mesmas trees de backend/frontend do candidato aprovado; deployments Git posteriores à promoção inicial devem ser conferidos no registro final local `production-release-final.json`.
 
 ## Comportamento da candidata
 
@@ -115,7 +133,8 @@ Publicar e promover a manutenção no projeto API, conferindo o ID/URL antes de 
 
 ```powershell
 $maintenanceRoot=Join-Path $sourceRoot 'release/maintenance'
-$maintenanceDeployment=(npx --yes vercel@65.14.0 deploy $maintenanceRoot --project prj_v0SXYazTtfH659wnuvk97W4bdqR9 --scope crh535 --prod --skip-domain --non-interactive | Select-Object -Last 1).Trim()
+$maintenanceBuild=npx --yes vercel@65.14.0 deploy $maintenanceRoot --project prj_v0SXYazTtfH659wnuvk97W4bdqR9 --scope crh535 --prod --skip-domain --non-interactive --json | ConvertFrom-Json
+$maintenanceDeployment=$maintenanceBuild.deployment.url
 if($LASTEXITCODE -or $maintenanceDeployment -notmatch '^https://[a-z0-9-]+\.vercel\.app/?$'){throw 'Manutencao invalida'}
 npx --yes vercel@65.14.0 promote $maintenanceDeployment --scope crh535 --yes
 if($LASTEXITCODE){throw 'Promocao falhou'}
@@ -146,9 +165,11 @@ O configurador Vercel verifica a preparação SQL e envia secrets por stdin ao C
 Construir API/web production com --skip-domain, mantendo os aliases em manutenção; registrar os URLs retornados e inspecionar READY, projeto e versão. Ativar a 019 somente após os builds compatíveis estarem prontos:
 
 ```powershell
-$apiCandidate=(npx --yes vercel@65.14.0 deploy $sourceRoot --project prj_v0SXYazTtfH659wnuvk97W4bdqR9 --scope crh535 --prod --skip-domain --non-interactive --meta releaseSha=$releaseSha | Select-Object -Last 1).Trim()
+$apiBuild=npx --yes vercel@65.14.0 deploy $sourceRoot --project prj_v0SXYazTtfH659wnuvk97W4bdqR9 --scope crh535 --prod --skip-domain --non-interactive --json --meta releaseSha=$releaseSha | ConvertFrom-Json
+$apiCandidate=$apiBuild.deployment.url
 if($LASTEXITCODE){throw 'Build API falhou'}
-$webCandidate=(npx --yes vercel@65.14.0 deploy $sourceRoot --project prj_zymSeKZ3qH06rcUcjT2rTcFxh2Vm --scope crh535 --prod --skip-domain --non-interactive --meta releaseSha=$releaseSha | Select-Object -Last 1).Trim()
+$webBuild=npx --yes vercel@65.14.0 deploy $sourceRoot --project prj_zymSeKZ3qH06rcUcjT2rTcFxh2Vm --scope crh535 --prod --skip-domain --non-interactive --json --meta releaseSha=$releaseSha | ConvertFrom-Json
+$webCandidate=$webBuild.deployment.url
 if($LASTEXITCODE){throw 'Build web falhou'}
 node scripts/release-production.cjs --activate
 if($LASTEXITCODE){throw 'RLS recusado; manter manutencao'}
