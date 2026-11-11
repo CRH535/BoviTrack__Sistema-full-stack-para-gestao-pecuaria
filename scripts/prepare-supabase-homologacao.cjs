@@ -77,7 +77,7 @@ async function preparar() {
       DATABASE_AUTH_URL: runtimeUrl(alvo.authRole, authPassword), DB_RLS_CONTEXT_KEY: key,
       JWT_SECRET: crypto.randomBytes(48).toString('hex'), EMAIL_VERIFICATION_PEPPER: crypto.randomBytes(48).toString('hex'),
       TEST_ADMIN_SENHA: crypto.randomBytes(20).toString('hex'), RESEND_API_KEY: 're_mock_homologacao_no_network',
-      EMAIL_FROM: 'BoviTrack <onboarding@resend.dev>', JWT_ACCESS_EXPIRES_IN: '15m', JWT_REFRESH_EXPIRES_IN: '7d',
+      EMAIL_FROM: 'BoviTrack <onboarding@resend.dev>', EMAIL_VERIFICATION_REQUIRED: 'true', JWT_ACCESS_EXPIRES_IN: '15m', JWT_REFRESH_EXPIRES_IN: '7d',
       JWT_ISSUER: 'bovitrack-api', JWT_AUDIENCE: 'bovitrack-web', FRONTEND_URL: 'http://127.0.0.1:5175',
       COOKIE_SECURE: 'false', COOKIE_SAME_SITE: 'lax', CSRF_ALLOW_NO_ORIGIN: 'true',
       APP_TIMEZONE: 'America/Sao_Paulo', DB_POOL_MAX: '3', DB_CONNECTION_TIMEOUT_MS: '10000',

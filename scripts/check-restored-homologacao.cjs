@@ -3,14 +3,17 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const {carregar}=require('./prepare-supabase-homologacao.cjs');
-const {root,output,localName,localClient}=require('./stage3-helpers.cjs');
+const {root,output,localName,localClient,writeLocal}=require('./stage3-helpers.cjs');
 async function main(){
   assert.equal(process.argv.length,2);
   const result=JSON.parse(fs.readFileSync(path.join(output,'backup-restore-results.json'),'utf8'));
   assert.equal(result.completed,true);assert.match(result.database,localName);
   const fixture=await localClient(result.database);
+  // O dump historico segue preservado; atualizar somente sua copia local atestada.
+  await writeLocal(fixture,result.database,fs.readFileSync(path.join(root,'backend/database/migrations/021_email_verificacao_configuravel.sql'),'utf8'));
+  const emailObrigatorio=(await fixture.query('SELECT bovitrack_seg.email_verificacao_obrigatoria() AS obrigatoria')).rows[0].obrigatoria;
   const {env}=carregar();
-  Object.assign(process.env,env,{NODE_ENV:'test',VERCEL:'',DB_SSL:'disable',DB_SSL_CA_PATH:'',DB_SSL_CA_BASE64:'',
+  Object.assign(process.env,env,{NODE_ENV:'test',VERCEL:'',DB_SSL:'disable',DB_SSL_CA_PATH:'',DB_SSL_CA_BASE64:'',EMAIL_VERIFICATION_REQUIRED:String(emailObrigatorio),
     DATABASE_URL:'postgresql://bovitrack_homolog_dominio@127.0.0.1:55441/'+result.database,
     DATABASE_AUTH_URL:'postgresql://bovitrack_homolog_auth@127.0.0.1:55441/'+result.database});
   const security=spawnSync(process.execPath,['scripts/check-security-readonly.js'],{cwd:path.join(root,'backend'),env:process.env,encoding:'utf8',timeout:30000});

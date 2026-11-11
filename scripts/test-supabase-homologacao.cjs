@@ -46,13 +46,17 @@ async function main() {
     validarUrl(value, tipo, alvo);
     await inspecionar(value, tipo, alvo, env);
   }
-  Object.assign(process.env, env, { VERCEL: '', NODE_ENV: 'test' });
+  Object.assign(process.env, env, { VERCEL: '', NODE_ENV: 'test', EMAIL_VERIFICATION_REQUIRED: 'true' });
   const admin = new Client(configuracaoAdmin(env));
   let pool, auth, server;
   const report = { projectRef: alvo.projectRef, startedAt: new Date().toISOString(), measurements: {}, completed: false };
   try {
     await admin.connect();
     await confirmarDestino(admin, alvo);
+    assert.equal((await admin.query("SELECT to_regclass('bovitrack_seg.configuracao_email') IS NOT NULL AS ready")).rows[0].ready,
+      true, 'Aplicar a migration 021 administrativamente na homologacao antes desta suite TRUE');
+    assert.equal((await admin.query('SELECT bovitrack_seg.email_verificacao_obrigatoria() AS obrigatoria')).rows[0].obrigatoria,
+      true, 'Esta suite valida a configuracao TRUE da homologacao');
     const audit = child('scripts/migrate-email-verification.js', { ...process.env,
       SUPABASE_MIGRATION_URL: env.BOVITRACK_HOMOLOG_ADMIN_URL }, ['--check']);
     fs.writeFileSync(path.join(output, 'remote-email-check.log'), audit);

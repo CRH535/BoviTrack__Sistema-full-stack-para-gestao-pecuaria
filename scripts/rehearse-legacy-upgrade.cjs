@@ -17,7 +17,7 @@ async function main(){
   const env={...process.env,NODE_ENV:'test',VERCEL:'',DB_SSL:'disable',DB_SSL_CA_PATH:'',DB_SSL_CA_BASE64:'',
     DATABASE_URL:'postgresql://'+login+'@127.0.0.1:55441/'+database,DATABASE_AUTH_URL:'postgresql://'+authLogin+'@127.0.0.1:55441/'+database,
     DB_RLS_CONTEXT_KEY:key,JWT_SECRET:hex(),EMAIL_VERIFICATION_PEPPER:hex(),TEST_ADMIN_SENHA:password,
-    RESEND_API_KEY:'re_mock_stage3_no_network',EMAIL_FROM:'BoviTrack <onboarding@resend.dev>',
+    RESEND_API_KEY:'re_mock_stage3_no_network',EMAIL_FROM:'BoviTrack <onboarding@resend.dev>',EMAIL_VERIFICATION_REQUIRED:'true',
     FRONTEND_URL:'http://127.0.0.1:5176,http://127.0.0.1:5177',COOKIE_SECURE:'false',COOKIE_SAME_SITE:'lax',CSRF_ALLOW_NO_ORIGIN:'true',
     JWT_ISSUER:'bovitrack-api',JWT_AUDIENCE:'bovitrack-web',JWT_ACCESS_EXPIRES_IN:'15m',JWT_REFRESH_EXPIRES_IN:'7d',APP_TIMEZONE:'America/Sao_Paulo'};
   const result={database,postgres:'17.6',legacyCommit:'d22d106889debe59cad67f344efbe94810c7912a',emailCommit:'91a07aadab54a42ccce82966ed1368e2847e0a88',migrations:[],cases:[],completed:false};
@@ -65,7 +65,7 @@ async function main(){
     await migration('012_integridade_parentesco_indices.sql');
     const after012=await fingerprint(c);
     // Login probes criam sessoes/limites; comparar todas as tabelas de negocio.
-    const business=rows=>rows.filter(r=>!['public.sessoes_refresh','public.sessoes_refresh_usados','public.limites_requisicao','public.usuarios','public.verificacoes_email','bovitrack_seg.chaves_contexto'].includes(r.table));
+    const business=rows=>rows.filter(r=>!['public.sessoes_refresh','public.sessoes_refresh_usados','public.limites_requisicao','public.usuarios','public.verificacoes_email','bovitrack_seg.chaves_contexto','bovitrack_seg.configuracao_email'].includes(r.table));
     assert.deepEqual(business(after012),business(before));
     await writeLocal(c,database,fs.readFileSync(path.join(root,'backend/database/migrations/012_integridade_parentesco_indices.sql'),'utf8'));
     assert.deepEqual(business(await fingerprint(c)),business(before));
@@ -77,6 +77,8 @@ async function main(){
     await writeLocal(c,database,'UPDATE usuarios SET email_verificado=true,email_verificado_em=now() WHERE id=ANY($1)',[[ids[0],ids[1]]]);
     await writeLocal(c,database,fs.readFileSync(path.join(root,'backend/database/migrations/013_verificacao_email.sql'),'utf8'));
     for(const file of['014_rls_contexto.sql','015_rls_autenticacao.sql','016_rls_verificacao_email.sql','017_rls_integridade.sql','018_rls_politicas.sql'])await migration(file);
+    await migration('021_email_verificacao_configuravel.sql');
+    assert.equal((await c.query('SELECT obrigatoria FROM bovitrack_seg.configuracao_email WHERE singleton')).rows[0].obrigatoria,true);
     await writeLocal(c,database,'GRANT bovitrack_auth_runtime TO '+ident(authLogin));
     await writeLocal(c,database,"INSERT INTO bovitrack_seg.chaves_contexto VALUES (decode($1,'hex'))",[key]);
     await probe('legacy','legacy-prepared');
