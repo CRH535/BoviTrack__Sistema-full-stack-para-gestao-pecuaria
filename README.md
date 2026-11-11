@@ -4,7 +4,7 @@
 
 O BoviTrack reúne informações de propriedades, animais, lotes, manejo, vacinação, produção leiteira e movimentações financeiras. A interface utiliza React; uma API Express concentra as regras de negócio, a autenticação e o acesso ao PostgreSQL.
 
-> **Status:** projeto em desenvolvimento. Esta documentação foi conferida com os arquivos disponíveis em 12 de outubro de 2026. Veja o [relatório de evolução](docs/RELATORIO_EVOLUCAO_2026-10-12.md) para alterações, testes e limites da validação local.
+> Produção conferida em 11/11/2026 com RLS ativo e verificação de e-mail opcional. O registro da publicação e reversão está em [Deploy de produção](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md). O [índice de documentação](docs/README.md) reúne os guias atuais e os registros históricos.
 
 ## Sumário
 
@@ -94,8 +94,8 @@ O navegador não acessa o PostgreSQL diretamente. O Supabase é utilizado como b
 - A renovação utiliza cookie HttpOnly e sessões no PostgreSQL, com rotação e revogação. O cliente Axios envia cookies com `withCredentials` e tenta renovar a sessão quando recebe um erro de autenticação apropriado.
 - Os tokens de autenticação não são persistidos pelo cliente atual em Local Storage. Preferências visuais podem usar esse armazenamento.
 - O cadastro público cria o perfil `usuario`. O administrador inicial é criado por script administrativo; rotas administrativas também verificam o perfil no backend.
-- E-mail verificado é obrigatório para contas novas e antigas, inclusive admin. Código de seis dígitos via Resend, validade de dez minutos, cinco tentativas e cooldown persistente. Consulte [implantação e verificação de e-mail](docs/VERIFICACAO_EMAIL.md) antes de ativar a migration `013`.
-- A autorização de dados privados ocorre no backend. Propriedades e vacinas têm vínculo direto com o usuário; os demais registros herdam o acesso pelos relacionamentos.
+- `EMAIL_VERIFICATION_REQUIRED=false` mantém cadastro, login e refresh disponíveis para contas pendentes, preservando seu estado real e sem envio automático de códigos nesses fluxos. Serviços Resend, desafios, telas e proteções permanecem implementados para a [ativação futura](ATIVACAO_FUTURA_VERIFICACAO_EMAIL.md).
+- O backend aplica autorização e o PostgreSQL aplica RLS nas 16 tabelas públicas da aplicação. Contexto assinado fica vinculado à transação no mesmo cliente `pg`, com logins separados para domínio e autenticação. Propriedades e vacinas têm vínculo direto com o usuário; os demais registros herdam o acesso pelos relacionamentos.
 - Listagens, alterações, vínculos entre entidades e agregações devem respeitar esse escopo. Recursos de terceiros são tratados como indisponíveis, inclusive diante de IDs manipulados.
 - CORS, validação de origem nas rotas de sessão, limites de requisições, limites de corpo JSON e cabeçalhos de segurança complementam as verificações de acesso.
 
@@ -104,7 +104,7 @@ As configurações de produção são validadas na inicialização. Use HTTPS, s
 ## Pré-requisitos
 
 - Git e npm.
-- Node.js compatível com as dependências instaladas. Para este projeto com Vite 8, use Node.js **22.12 ou superior em uma linha suportada**, verificando também os requisitos do ESLint e do lockfile. Consulte os [requisitos oficiais do Vite](https://vite.dev/guide/).
+- Node.js **24**, utilizado na validação local, no CI e nos projetos publicados, com as dependências dos lockfiles.
 - PostgreSQL acessível localmente ou um projeto Supabase.
 - Ferramentas PostgreSQL `psql` e `createdb` para o exemplo de instalação abaixo. A cópia para Supabase também utiliza `pg_dump`.
 - Acesso à internet para instalar dependências e consultar o clima.
@@ -131,34 +131,21 @@ Use `npm ci` com os arquivos `package-lock.json` versionados. Se estiver trabalh
 
 Edite os dois arquivos `.env` conforme a seção de configuração. Escolha uma senha administrativa própria e gere o segredo JWT; copiar o exemplo não configura credenciais utilizáveis.
 
-### 2. Preparar um PostgreSQL local vazio
+### 2. Preparar o banco com RLS
 
-O arquivo de schema abaixo cria as tabelas de negócio iniciais. Apesar do nome da pasta `supabase`, utiliza SQL PostgreSQL e pode inicializar um banco local vazio. Ele não deve ser reaplicado em um banco já populado.
+Para executar testes e explorar a aplicação com fixtures sintéticas, use a [validação reproduzível em banco descartável](#validação-reproduzível-em-banco-descartável). O runner prepara schema, roles, chave de contexto e migrations, inicia API e Vite durante o E2E e encerra seus recursos ao concluir.
 
-Antes dos scripts npm, configure `DB_*` no `.env` para esse banco e informe `ADMIN_NOME`, `ADMIN_EMAIL` e `ADMIN_SENHA` para `migrate:auth`. Mantenha `DATABASE_URL` ausente se quiser utilizar `DB_*`.
+Um ambiente persistente de desenvolvimento exige provisionamento administrativo próprio antes de iniciar a API. A sequência aplicada e testada em um banco vazio está em `scripts/test-isolated.cjs`.
 
-```powershell
-createdb -h localhost -p 5432 -U postgres bovitrack
-cd backend
-psql -h localhost -p 5432 -U postgres -d bovitrack -v ON_ERROR_STOP=1 -f database/supabase/001_schema_bovitrack.sql
+1. Aplicar o schema `backend/database/supabase/001_schema_bovitrack.sql`, sessões `003`, migrations `007`, `008`, `009` e `012`.
+2. Aplicar `020_estrutura_email_sem_revogar_sessoes.sql`, seguida de `014` a `018` e `021_email_verificacao_configuravel.sql`.
+3. Criar dois logins locais com senhas próprias e privilégios restritos, membros de `bovitrack_runtime` e `bovitrack_auth_runtime`, respectivamente. Provisionar uma chave aleatória de 32 bytes em `bovitrack_seg.chaves_contexto` e a mesma chave em hexadecimal em `DB_RLS_CONTEXT_KEY`.
+4. Definir `bovitrack_seg.configuracao_email.obrigatoria=false` e `EMAIL_VERIFICATION_REQUIRED=false`, criar as contas locais necessárias e aplicar `019_rls_ativacao.sql`.
+5. Configurar `DATABASE_URL` com o login de domínio e `DATABASE_AUTH_URL` com o de autenticação. Validar isolamento, autenticação e integridade antes de utilizar o ambiente.
 
-npm run migrate:auth
-npm run migrate:sessions
-npm run migrate:milk
-npm run migrate:bezerros
+As roles são compartilhadas pelo cluster PostgreSQL. Use um cluster dedicado ao desenvolvimento. O provisionamento deve ocorrer com credencial administrativa, guardada fora do runtime. O [relatório de implementação](IMPLEMENTACAO_RLS_BOVITRACK.md) descreve contexto e permissões, e o [registro da publicação](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md) documenta o caminho com e-mail opcional.
 
-psql -h localhost -p 5432 -U postgres -d bovitrack -v ON_ERROR_STOP=1 -f database/migrations/009_seguranca_sessoes_rate_limit.sql
-psql -h localhost -p 5432 -U postgres -d bovitrack -v ON_ERROR_STOP=1 -f database/migrations/012_integridade_parentesco_indices.sql
-npm run db:check
-```
-
-Configure `DB_*` para esse banco no `.env` e mantenha `DATABASE_URL` ausente se quiser utilizar essas variáveis. Os comandos PostgreSQL solicitam a senha da conexão; não coloque a senha na linha de comando.
-
-O schema inicial já inclui receitas e os campos básicos de identificação dos animais e despesas. As migrações acima acrescentam sessões, produção leiteira e manejo de bezerros; a migração `009` completa as estruturas de segurança da sessão e dos limites de requisição.
-
-`migrate:auth` utiliza `ADMIN_NOME`, `ADMIN_EMAIL` e `ADMIN_SENHA`. Se o e-mail administrativo já existir, o script pode atualizar sua senha e dados. Execute-o conscientemente.
-
-Para bancos existentes, revise o estado antes de escolher migrações incrementais. A migração `010` é destinada ao ambiente Supabase e referencia suas roles; ela não integra a inicialização local acima.
+Para bancos existentes, confira o catálogo e o histórico antes de escolher migrations. `migrate:auth` cria o administrador e pode atualizar sua senha e dados quando o e-mail já existe. Os scripts administrativos legados exigem revisão das credenciais e do estado do banco antes do uso.
 
 ### 3. Iniciar o backend
 
@@ -180,9 +167,7 @@ npm run dev
 
 Abra o endereço exibido pelo Vite, normalmente `http://localhost:5173`. Se a porta estiver ocupada e o Vite escolher outra, ajuste a configuração de origem quando necessário.
 
-Antes de utilizar a autenticação nova, aplique a migration `013` e configure os secrets de e-mail somente no backend, conforme [o guia de verificação](docs/VERIFICACAO_EMAIL.md). Use um e-mail administrativo real: endereços `.local` não recebem códigos. Com `onboarding@resend.dev`, somente o endereço da conta Resend pode receber o teste.
-
-Entre com a conta administrativa ou utilize o cadastro público para criar um usuário comum, confirme o código e faça novo login. Valide os registros e o isolamento entre contas em um banco de desenvolvimento.
+Entre com a conta administrativa local ou utilize o cadastro público. Com a obrigatoriedade de e-mail desativada, o login funciona com o estado real de verificação da conta. Valide os registros e o isolamento entre contas no banco de desenvolvimento. A [ativação futura da verificação](ATIVACAO_FUTURA_VERIFICACAO_EMAIL.md) exige configuração coordenada da API, do banco e do provedor.
 
 ## Variáveis de ambiente
 
@@ -201,12 +186,11 @@ Em produção, substitua por `https://SEU_BACKEND.vercel.app`, sem `/api` e sem 
 ```dotenv
 NODE_ENV=development
 PORT=3000
-DB_USER=postgres
-DB_HOST=localhost
-DB_NAME=bovitrack
-DB_PASSWORD=SUBSTITUA_PELA_SENHA_LOCAL
-DB_PORT=5432
+DATABASE_URL=postgresql://LOGIN_DOMINIO:SENHA_URL_ENCODED@127.0.0.1:5432/bovitrack
+DATABASE_AUTH_URL=postgresql://LOGIN_AUTH:SENHA_URL_ENCODED@127.0.0.1:5432/bovitrack
+DB_RLS_CONTEXT_KEY=SUBSTITUA_PELA_CHAVE_HEXADECIMAL_DE_64_CARACTERES
 DB_SSL=disable
+EMAIL_VERIFICATION_REQUIRED=false
 
 FRONTEND_URL=http://localhost:5173
 CORS_ALLOW_LOCALHOST=false
@@ -234,7 +218,7 @@ ADMIN_SENHA=SUBSTITUA_POR_UMA_SENHA_FORTE_E_UNICA
 ALLOW_TEST_DB_WRITES=false
 ```
 
-`DB_SSL=disable` é apropriado apenas para o exemplo de PostgreSQL local. Conexões remotas devem utilizar TLS. Os valores de `ADMIN_*` são usados na configuração administrativa, não devem ser credenciais públicas e não precisam ficar no runtime hospedado.
+`DB_SSL=disable` é apropriado apenas para o exemplo de PostgreSQL local. Conexões remotas devem utilizar TLS. `DB_*` permanece disponível para ferramentas legadas, com precedência de `DATABASE_URL` quando presente. Os valores de `ADMIN_*` são usados na configuração administrativa e ficam fora do runtime hospedado. Consulte `backend/.env.example` para opções de Resend e de homologação.
 
 ### Backend — produção e migrações
 
@@ -242,12 +226,15 @@ ALLOW_TEST_DB_WRITES=false
 | --- | --- |
 | `NODE_ENV` | `production` no backend hospedado. |
 | `DATABASE_URL` | URI do login de execução do banco; tem precedência sobre `DB_*`. Exemplo estrutural: `postgresql://USUARIO_RUNTIME:SENHA_URL_ENCODED@HOST_POOLER:6543/postgres`. |
+| `DATABASE_AUTH_URL` | URI do login separado, membro de `bovitrack_auth_runtime`, para os caminhos de autenticação. |
+| `DB_RLS_CONTEXT_KEY` | Chave aleatória de 32 bytes em hex, idêntica à provisionada no schema privado do banco. |
+| `EMAIL_VERIFICATION_REQUIRED` | `false`, em concordância com a configuração SQL administrativa da migration `021`. |
 | `DB_SSL` | `verify-full` em produção. |
 | `DB_SSL_CA_BASE64` ou `DB_SSL_CA_PATH` | CA confiável em PEM codificado em base64, ou caminho do certificado disponível no servidor. Configure uma alternativa. |
 | `FRONTEND_URL` | Origem HTTPS exata do frontend; várias origens autorizadas são separadas por vírgula. |
 | `COOKIE_SECURE` | `true` em produção. |
 | `COOKIE_SAME_SITE` | `none` quando a comunicação for cross-site; nesse caso `Secure` é obrigatório. |
-| `JWT_SECRET` | Valor novo e aleatório, com pelo menos 32 bytes, sem palavras ou valores de exemplo. |
+| `JWT_SECRET` | Segredo aleatório com pelo menos 32 bytes. Gere na instalação inicial e coordene rotações com a validade das sessões existentes. |
 | `JWT_ACCESS_EXPIRES_IN` | Padrão documentado: `15m`; em produção, a validação aceita entre `1m` e `30m`. |
 | `JWT_REFRESH_EXPIRES_IN` | Padrão documentado: `7d`; em produção, entre `1h` e `30d`. |
 | `JWT_ISSUER` / `JWT_AUDIENCE` | `bovitrack-api` / `bovitrack-web`, ou valores consistentes definidos pela instalação. |
@@ -319,13 +306,17 @@ $env:BOVITRACK_TEST_POSTGRES_URL = 'postgresql://postgres:SENHA_DE_TESTE@127.0.0
 node scripts/test-isolated.cjs offline
 node scripts/test-isolation.cjs
 node scripts/test-isolated.cjs integration
+node scripts/test-isolated.cjs email-flag
 cd frontend
 npx playwright install chromium
 cd ..
 node scripts/test-isolated.cjs e2e
+$env:BOVITRACK_TEST_EMAIL_REQUIRED = 'false'
+node scripts/test-isolated.cjs e2e email-optional.spec.js
+Remove-Item Env:BOVITRACK_TEST_EMAIL_REQUIRED
 ```
 
-`all` executa integração e E2E. O runner aceita somente URI PostgreSQL em loopback, sem query/hash, cria nome aleatório `bovitrack_test_*`, aplica schema e migrations (incluindo reaplicação de `012`), define configuração de teste e remove somente seu banco ao terminar normalmente ou diante de falha da suíte. A URL de negócio do ambiente é substituída. Os processos filhos legados podem ler `.env`, mas os valores explícitos do runner prevalecem. Não use conexão de produção. Uma interrupção forçada do processo pode deixar recursos de teste para limpeza manual.
+`all` executa integração e E2E com e-mail obrigatório por padrão. `email-flag` cobre FALSE, TRUE e transições. A segunda execução E2E acima cobre a configuração FALSE. O runner aceita somente URI PostgreSQL em loopback, sem query/hash, cria nome aleatório `bovitrack_test_*`, aplica schema e migrations, gera senhas temporárias próprias para os dois logins e remove seu banco e logins ao concluir ou diante de falha da suíte. Os processos filhos legados podem ler `.env`, mas os valores explícitos do runner prevalecem. Uma interrupção forçada pode deixar recursos de teste para limpeza manual.
 
 O Playwright inicia API e Vite nas portas `3005` e `5175`, recusa reutilizar servidores existentes, usa Chromium e sete viewports. Dados e autenticação são reais; apenas clima externo e o cenário explícito de erro do dashboard são simulados. Capturas ficam em `frontend/test-results/` e relatório HTML em `frontend/playwright-report/`, ambos ignorados pelo Git. O workflow [CI](.github/workflows/ci.yml) instala dependências e executa lint, build, auditoria e testes em serviço PostgreSQL próprio.
 
@@ -352,11 +343,9 @@ A migração `012` não reescreve dados históricos e deve ser aplicada em janel
 
 ### Preparar o runtime no Supabase
 
-Com as tabelas e migrações funcionais presentes, execute `migrate:security` e `migrate:revenues` pela conexão administrativa. A migração de segurança pressupõe, entre outras, as estruturas de sessões, produção leiteira, pesagens e desmamas.
+O runtime atual utiliza RLS e dois logins restritos, separados entre `DATABASE_URL` e `DATABASE_AUTH_URL`, com contexto assinado por transação. A ordem do corte publicado foi `012`, `020`, `014`–`018`, `021`, provisionamento e `019`. A chave privada, os grants e a configuração de e-mail precisam corresponder à API.
 
-Crie um login dedicado com os privilégios limitados documentados e associe-o à role `bovitrack_runtime`. Use esse login na `DATABASE_URL` da aplicação. Alguns scripts antigos de migração usam a conexão normal do pool: execute-os em um contexto administrativo de manutenção, nunca com o login restrito de runtime.
-
-A separação de usuários da aplicação é aplicada pelo Express. RLS não integra esse fluxo. Desative a Data API quando o projeto Supabase for dedicado a esse uso e confira a ausência de privilégios de acesso de `anon` e `authenticated` às tabelas e sequences.
+Confira o estado existente antes de qualquer manutenção. As migrations originais e os scripts legados foram preservados para compatibilidade. O login legado está bloqueado na produção publicada. O [registro de publicação e rollback](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md) documenta esse estado e seus requisitos operacionais. Confira também Data API, privilégios de `anon` e `authenticated` e as roles proprietárias.
 
 Para a Vercel, use o Transaction pooler, normalmente na porta `6543`, com pool pequeno. Para migrações, use Direct connection ou Session pooler, normalmente na porta `5432`. Copie host, usuário e porta do painel do seu projeto. Consulte a [documentação de conexões do Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres) e a [verificação TLS](https://supabase.com/docs/guides/platform/ssl-enforcement).
 
@@ -368,7 +357,7 @@ O repositório pode ser conectado a dois projetos Vercel, com diretórios raiz d
 
 1. Importe o repositório e configure **Root Directory: `backend`**.
 2. Use a detecção do framework Express. `app.js` exporta a aplicação; não há build de frontend nessa pasta.
-3. Configure as variáveis de produção do backend, incluindo `DATABASE_URL` de runtime, TLS e CA, segredo JWT, origens autorizadas e cookies seguros.
+3. Configure as variáveis do backend, incluindo os dois logins de runtime, `DB_RLS_CONTEXT_KEY`, `EMAIL_VERIFICATION_REQUIRED=false`, TLS e CA, segredo JWT, origens autorizadas e cookies seguros, conforme o registro da publicação.
 4. Prepare o banco previamente por um processo administrativo separado. Não execute migrações no início de cada requisição nem guarde a conexão administrativa no projeto hospedado.
 5. Publique e registre a URL HTTPS da API.
 

@@ -1,5 +1,7 @@
 # Preparação de produção — RLS BoviTrack
 
+> Relatório histórico anterior ao corte. A publicação posterior com RLS ativo e e-mail opcional está registrada em [Deploy de produção](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md). Os bloqueios e as aprovações descritos abaixo correspondem à etapa de preparação.
+
 Data: 11/11/2026. Branch: `feat/rls-bovitrack`. Candidata: tag local `bovitrack-rls-rc-20261111`; resolver o SHA com `git rev-parse bovitrack-rls-rc-20261111^{commit}`. Base da etapa: `51cb1c5d21d75a863bd03aa55361933cd722501b`.
 
 **Classificação: BLOQUEADO para implantação.** A preparação técnica foi executada, com correções, ensaios, backup restaurado e release local. A disponibilidade do banco de produção e a entrega real de e-mail ainda dependem de ação humana. Não houve escrita SQL em produção, reativação, alteração de secrets, push, merge em main, deploy ou promoção.

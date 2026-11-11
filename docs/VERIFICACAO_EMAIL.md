@@ -1,5 +1,7 @@
 # Verificação obrigatória de e-mail — BoviTrack
 
+> Registro da implementação original com obrigatoriedade ativa. A produção conferida em 11/11/2026 utiliza `EMAIL_VERIFICATION_REQUIRED=false` e configuração SQL correspondente. Para o estado publicado e a ativação futura, consulte [Deploy com e-mail opcional](../DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md) e [Ativação futura](../ATIVACAO_FUTURA_VERIFICACAO_EMAIL.md).
+
 Implementação na branch `DEV`, sem Supabase Auth, sem push e sem mudanças de produção executadas automaticamente.
 
 ## 1. Arquitetura
@@ -177,7 +179,7 @@ Testes sempre com transporte mock e banco local descartável criado pelo runner;
 
 Verificação automatizada cobre os 25 cenários solicitados: cadastro/estado/envio/CSPRNG, acerto/erro/expiração/reuso/tentativas, reenvio/código anterior/cooldown/rate limit, login antes/depois, antigo/admin/API direta/access/refresh antigos, falha/recuperação/concorrência, inexistente e envelope genérico. Acrescenta troca de e-mail própria/admin, CSRF, tickets expirados/manipulados, logging do SDK, RLS/constraints, idempotência de migration e cascade da conta.
 
-Comandos e resultados finais constam em `RELATORIO_VERIFICACAO_EMAIL.md`. Falhas intermediárias corrigidas foram de cast SQL e fixtures de cronologia/body JSON; nenhuma falha conhecida foi omitida.
+Comandos e resultados finais constam no [relatório histórico de validação](archive/RELATORIO_VERIFICACAO_EMAIL.md). Falhas intermediárias corrigidas foram de cast SQL e fixtures de cronologia/body JSON; nenhuma falha conhecida foi omitida.
 
 ## 16. Build
 

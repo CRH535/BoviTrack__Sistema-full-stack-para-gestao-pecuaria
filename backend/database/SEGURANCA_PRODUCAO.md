@@ -1,5 +1,7 @@
 # Segurança do banco em produção
 
+> Procedimento histórico do login único anterior ao RLS. O runtime publicado utiliza dois logins restritos, contexto assinado e migrations posteriores. Consulte o [registro da publicação e reversão](../../DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md) para os requisitos atuais.
+
 1. Execute `009_seguranca_sessoes_rate_limit.sql` e depois
    `010_hardening_supabase_runtime.sql` usando a conexão administrativa de
    migration. Os scripts não removem dados.

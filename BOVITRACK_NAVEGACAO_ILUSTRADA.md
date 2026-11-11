@@ -129,12 +129,12 @@ Os testes de interação cobrem teclado/drawer, busca, filtros, ordenação, pag
 
 O aviso preexistente do Graphify sobre o parser SQL ausente permanece restrito à extração desse tipo de arquivo. A atualização AST do frontend foi concluída; não se alterou o backend para tratar esse aviso.
 
-Evidências locais:
+Evidências locais. Os caminhos a seguir registram a execução original. Na conferência de 11/11/2026, este checkout contém capturas em `outputs/navigation-images/development/`; a galeria e os relatórios HTML abaixo estão ausentes.
 
-- [Galeria por ambiente, largura e tema](outputs/navigation-images/index.html).
-- [Relatório de desenvolvimento](outputs/navigation-images/development-report/index.html).
-- [Relatório de produção](outputs/navigation-images/production-report/index.html).
-- [Regressões de interação](outputs/navigation-images/interactions-report/index.html).
-- [Inventário consolidado](outputs/navigation-images/validation-summary.json).
+- Galeria por ambiente, largura e tema em `outputs/navigation-images/index.html`.
+- Relatório de desenvolvimento em `outputs/navigation-images/development-report/index.html`.
+- Relatório de produção em `outputs/navigation-images/production-report/index.html`.
+- Regressões de interação em `outputs/navigation-images/interactions-report/index.html`.
+- Inventário consolidado em `outputs/navigation-images/validation-summary.json`.
 
 Não há pendências conhecidas dentro do escopo auditado. Entrega em commit lógico na DEV após a validação. Main preservada; sem push ou deploy automático. O build de produção foi validado localmente com `vite preview`.

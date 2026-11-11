@@ -1,5 +1,7 @@
 # Implementação de RLS no BoviTrack
 
+> Registro da implementação inicial e do catálogo observado naquela etapa. A publicação posterior utiliza 16 tabelas com RLS e verificação de e-mail configurável pela `021`, com obrigatoriedade desativada. O estado operacional está em [Deploy de produção](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md).
+
 ## Escopo
 
 Implementação na branch `feat/rls-bovitrack`, criada da DEV local em `91a07aa` para incorporar a verificação de e-mail. O [relatório de auditoria](AUDITORIA_RLS_BOVITRACK.md) foi a referência de autorização e integridade. A nova leitura do catálogo Supabase confirmou 15 tabelas, zero policies, zero tabelas com RLS ativo e ausência de `verificacoes_email` e dos sete índices da 012. Essa leitura foi a única ação no banco remoto.

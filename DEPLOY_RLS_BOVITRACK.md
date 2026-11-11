@@ -1,5 +1,7 @@
 # Implantação e reversão de RLS
 
+> Runbook histórico da candidata com verificação de e-mail obrigatória. O corte posterior usou `020` e `021`, preservando sessões e mantendo a flag false. Consulte o [registro da publicação](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md) e o [procedimento de ativação futura](ATIVACAO_FUTURA_VERIFICACAO_EMAIL.md) para a configuração atual.
+
 ## Pré-requisitos
 
 - Aprovação explícita para produção, identificação do deployment Vercel e ambiente Supabase de homologação com PostgreSQL 17 e pooler de transações.

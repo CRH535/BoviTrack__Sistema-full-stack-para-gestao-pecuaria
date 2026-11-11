@@ -237,7 +237,7 @@ Criada somente **012_integridade_parentesco_indices.sql**; migrations antigas
 foram preservadas. Aplicação manual pela conexão administrativa
 `SUPABASE_MIGRATION_URL` via `npm run migrate:integrity`; nunca no startup.
 Pré-condições, locks e reversão estão em
-[INTEGRIDADE_012.md](../backend/database/INTEGRIDADE_012.md).
+[INTEGRIDADE_012.md](../../backend/database/INTEGRIDADE_012.md).
 Faça backup, confira inconsistências com `db:check`, planeje janela e valide após
 aplicar. Índices normais podem bloquear escritas enquanto são criados.
 

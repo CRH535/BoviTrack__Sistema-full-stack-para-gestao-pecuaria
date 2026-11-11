@@ -1,6 +1,6 @@
 # BoviTrack — verificação para publicação em produção
 
-> Relatório histórico de 10/11/2026. Para o estado reconfirmado em 11/11/2026, resultados posteriores e decisão de corte, consultar `PREPARACAO_PRODUCAO_RLS_BOVITRACK.md` e `RUNBOOK_DEPLOY_RLS_BOVITRACK.md`. As vulnerabilidades npm citadas abaixo foram corrigidas posteriormente; não representam o audit atual.
+> Relatório histórico de 10/11/2026. A publicação posterior com RLS ativo e e-mail opcional está registrada em [Deploy de produção](DEPLOY_PRODUCAO_RLS_SEM_VERIFICACAO_EMAIL.md). As vulnerabilidades npm citadas abaixo foram corrigidas posteriormente. As seções seguintes preservam os resultados daquela auditoria.
 
 Data: 10/11/2026, America/Sao_Paulo. Verificação realizada nesta sessão.
 

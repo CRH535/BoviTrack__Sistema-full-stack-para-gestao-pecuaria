@@ -1,6 +1,6 @@
 # Validação da verificação de e-mail — 14/10/2026
 
-Implementação e revisão completas na `DEV`. Produção não foi alterada: nenhuma migration, entrega real, mudança de secret, deploy, push ou merge foi executada. Guia técnico e operacional com os vinte tópicos solicitados: [VERIFICACAO_EMAIL.md](VERIFICACAO_EMAIL.md).
+Implementação e revisão completas na `DEV`. Produção não foi alterada: nenhuma migration, entrega real, mudança de secret, deploy, push ou merge foi executada. Guia técnico e operacional com os vinte tópicos solicitados: [VERIFICACAO_EMAIL.md](../VERIFICACAO_EMAIL.md).
 
 ## Resultados
 

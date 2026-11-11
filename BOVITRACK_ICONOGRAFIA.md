@@ -118,12 +118,12 @@ Os cenários funcionais de falha injetam erros de API deliberadamente para valid
 
 Foram consolidados **914 estados distintos** de páginas/tema/resolução, **23571 instâncias de ícones** e **938 capturas**, incluindo 24 capturas finais dos campos de busca. Nenhum estado auditado possui falha remanescente.
 
-Evidências locais, ignoradas pelo Git:
+Evidências locais, ignoradas pelo Git. Os caminhos a seguir registram a execução original. Na conferência de 11/11/2026, este checkout contém as capturas em `outputs/iconografia/after/`; a galeria e os relatórios HTML abaixo estão ausentes.
 
-- [Galeria final com filtros de ambiente, resolução e tema](outputs/iconografia/index.html).
-- [Auditoria de produção](outputs/iconografia/production-report/index.html).
-- [Fluxos funcionais](outputs/iconografia/flows-report/index.html).
-- [Inventário consolidado](outputs/iconografia/validation-summary.json).
+- Galeria final com filtros de ambiente, resolução e tema em `outputs/iconografia/index.html`.
+- Auditoria de produção em `outputs/iconografia/production-report/index.html`.
+- Fluxos funcionais em `outputs/iconografia/flows-report/index.html`.
+- Inventário consolidado em `outputs/iconografia/validation-summary.json`.
 - Inventários individuais em `after/<resolução>/inventory.json`, `production/<resolução>/inventory.json` e capturas finais em `search-results/`, dentro de `outputs/iconografia/`.
 
 ## Pendências e entrega
