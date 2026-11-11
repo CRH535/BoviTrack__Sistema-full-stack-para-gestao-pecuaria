@@ -1,25 +1,59 @@
-SECURITY_AUDIT.md
-BOVITRACK_MEMORIA_ATUALIZADA_29-08-2026.md
-SECURITY_AUDIT_PRE_LAUNCH.md
-DER_BOVITRACK.png
-DICIONARIO_DADOS_BOVITRACK.png
-DICIONARIO_DADOS_TCC.md
-DICIONARIO_DADOS.md
-
-# Dependências e evidências locais de validação
+# Dependências, builds e caches (frontend, backend e ferramentas)
 node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+.cache/
+.eslintcache
+coverage/
+
+# Ambientes locais; somente exemplos revisados podem ser compartilhados
 .env
 .env.*
 !.env.example
+
+# Chaves privadas, containers de credenciais e dumps PostgreSQL
+# Certificados públicos .crt não são bloqueados por extensão.
+*.key
+*.pem
+*.p12
+*.pfx
+*.dump
+*.backup
+
+# Logs e arquivos temporários
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Sistema operacional e estado local de ferramentas
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vercel/
+**/supabase/.temp/
+**/supabase/.branches/
+
+# Resultados de testes, evidências, bancos e binários de ensaio
 test-results/
 playwright-report/
-outputs/ui-audit/
-outputs/iconografia/
-outputs/navigation-images/
-outputs/email-verification/
-# Evidencias, bancos descartaveis, backups sinteticos e binarios de ensaio.
-outputs/
-graphify-out/cache/
-.codex/ui-*.cjs
-# Backups automáticos do grafo; os arquivos atuais permanecem versionados.
-graphify-out/????-??-??/
+/outputs/
+
+# Agentes: preservar hooks, skills, grafo atual e documentação compartilhados
+/.codex/ui-*.cjs
+/.codex/*.graphify-bak
+/graphify-out/cache/
+/graphify-out/????-??-??/
+/graphify-out/.graphify_python
+/graphify-out/.graphify_root

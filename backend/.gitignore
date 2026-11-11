@@ -1,7 +1,10 @@
+# O pacote de release também usa este módulo sem o .gitignore da raiz
 node_modules/
 .env
 .env.*
 !.env.example
 .vercel/
-backups/
-certificates/
+
+# Dados de migração e certificados locais
+/backups/
+/certificates/
