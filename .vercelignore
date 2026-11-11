@@ -1,0 +1,9 @@
+.git
+.codex
+graphify-out
+outputs
+**/node_modules
+**/.env*
+**/tests
+**/test-results
+**/playwright-report

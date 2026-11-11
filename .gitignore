@@ -17,6 +17,9 @@ outputs/ui-audit/
 outputs/iconografia/
 outputs/navigation-images/
 outputs/email-verification/
+# Evidencias, bancos descartaveis, backups sinteticos e binarios de ensaio.
+outputs/
+graphify-out/cache/
 .codex/ui-*.cjs
 # Backups automáticos do grafo; os arquivos atuais permanecem versionados.
 graphify-out/????-??-??/

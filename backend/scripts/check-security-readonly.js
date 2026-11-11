@@ -33,6 +33,24 @@ async function verificar() {
     verificarLogin(auth, "bovitrack_auth_runtime", "bovitrack_runtime"),
   ]);
   assert.notEqual(loginDominio, loginAuth);
+  for (const [tabela, coluna] of [
+    ['usuarios','senha'], ['usuarios','perfil'], ['usuarios','ativo'],
+    ['usuarios','email_verificado'], ['usuarios','email_verificado_em'],
+    ['propriedades','usuario_id'], ['vacinas','usuario_id'],
+    ['pesagens','registrado_por'], ['desmamas','registrado_por'],
+  ]) {
+    const { rows: [{ permitido }] } = await dominio.query(
+      "SELECT has_column_privilege(current_user,$1,$2,'UPDATE') AS permitido",
+      ['public.' + tabela, coluna],
+    );
+    assert.equal(permitido, false, 'grant direto de coluna sensível incompatível');
+  }
+  const authDireto = await auth.query(`SELECT c.relname FROM pg_class c
+    JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relname=ANY($1)
+      AND (has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+        OR has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE'))`, [tabelas]);
+  assert.equal(authDireto.rowCount, 0, 'login auth com acesso direto a tabelas');
   const { rows } = await dominio.query(
     `SELECT c.relname, c.relrowsecurity,
       EXISTS (SELECT FROM pg_policy p WHERE p.polrelid=c.oid) AS tem_policy,
