@@ -9,9 +9,13 @@ const {spawnSync}=require('node:child_process');
 const dotenv=require('../backend/node_modules/dotenv');
 const {Client}=require('../backend/node_modules/pg');
 const {criarConfiguracaoPorUrl}=require('../backend/database/config');
-const {files,applyMigration}=require('./release-migration-executor.cjs');
+const {optionalEmailFiles:files,applyMigration}=require('./release-migration-executor.cjs');
 const REF='znpmzebrryqtjkgnvlcw';
 const root=path.resolve(__dirname,'..');
+function loadReleaseEnv(){
+  const encrypted=path.join(root,'backend/.env.release-production.dpapi');
+  return fs.existsSync(encrypted)?require('./windows-private-store.cjs').readPrivate(encrypted):dotenv.parse(fs.readFileSync(path.join(root,'backend/.env.release-production')));
+}
 function assertReleaseCheckout(sha){
   const git=spawnSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'});
   assert.equal(git.status,0);assert.equal(git.stdout.trim(),sha);
@@ -34,7 +38,7 @@ function validateConfig(env,mode){
 }
 async function main(){
   const mode=process.argv[2]||'--check';assert.ok(process.argv.length<=3);
-  const env=dotenv.parse(fs.readFileSync(path.join(root,'backend/.env.release-production')));
+  const env=loadReleaseEnv();
   validateConfig(env,mode);assert.notEqual(process.env.NODE_TLS_REJECT_UNAUTHORIZED,'0');
   assertReleaseCheckout(env.BOVITRACK_RELEASE_SHA);
   const c=new Client({...criarConfiguracaoPorUrl(env.BOVITRACK_RELEASE_ADMIN_URL,{sslMode:'verify-full',sslCaPath:env.DB_SSL_CA_PATH,producao:true}),connectionTimeoutMillis:10000,query_timeout:30000});
@@ -63,8 +67,11 @@ async function main(){
     }
     const backup=JSON.parse(fs.readFileSync(env.BOVITRACK_RELEASE_BACKUP_MANIFEST,'utf8'));
     assert.equal(backup.projectRef,REF);assert.equal(backup.verifiedRestore,true);assert.equal(backup.sourceSha,env.BOVITRACK_RELEASE_SHA);
+    assert.ok(Date.parse(backup.startedAt)>=Date.parse(env.BOVITRACK_RELEASE_MAINTENANCE_STARTED_AT));
     assert.ok(Date.parse(backup.finishedAt)>=Date.parse(env.BOVITRACK_RELEASE_MAINTENANCE_STARTED_AT));
     assert.equal(crypto.createHash('sha256').update(fs.readFileSync(backup.archive)).digest('hex'),backup.sha256);
+    assert.equal((await c.query("SELECT rolcanlogin FROM pg_roles WHERE rolname='bovitrack_app_login'")).rows[0]?.rolcanlogin,false);
+    assert.equal((await c.query("SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename='bovitrack_app_login'")).rows[0].n,0);
     if(mode==='--prepare'){
       const ledger=(await c.query("SELECT to_regclass('bovitrack_release.migrations') AS name")).rows[0].name;
       if(!ledger){
@@ -73,6 +80,7 @@ async function main(){
       }
       for(const file of files.slice(0,-1)){await applyMigration(c,file,guard);console.log('OK migration '+file);}
     }else if(mode==='--provision'){
+      assert.equal(env.EMAIL_VERIFICATION_REQUIRED,'false');
       assert.match(env.DB_RLS_CONTEXT_KEY||'',/^[a-f0-9]{64}$/);assert.ok((env.BOVITRACK_AUTH_LOGIN_PASSWORD||'').length>=32);assert.ok((env.BOVITRACK_DOMAIN_LOGIN_PASSWORD||'').length>=32);
       await c.query('BEGIN');await guard();
       assert.equal((await c.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname='bovitrack_app_auth_login'")).rows[0].n,0,'Nao rotacionar login existente automaticamente');
@@ -83,9 +91,12 @@ async function main(){
       await c.query('SELECT pg_temp.provisionar_login($1,$2)',['bovitrack_app_rls_login',env.BOVITRACK_DOMAIN_LOGIN_PASSWORD]);
       await c.query('GRANT bovitrack_auth_runtime TO bovitrack_app_auth_login');
       await c.query('GRANT bovitrack_runtime TO bovitrack_app_rls_login');
+      assert.equal((await c.query('UPDATE bovitrack_seg.configuracao_email SET obrigatoria=false WHERE singleton')).rowCount,1);
       await c.query("INSERT INTO bovitrack_seg.chaves_contexto VALUES (decode($1,'hex'))",[env.DB_RLS_CONTEXT_KEY]);await c.query('COMMIT');
       console.log('OK provisionamento; segredos nao exibidos');
     }else if(mode==='--activate'){
+      assert.equal(env.EMAIL_VERIFICATION_REQUIRED,'false','Este release exige e-mail opcional');
+      assert.equal((await c.query('SELECT obrigatoria FROM bovitrack_seg.configuracao_email WHERE singleton')).rows[0]?.obrigatoria,false);
       assert.equal((await c.query('SELECT count(DISTINCT tablename)::int AS n FROM pg_policies WHERE schemaname=\'public\'')).rows[0].n,16);
       assert.equal((await c.query("SELECT count(*)::int AS n FROM bovitrack_seg.chaves_contexto WHERE chave=decode($1,'hex')",[env.DB_RLS_CONTEXT_KEY])).rows[0].n,1);
       for(const file of files.slice(0,-1)){
@@ -100,4 +111,4 @@ async function main(){
   }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{await c.end();}
 }
 if(require.main===module)main().catch(e=>{console.error('Release recusado:',e.code||e.name,'Consulte runbook, aprovacao, destino, TLS, backup e manutencao.');process.exitCode=1;});
-module.exports={validateConfig,assertReleaseCheckout};
+module.exports={validateConfig,assertReleaseCheckout,loadReleaseEnv};
