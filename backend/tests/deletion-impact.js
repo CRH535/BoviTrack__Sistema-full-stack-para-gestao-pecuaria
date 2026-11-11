@@ -8,7 +8,7 @@ async function testarRollbackDaPropriedade() {
   const consultas = [];
   let liberado = false;
   const connectOriginal = pool.connect;
-  const cliente = {
+  const cliente = Object.assign(new (require('node:events').EventEmitter)(), {
     async query(sql) {
       const texto = String(sql).replace(/\s+/g, " ").trim();
       consultas.push(texto);
@@ -34,7 +34,7 @@ async function testarRollbackDaPropriedade() {
     release() {
       liberado = true;
     },
-  };
+  });
 
   pool.connect = async () => cliente;
   delete require.cache[require.resolve("../services/impactoExclusao")];

@@ -95,7 +95,7 @@ function respostaFake() {
     for (const erro of [new Error("falha de consulta"), new Error("Query read timeout")]) {
       let descartado = false;
       const chamadas = [];
-      const banco = { connect: async () => ({
+      const banco = { connect: async () => Object.assign(new (require('node:events').EventEmitter)(), {
         query: async (sql) => {
           chamadas.push(sql);
           if (sql === "ROLLBACK") throw new Error("conexão fechada");
@@ -106,6 +106,23 @@ function respostaFake() {
       assert.equal(descartado, true);
       assert.equal(chamadas.includes("ROLLBACK"), erro.message !== "Query read timeout");
     }
+  });
+
+  await teste("executor captura desconexão assíncrona e descarta o cliente sem COMMIT", async () => {
+    const { EventEmitter } = require('node:events');
+    const chamadas = [];
+    let descartado;
+    const cliente = Object.assign(new EventEmitter(), {
+      query: async sql => { chamadas.push(sql); return { command: sql }; },
+      release: destruir => { descartado = destruir; },
+    });
+    const falha = new Error('Connection terminated unexpectedly');
+    await assert.rejects(transacao({ connect: async () => cliente }, async () => {
+      cliente.emit('error', falha);
+    }), falha);
+    assert.equal(descartado, true);
+    assert.deepEqual(chamadas, ['BEGIN']);
+    assert.equal(cliente.listenerCount('error'), 0);
   });
 
   await teste("produção falha com segredo fraco, access token longo e TLS inseguro", () => {

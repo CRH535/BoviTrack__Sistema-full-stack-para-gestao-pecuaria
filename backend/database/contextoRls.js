@@ -4,14 +4,20 @@ const pool = require("./pool");
 async function transacao(banco, executar) {
   const cliente = await banco.connect();
   let descartar = false;
+  let erroConexao;
+  // O pg-pool retira seu listener enquanto o cliente está emprestado. Uma
+  // desconexão assíncrona nesse intervalo não pode virar um evento sem tratador.
+  const aoFalharConexao = (erro) => { descartar = true; erroConexao = erro; };
+  cliente.on('error', aoFalharConexao);
   try {
     await cliente.query("BEGIN");
     const resultado = await executar(cliente);
+    if (erroConexao) throw erroConexao;
     const fim = await cliente.query("COMMIT");
     if (fim.command !== "COMMIT") throw new Error("Transação abortada");
     return resultado;
   } catch (erro) {
-    descartar = erro.message === "Query read timeout";
+    descartar ||= erro.message === "Query read timeout";
     if (!descartar) {
       try {
         await cliente.query("ROLLBACK");
@@ -21,6 +27,7 @@ async function transacao(banco, executar) {
     }
     throw erro;
   } finally {
+    cliente.removeListener('error', aoFalharConexao);
     cliente.release(descartar);
   }
 }

@@ -50,7 +50,7 @@ async function testarHttpSemBanco() {
     // Nenhum dos IDs privados do teste pertence ao usuario simulado.
     return { rows: [], rowCount: 0 };
   };
-  pool.connect = async () => ({ query, release() {} });
+  pool.connect = async () => Object.assign(new (require('node:events').EventEmitter)(), { query, release() {} });
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => { req.usuario = { id: 7, perfil: "usuario" }; req.autenticacao = { sessionId: "b".repeat(64) }; next(); });
