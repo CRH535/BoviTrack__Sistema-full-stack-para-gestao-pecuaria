@@ -171,6 +171,7 @@ export function AuthProvider({ children }) {
   function iniciarVerificacao(email, dados) {
     limparTokenAcesso();
     setUsuario(null);
+    setVerificacaoEmailObrigatoria(true);
     // Contexto restrito apenas em memória: sem URL, localStorage ou senha.
     setVerificacaoPendente({ email: email.trim().toLowerCase(), ...dados,
       reenviarEm: Date.now() + (Number(dados.retryAfter) || 0) * 1000 });
