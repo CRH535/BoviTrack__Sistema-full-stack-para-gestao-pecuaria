@@ -46,6 +46,7 @@
   height: 56%;
 }
 .nav-link:has(.module-illustration) {
+  min-height: 42px;
   padding-block: 7px;
   gap: 9px;
 }
