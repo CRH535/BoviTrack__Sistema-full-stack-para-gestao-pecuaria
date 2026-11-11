@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool");
+const { rotaComBanco } = require("../database/contextoRls");
 const { validarParametroId } = require("../middleware/validacao");
 const { registrarErro } = require("../utils/log");
 const {
@@ -163,9 +163,9 @@ function construirFiltro(aliasTabela, filtros, usuario, { incluirCategoria = tru
   return { where: condicoes.join(" AND "), valores };
 }
 
-async function validarAcessoPropriedade(propriedadeId, usuario) {
+async function validarAcessoPropriedade(propriedadeId, usuario, cliente) {
   if (!propriedadeId) return true;
-  const resultado = await pool.query(
+  const resultado = await cliente.query(
     `SELECT id FROM propriedades
       WHERE id = $1 AND ($2 = 'admin' OR usuario_id = $3)`,
     [propriedadeId, usuario.perfil, usuario.id],
@@ -173,7 +173,7 @@ async function validarAcessoPropriedade(propriedadeId, usuario) {
   return resultado.rowCount > 0;
 }
 
-router.post("/receitas", async (req, res) => {
+router.post("/receitas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, [
       "descricao",
@@ -184,16 +184,16 @@ router.post("/receitas", async (req, res) => {
       "forma_recebimento",
       "observacao",
     ]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const dados = normalizarReceita(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const receita = dados.valor;
 
-    if (!(await validarAcessoPropriedade(receita.propriedadeId, req.usuario))) {
-      return res.status(404).json({ mensagem: "Propriedade não encontrada" });
+    if (!(await validarAcessoPropriedade(receita.propriedadeId, req.usuario, cliente))) {
+      return responder(404, { mensagem: "Propriedade não encontrada" });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO receitas
         (descricao, categoria, valor, data, propriedade_id, forma_recebimento, observacao)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -209,31 +209,31 @@ router.post("/receitas", async (req, res) => {
       ],
     );
 
-    return res.status(201).json({
+    return responder(201, {
       mensagem: "Receita cadastrada com sucesso!",
       receita: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("receitas_rota_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao cadastrar receita" });
+    return responder(500, { mensagem: "Erro ao cadastrar receita" });
   }
-});
+}));
 
-router.get("/receitas", async (req, res) => {
+router.get("/receitas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const filtros = normalizarFiltros(req.query);
-    if (filtros.erro) return res.status(400).json({ mensagem: filtros.erro });
-    if (!(await validarAcessoPropriedade(filtros.valor.propriedadeId, req.usuario))) {
-      return res.status(404).json({ mensagem: "Propriedade não encontrada" });
+    if (filtros.erro) return responder(400, { mensagem: filtros.erro });
+    if (!(await validarAcessoPropriedade(filtros.valor.propriedadeId, req.usuario, cliente))) {
+      return responder(404, { mensagem: "Propriedade não encontrada" });
     }
 
     const consulta = construirFiltro("r", filtros.valor, req.usuario);
     consulta.valores.push(paginacao.valor.limite + 1, paginacao.valor.offset);
     const limite = `$${consulta.valores.length - 1}`;
     const offset = `$${consulta.valores.length}`;
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT r.id, r.descricao, r.categoria, r.valor, r.data,
               r.propriedade_id, r.forma_recebimento, r.observacao,
               p.nome AS propriedade
@@ -245,58 +245,56 @@ router.get("/receitas", async (req, res) => {
       consulta.valores,
     );
 
-    return res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    return responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("receitas_rota_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao buscar receitas" });
+    return responder(500, { mensagem: "Erro ao buscar receitas" });
   }
-});
+}));
 
-router.get("/receitas/resumo", async (req, res) => {
+router.get("/receitas/resumo", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const filtros = normalizarFiltros(req.query);
-    if (filtros.erro) return res.status(400).json({ mensagem: filtros.erro });
-    if (!(await validarAcessoPropriedade(filtros.valor.propriedadeId, req.usuario))) {
-      return res.status(404).json({ mensagem: "Propriedade não encontrada" });
+    if (filtros.erro) return responder(400, { mensagem: filtros.erro });
+    if (!(await validarAcessoPropriedade(filtros.valor.propriedadeId, req.usuario, cliente))) {
+      return responder(404, { mensagem: "Propriedade não encontrada" });
     }
 
     const filtroReceitas = construirFiltro("r", filtros.valor, req.usuario);
     const filtroDespesas = construirFiltro("d", filtros.valor, req.usuario, {
       incluirCategoria: false,
     });
-    const [receitasResultado, despesasResultado] = await Promise.all([
-      pool.query(
-        `SELECT COALESCE(SUM(r.valor), 0) AS total
-           FROM receitas r
-           JOIN propriedades p ON p.id = r.propriedade_id
-          WHERE ${filtroReceitas.where}`,
-        filtroReceitas.valores,
-      ),
-      pool.query(
-        `SELECT COALESCE(SUM(d.valor), 0) AS total
-           FROM despesas d
-           JOIN propriedades p ON p.id = d.propriedade_id
-          WHERE ${filtroDespesas.where}`,
-        filtroDespesas.valores,
-      ),
-    ]);
+    const receitasResultado = await cliente.query(
+      `SELECT COALESCE(SUM(r.valor), 0) AS total
+         FROM receitas r
+         JOIN propriedades p ON p.id = r.propriedade_id
+        WHERE ${filtroReceitas.where}`,
+      filtroReceitas.valores,
+    );
+    const despesasResultado = await cliente.query(
+      `SELECT COALESCE(SUM(d.valor), 0) AS total
+         FROM despesas d
+         JOIN propriedades p ON p.id = d.propriedade_id
+        WHERE ${filtroDespesas.where}`,
+      filtroDespesas.valores,
+    );
     const totalReceitas = Number(receitasResultado.rows[0].total);
     const totalDespesas = Number(despesasResultado.rows[0].total);
 
-    return res.json({
+    return responder(200, {
       receita_total: totalReceitas,
       despesas_totais: totalDespesas,
       lucro_liquido: totalReceitas - totalDespesas,
     });
   } catch (erro) {
     registrarErro("receitas_resumo_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao calcular resumo financeiro" });
+    return responder(500, { mensagem: "Erro ao calcular resumo financeiro" });
   }
-});
+}));
 
-router.get("/receitas/:id", async (req, res) => {
+router.get("/receitas/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT r.id, r.descricao, r.categoria, r.valor, r.data,
               r.propriedade_id, r.forma_recebimento, r.observacao,
               p.nome AS propriedade
@@ -306,23 +304,23 @@ router.get("/receitas/:id", async (req, res) => {
       [req.params.id, req.usuario.perfil, req.usuario.id],
     );
     if (!resultado.rowCount) {
-      return res.status(404).json({ mensagem: "Receita não encontrada" });
+      return responder(404, { mensagem: "Receita não encontrada" });
     }
-    return res.json(resultado.rows[0]);
+    return responder(200, resultado.rows[0]);
   } catch (erro) {
     registrarErro("receitas_rota_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao buscar receita" });
+    return responder(500, { mensagem: "Erro ao buscar receita" });
   }
-});
+}));
 
-router.put("/receitas/:id", async (req, res) => {
+router.put("/receitas/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
-    const atual = await pool.query(
+    const atual = await cliente.query(
       `SELECT r.id FROM receitas r JOIN propriedades p ON p.id = r.propriedade_id
         WHERE r.id = $1 AND ($2 = 'admin' OR p.usuario_id = $3)`,
       [req.params.id, req.usuario.perfil, req.usuario.id],
     );
-    if (!atual.rows[0]) return res.status(404).json({ mensagem: "Receita não encontrada" });
+    if (!atual.rows[0]) return responder(404, { mensagem: "Receita não encontrada" });
     const campos = validarCamposPermitidos(req.body, [
       "descricao",
       "categoria",
@@ -332,16 +330,16 @@ router.put("/receitas/:id", async (req, res) => {
       "forma_recebimento",
       "observacao",
     ]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const dados = normalizarReceita(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const receita = dados.valor;
 
-    if (!(await validarAcessoPropriedade(receita.propriedadeId, req.usuario))) {
-      return res.status(404).json({ mensagem: "Propriedade não encontrada" });
+    if (!(await validarAcessoPropriedade(receita.propriedadeId, req.usuario, cliente))) {
+      return responder(404, { mensagem: "Propriedade não encontrada" });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE receitas r
           SET descricao = $1, categoria = $2, valor = $3, data = $4,
               propriedade_id = $5, forma_recebimento = $6, observacao = $7,
@@ -366,21 +364,21 @@ router.put("/receitas/:id", async (req, res) => {
       ],
     );
     if (!resultado.rowCount) {
-      return res.status(404).json({ mensagem: "Receita não encontrada" });
+      return responder(404, { mensagem: "Receita não encontrada" });
     }
-    return res.json({
+    return responder(200, {
       mensagem: "Receita atualizada com sucesso!",
       receita: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("receitas_rota_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao atualizar receita" });
+    return responder(500, { mensagem: "Erro ao atualizar receita" });
   }
-});
+}));
 
-router.delete("/receitas/:id", async (req, res) => {
+router.delete("/receitas/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM receitas r
         USING propriedades p
         WHERE r.id = $1 AND p.id = r.propriedade_id
@@ -389,16 +387,16 @@ router.delete("/receitas/:id", async (req, res) => {
       [req.params.id, req.usuario.perfil, req.usuario.id],
     );
     if (!resultado.rowCount) {
-      return res.status(404).json({ mensagem: "Receita não encontrada" });
+      return responder(404, { mensagem: "Receita não encontrada" });
     }
-    return res.json({
+    return responder(200, {
       mensagem: "Receita excluída com sucesso!",
       receita: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("receitas_rota_erro", erro, req);
-    return res.status(500).json({ mensagem: "Erro ao excluir receita" });
+    return responder(500, { mensagem: "Erro ao excluir receita" });
   }
-});
+}));
 
 module.exports = router;

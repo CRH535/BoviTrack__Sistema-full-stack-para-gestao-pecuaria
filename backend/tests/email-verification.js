@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { mensagens } = require('./helpers/email');
-const { app, pool } = require('../app');
+const { app } = require('../app');
+const pool = require("./helpers/bancoFixture");
 const emailService = require('../services/emailService');
 const service = require('../services/verificacaoEmail');
 const { VERIFICACAO_EMAIL: config, obterConfiguracaoEmail } = require('../config/email');
@@ -161,8 +162,8 @@ async function newCode() { await allowResend(); assert.equal((await service.soli
   });
   await check('usuário antigo com access/refresh anteriores é bloqueado; verificação não ressuscita sessão', async () => {
     await pool.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=CURRENT_TIMESTAMP WHERE id=$1',[userId]);
-    const u = (await pool.query('SELECT id,perfil FROM usuarios WHERE id=$1',[userId])).rows[0];
-    const session = await criarSessaoRefresh(pool,userId); const token = criarTokenAcesso(u,session);
+    const u = (await pool.query('SELECT id,perfil,senha FROM usuarios WHERE id=$1',[userId])).rows[0];
+    const session = await criarSessaoRefresh(pool,userId,u.senha); const token = criarTokenAcesso(u,session);
     await pool.query('UPDATE usuarios SET email_verificado=FALSE,email_verificado_em=NULL WHERE id=$1',[userId]);
     assert.equal((await request('/dashboard',{token})).data.codigo,'EMAIL_NOT_VERIFIED');
     const refresh = await request('/auth/refresh',{body:null,cookie:`bovitrack_refresh=${session.token}`});
@@ -288,44 +289,22 @@ async function newCode() { await allowResend(); assert.equal((await service.soli
     assert.equal((await service.verificarCodigo(target,mensagens.get(target).codigo)).estado,'EMAIL_VERIFIED');
     await pool.query('DELETE FROM usuarios WHERE email=$1',[target]);
   });
-  await check('RLS, privilégio público, trigger invoker e consistência dos timestamps', async () => {
+  await check('RLS, privilégio público, trigger com papel interno e consistência dos timestamps', async () => {
     const table=(await pool.query(`SELECT relrowsecurity,relacl,relowner FROM pg_class WHERE oid='public.verificacoes_email'::regclass`)).rows[0];
     assert.equal(table.relrowsecurity,true);
     const grants=await pool.query(`SELECT * FROM pg_class c,LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a
       WHERE c.oid='public.verificacoes_email'::regclass AND a.grantee=0`);
     assert.equal(grants.rowCount,0);
-    const fn=(await pool.query(`SELECT prosecdef,proconfig FROM pg_proc WHERE oid='public.invalidar_verificacao_ao_alterar_email()'::regprocedure`)).rows[0];
-    assert.equal(fn.prosecdef,false); assert.ok(fn.proconfig.some((s)=>s.includes('pg_catalog')));
+    const fn=(await pool.query(`SELECT prosecdef,proconfig FROM pg_proc WHERE oid='bovitrack_seg.invalidar_ao_alterar_email()'::regprocedure`)).rows[0];
+    assert.equal(fn.prosecdef,true); assert.ok(fn.proconfig.some((s)=>s.includes('pg_catalog')));
     await assert.rejects(pool.query('UPDATE usuarios SET email_verificado=TRUE,email_verificado_em=NULL WHERE id=$1',[userId]),(e)=>e.code==='23514');
     const before=(await pool.query('SELECT email FROM usuarios WHERE id=$1',[userId])).rows[0].email;
     await assert.rejects(pool.query('UPDATE usuarios SET email=$1 WHERE id=$2',[before.toUpperCase(),2]),(e)=>e.code==='23505');
   });
-  await check('migration funciona com role SQL runtime sem bypass de RLS; preparação local é revertida', async () => {
-    const cliente=await pool.connect();
-    try {
-      await cliente.query('BEGIN');
-      await cliente.query(`DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='bovitrack_runtime') THEN
-        CREATE ROLE bovitrack_runtime NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END $$`);
-      const fs=require('node:fs'),path=require('node:path');
-      // Mantém toda a preparação na transação externa, inclusive CREATE ROLE.
-      const sql=fs.readFileSync(path.join(__dirname,'../database/migrations/013_verificacao_email.sql'),'utf8').replace(/^BEGIN;$/m,'').replace(/^COMMIT;$/m,'');
-      await cliente.query(sql);
-      // Permissões de tabelas anteriores correspondentes à migration 010.
-      await cliente.query('GRANT USAGE ON SCHEMA public TO bovitrack_runtime');
-      await cliente.query('GRANT SELECT,UPDATE ON usuarios,sessoes_refresh TO bovitrack_runtime');
-      await cliente.query('SET LOCAL ROLE bovitrack_runtime');
-      assert.equal((await cliente.query('SELECT current_user AS papel')).rows[0].papel,'bovitrack_runtime');
-      await cliente.query('SELECT id FROM verificacoes_email WHERE usuario_id=$1',[userId]);
-      const id=crypto.randomUUID();
-      await cliente.query(`INSERT INTO verificacoes_email(id,usuario_id,codigo_hash,expira_em)
-        VALUES ($1,$2,$3,CURRENT_TIMESTAMP+INTERVAL '10 minutes')`,[id,userId,'a'.repeat(64)]);
-      const estado=await cliente.query('UPDATE usuarios SET email=$1 WHERE id=$2 RETURNING email_verificado',[`runtime-${suffix}@example.test`,userId]);
-      assert.equal(estado.rows[0].email_verificado,false);
-      assert.equal((await cliente.query('SELECT motivo FROM verificacoes_email WHERE id=$1',[id])).rows[0].motivo,'EMAIL_ALTERADO');
-    } finally {
-      await cliente.query('ROLLBACK');
-      cliente.release();
-    }
+  await check('runtime sem acesso direto aos desafios', async () => {
+    const { pool: runtime } = require('../app');
+    await assert.rejects(runtime.query('SELECT id FROM verificacoes_email'), { code: '42501' });
+    await assert.rejects(runtime.query('UPDATE verificacoes_email SET tentativas=0'), { code: '42501' });
   });
   await check('migration reaplicável preserva contas/dados e revoga sessões pendentes', async () => {
     const before=(await pool.query('SELECT count(*)::int AS n FROM usuarios')).rows[0].n;

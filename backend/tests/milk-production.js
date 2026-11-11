@@ -1,7 +1,8 @@
 require("dotenv").config();
 
 const assert = require("assert/strict");
-const { app, pool } = require("../server");
+const { app } = require("../server");
+const pool = require("./helpers/bancoFixture");
 
 const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const emailA = `leite-a-${sufixo}@bovitrack.local`;

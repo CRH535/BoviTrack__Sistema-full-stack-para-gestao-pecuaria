@@ -1,4 +1,4 @@
-const pool = require("../database/pool");
+const { comAtor } = require("../database/contextoRls");
 const { verificarTokenAcesso } = require("../services/sessoes");
 const { registrarErro } = require("../utils/log");
 
@@ -48,36 +48,20 @@ async function autenticar(req, res, next) {
       });
     }
 
-    const resultado = await pool.query(
-      `SELECT u.id, u.nome, u.email, u.perfil, u.ativo, u.email_verificado
-         FROM usuarios u
-         JOIN sessoes_refresh sr
-           ON sr.usuario_id = u.id
-          AND sr.session_id = $2
-          AND sr.revoked_at IS NULL
-          AND sr.expires_at > CURRENT_TIMESTAMP
-        WHERE u.id = $1
-          AND u.ativo = TRUE`,
-      [usuarioId, dados.sid],
-    );
-
-    if (resultado.rows.length === 0) {
-      return res.status(401).json({
-        mensagem: "Sessão inválida ou usuário desativado",
-        codigo: "SESSAO_INVALIDA",
-      });
-    }
-
-    if (resultado.rows[0].email_verificado !== true) {
+    const ator = await comAtor({ id: usuarioId, sessionId: dados.sid }, (_, usuario) => usuario, { permitirPendente: true });
+    if (ator.email_verificado !== true) {
       return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail. Entre novamente para continuar.' });
     }
-    req.usuario = resultado.rows[0];
+    req.usuario = ator;
     req.autenticacao = {
       sessionId: dados.sid,
       autenticadoEm: dados.auth_time,
     };
     next();
   } catch (erro) {
+    if (erro.codigo === "SESSAO_INVALIDA") {
+      return res.status(401).json({ mensagem: erro.message, codigo: erro.codigo });
+    }
     registrarErro("validacao_sessao_falhou", erro, req);
     return res.status(500).json({ mensagem: "Erro ao validar sessão" });
   }

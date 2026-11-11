@@ -7,8 +7,8 @@ async function bloquearAnimalParaPeso(cliente, animalId) {
 }
 
 async function sincronizarPesoAtual(cliente, animalId) {
-  await bloquearAnimalParaPeso(cliente, animalId);
-  await cliente.query(
+  if (!(await bloquearAnimalParaPeso(cliente, animalId))) throw new Error("Animal indisponivel para sincronizar peso");
+  const atualizado = await cliente.query(
     `UPDATE animais
         SET peso = (
           SELECT p.peso_kg
@@ -20,6 +20,7 @@ async function sincronizarPesoAtual(cliente, animalId) {
       WHERE id = $1`,
     [animalId],
   );
+  if (atualizado.rowCount !== 1) throw new Error("Peso do animal nao atualizado");
 }
 
 module.exports = { bloquearAnimalParaPeso, sincronizarPesoAtual };

@@ -61,9 +61,14 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
-DROP TRIGGER IF EXISTS usuarios_email_alterado ON public.usuarios;
-CREATE TRIGGER usuarios_email_alterado BEFORE UPDATE OF email ON public.usuarios
-  FOR EACH ROW EXECUTE FUNCTION public.invalidar_verificacao_ao_alterar_email();
+DO $$
+BEGIN
+  IF to_regprocedure('bovitrack_seg.invalidar_ao_alterar_email()') IS NULL THEN
+    DROP TRIGGER IF EXISTS usuarios_email_alterado ON public.usuarios;
+    CREATE TRIGGER usuarios_email_alterado BEFORE UPDATE OF email ON public.usuarios
+      FOR EACH ROW EXECUTE FUNCTION public.invalidar_verificacao_ao_alterar_email();
+  END IF;
+END $$;
 
 UPDATE public.sessoes_refresh sr SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'EMAIL_NOT_VERIFIED'
   FROM public.usuarios u WHERE sr.usuario_id = u.id AND NOT u.email_verificado AND sr.revoked_at IS NULL;
@@ -81,13 +86,5 @@ BEGIN
       EXECUTE format('REVOKE ALL ON FUNCTION public.invalidar_verificacao_ao_alterar_email() FROM %I', papel);
     END IF;
   END LOOP;
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'bovitrack_runtime') THEN
-    GRANT SELECT, INSERT, UPDATE, DELETE ON public.verificacoes_email TO bovitrack_runtime;
-    GRANT EXECUTE ON FUNCTION public.invalidar_verificacao_ao_alterar_email() TO bovitrack_runtime;
-    -- A role runtime não usa Supabase Auth; policy exclusiva para a role SQL.
-    IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'public.verificacoes_email'::regclass AND polname = 'verificacoes_runtime') THEN
-      CREATE POLICY verificacoes_runtime ON public.verificacoes_email TO bovitrack_runtime USING (TRUE) WITH CHECK (TRUE);
-    END IF;
-  END IF;
 END $$;
 COMMIT;

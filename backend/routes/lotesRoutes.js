@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool");
+const { rotaComBanco } = require("../database/contextoRls");
 const { converterId, normalizarPaginacao, responderPagina, validarCamposPermitidos, normalizarTextoObrigatorio, normalizarTextoOpcional } = require("../utils/validacoes")
 const { validarParametroId } = require("../middleware/validacao");
 const { registrarErro } = require("../utils/log");
@@ -7,12 +7,12 @@ const { registrarErro } = require("../utils/log");
 const router = express.Router();
 router.param("id", validarParametroId);
 
-router.get("/lotes", async (req, res) => {
+router.get("/lotes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
-    const resultado = await pool.query(`
+    const resultado = await cliente.query(`
             SELECT
                 lotes.id,
                 lotes.nome,
@@ -30,21 +30,21 @@ router.get("/lotes", async (req, res) => {
             LIMIT $3 OFFSET $4
         `, [req.usuario.perfil, req.usuario.id, limite + 1, offset]);
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar lotes",
     });
   }
-});
+}));
 
-router.get("/lotes/:id", async (req, res) => {
+router.get("/lotes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT
                 lotes.id,
                 lotes.nome,
@@ -63,32 +63,32 @@ router.get("/lotes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Lote não encontrado",
       });
     }
 
-    res.json(resultado.rows[0]);
+    responder(200, resultado.rows[0]);
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar lote",
     });
   }
-});
+}));
 
-router.post("/lotes", async (req, res) => {
+router.post("/lotes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "descricao", "propriedade_id"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
     const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const propriedade_id = converterId(req.body.propriedade_id);
     const erro = nome.erro || descricao.erro || (!propriedade_id && "Propriedade inválida");
-    if (erro) return res.status(400).json({ mensagem: erro });
+    if (erro) return responder(400, { mensagem: erro });
 
-    const propriedadeExiste = await pool.query(
+    const propriedadeExiste = await cliente.query(
       `SELECT id
          FROM propriedades
         WHERE id = $1
@@ -97,12 +97,12 @@ router.post("/lotes", async (req, res) => {
     );
 
     if (propriedadeExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO lotes
             (nome, descricao, propriedade_id)
             VALUES ($1, $2, $3)
@@ -110,32 +110,32 @@ router.post("/lotes", async (req, res) => {
       [nome.valor, descricao.valor, propriedade_id],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Lote cadastrado com sucesso!",
       lote: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao cadastrar lote",
     });
   }
-});
+}));
 
-router.put("/lotes/:id", async (req, res) => {
+router.put("/lotes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["nome", "descricao", "propriedade_id"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const { id } = req.params;
 
     const nome = normalizarTextoObrigatorio(req.body.nome, "Nome", 100);
     const descricao = normalizarTextoOpcional(req.body.descricao, "Descrição", 255);
     const propriedade_id = converterId(req.body.propriedade_id);
     const erro = nome.erro || descricao.erro || (!propriedade_id && "Propriedade inválida");
-    if (erro) return res.status(400).json({ mensagem: erro });
+    if (erro) return responder(400, { mensagem: erro });
 
-    const loteAtual = await pool.query(
+    const loteAtual = await cliente.query(
       `SELECT l.id
          FROM lotes l
          JOIN propriedades p ON p.id = l.propriedade_id
@@ -145,10 +145,10 @@ router.put("/lotes/:id", async (req, res) => {
     );
 
     if (loteAtual.rows.length === 0) {
-      return res.status(404).json({ mensagem: "Lote não encontrado" });
+      return responder(404, { mensagem: "Lote não encontrado" });
     }
 
-    const propriedadeExiste = await pool.query(
+    const propriedadeExiste = await cliente.query(
       `SELECT id
          FROM propriedades
         WHERE id = $1
@@ -157,12 +157,12 @@ router.put("/lotes/:id", async (req, res) => {
     );
 
     if (propriedadeExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Propriedade não encontrada",
       });
     }
 
-    const animalIncompativel = await pool.query(
+    const animalIncompativel = await cliente.query(
       `SELECT 1
          FROM animais_lotes al
          JOIN animais a ON a.id = al.animal_id
@@ -181,12 +181,12 @@ router.put("/lotes/:id", async (req, res) => {
     );
 
     if (animalIncompativel.rows.length > 0) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "O lote possui animais incompatíveis com a nova propriedade",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE lotes
              SET nome = $1,
                  descricao = $2,
@@ -213,29 +213,29 @@ router.put("/lotes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Lote não encontrado",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Lote atualizado com sucesso!",
       lote: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao atualizar lote",
     });
   }
-});
+}));
 
-router.delete("/lotes/:id", async (req, res) => {
+router.delete("/lotes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM lotes l
              USING propriedades p
              WHERE l.id = $1
@@ -246,44 +246,44 @@ router.delete("/lotes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Lote não encontrado",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Lote excluído com sucesso!",
       lote: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao excluir lote",
     });
   }
-});
+}));
 
 // =========================
 // ANIMAIS ↔ LOTES
 // =========================
 
-router.post("/lotes/:id/animais", async (req, res) => {
+router.post("/lotes/:id/animais", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["animal_id"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const { id } = req.params;
     const { animal_id } = req.body;
     const loteId = converterId(id);
     const animalId = converterId(animal_id);
 
     if (!loteId || !animalId) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Lote e animal devem possuir IDs válidos",
       });
     }
 
-    const loteExiste = await pool.query(
+    const loteExiste = await cliente.query(
       `SELECT l.*, p.usuario_id
          FROM lotes l
          JOIN propriedades p ON p.id = l.propriedade_id
@@ -293,12 +293,12 @@ router.post("/lotes/:id/animais", async (req, res) => {
     );
 
     if (loteExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Lote não encontrado",
       });
     }
 
-    const animalExiste = await pool.query(
+    const animalExiste = await cliente.query(
       `SELECT a.*, p.usuario_id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -308,7 +308,7 @@ router.post("/lotes/:id/animais", async (req, res) => {
     );
 
     if (animalExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
@@ -316,12 +316,12 @@ router.post("/lotes/:id/animais", async (req, res) => {
     if (
       loteExiste.rows[0].propriedade_id !== animalExiste.rows[0].propriedade_id
     ) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Animal e lote pertencem a propriedades diferentes",
       });
     }
 
-    const relacaoExiste = await pool.query(
+    const relacaoExiste = await cliente.query(
       `SELECT * FROM animais_lotes
              WHERE animal_id = $1
              AND lote_id = $2`,
@@ -329,12 +329,12 @@ router.post("/lotes/:id/animais", async (req, res) => {
     );
 
     if (relacaoExiste.rows.length > 0) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Animal já pertence a este lote",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO animais_lotes
             (animal_id, lote_id)
             VALUES ($1, $2)
@@ -342,38 +342,38 @@ router.post("/lotes/:id/animais", async (req, res) => {
       [animalId, loteId],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Animal adicionado ao lote com sucesso!",
       relacao: resultado.rows[0],
     });
   } catch (erro) {
     if (erro.code === "23505") {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Animal já pertence a este lote",
       });
     }
 
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao adicionar animal ao lote",
     });
   }
-});
+}));
 
-router.get("/lotes/:id/animais", async (req, res) => {
+router.get("/lotes/:id/animais", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const { id } = req.params;
     const loteId = converterId(id);
 
     if (!loteId) {
-      return res.status(400).json({ mensagem: "ID do lote inválido" });
+      return responder(400, { mensagem: "ID do lote inválido" });
     }
 
-    const loteExiste = await pool.query(
+    const loteExiste = await cliente.query(
       `SELECT l.id
          FROM lotes l
          JOIN propriedades p ON p.id = l.propriedade_id
@@ -383,12 +383,12 @@ router.get("/lotes/:id/animais", async (req, res) => {
     );
 
     if (loteExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Lote não encontrado",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT animais.*
              FROM animais
              JOIN animais_lotes
@@ -402,29 +402,29 @@ router.get("/lotes/:id/animais", async (req, res) => {
       [loteId, limite + 1, offset],
     );
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar animais do lote",
     });
   }
-});
+}));
 
-router.delete("/lotes/:id/animais/:animal_id", async (req, res) => {
+router.delete("/lotes/:id/animais/:animal_id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id, animal_id } = req.params;
     const loteId = converterId(id);
     const animalId = converterId(animal_id);
 
     if (!loteId || !animalId) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Lote e animal devem possuir IDs válidos",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM animais_lotes al
              USING lotes l, propriedades p, animais a
              WHERE al.lote_id = $1
@@ -439,37 +439,37 @@ router.delete("/lotes/:id/animais/:animal_id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado neste lote",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Animal removido do lote com sucesso!",
       relacao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao remover animal do lote",
     });
   }
-});
+}));
 
-router.get("/animais/:id/lotes", async (req, res) => {
+router.get("/animais/:id/lotes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const { id } = req.params;
     const animalId = converterId(id);
 
     if (!animalId) {
-      return res.status(400).json({ mensagem: "ID do animal inválido" });
+      return responder(400, { mensagem: "ID do animal inválido" });
     }
 
-    const animalExiste = await pool.query(
+    const animalExiste = await cliente.query(
       `SELECT a.id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -479,12 +479,12 @@ router.get("/animais/:id/lotes", async (req, res) => {
     );
 
     if (animalExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT lotes.*
              FROM lotes
              JOIN animais_lotes
@@ -498,15 +498,15 @@ router.get("/animais/:id/lotes", async (req, res) => {
       [animalId, limite + 1, offset],
     );
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("lotes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar lotes do animal",
     });
   }
-});
+}));
 // =========================
 // VACINAS
 // =========================

@@ -6,7 +6,7 @@ import { prepararReferenciaVisual } from "./visual-fixtures";
 
 const require = createRequire(import.meta.url);
 const { Pool } = require("../../../backend/node_modules/pg");
-const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+const db = new Pool({ connectionString: process.env.BOVITRACK_TEST_ADMIN_URL, ssl: false });
 test.afterAll(() => db.end());
 
 test("iconografia: todas as telas, temas e ações", async ({ page }, info) => {

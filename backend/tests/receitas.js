@@ -1,6 +1,7 @@
 const assert = require("assert/strict");
 const bcrypt = require("bcryptjs");
-const { app, pool } = require("../server");
+const { app } = require("../server");
+const pool = require("./helpers/bancoFixture");
 const { dataHojeNoFuso } = require("../utils/validacoes");
 
 const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;

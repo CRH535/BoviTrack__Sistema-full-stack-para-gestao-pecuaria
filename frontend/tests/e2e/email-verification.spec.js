@@ -4,7 +4,7 @@ import { prepararCodigoEmail } from './email-fixtures';
 const require = createRequire(import.meta.url);
 const { Pool } = require('../../../backend/node_modules/pg');
 const bcrypt = require('../../../backend/node_modules/bcryptjs');
-const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+const db = new Pool({ connectionString: process.env.BOVITRACK_TEST_ADMIN_URL, ssl: false });
 test.afterAll(async () => { await db.end(); });
 test.beforeEach(async () => { await db.query('DELETE FROM limites_requisicao'); });
 

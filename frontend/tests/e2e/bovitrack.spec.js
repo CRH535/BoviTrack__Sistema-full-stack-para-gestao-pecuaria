@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { prepararCodigoEmail } from './email-fixtures';
 const require = createRequire(import.meta.url);
 const { Pool } = require("../../../backend/node_modules/pg");
-const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+const db = new Pool({ connectionString: process.env.BOVITRACK_TEST_ADMIN_URL, ssl: false });
 const password = process.env.TEST_ADMIN_SENHA;
 
 test.afterAll(async () => {

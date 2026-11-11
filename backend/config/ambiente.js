@@ -44,6 +44,25 @@ function validarAmbiente(ambiente = process.env) {
   if (producao) {
     obterConfiguracaoEmail(ambiente);
     if (!urlBanco) throw new Error("DATABASE_URL não foi configurada em produção");
+    if (!/^[0-9a-f]{64}$/.test(ambiente.DB_RLS_CONTEXT_KEY || "") ||
+        ambiente.DB_RLS_CONTEXT_KEY === segredo ||
+        ambiente.DB_RLS_CONTEXT_KEY === ambiente.EMAIL_VERIFICATION_PEPPER) {
+      throw new Error("DB_RLS_CONTEXT_KEY deve ser uma chave independente de 32 bytes em hexadecimal");
+    }
+    let urlAuth;
+    try {
+      urlAuth = new URL(ambiente.DATABASE_AUTH_URL);
+      if (!["postgres:", "postgresql:"].includes(urlAuth.protocol) ||
+          !urlAuth.username || urlAuth.searchParams.has("user") ||
+          decodeURIComponent(urlAuth.username) === decodeURIComponent(new URL(urlBanco).username)) {
+        throw new Error("Credencial inválida");
+      }
+    } catch {
+      throw new Error("DATABASE_AUTH_URL deve usar um login PostgreSQL separado");
+    }
+    if (sslMode !== "verify-full" && urlAuth.searchParams.get("sslmode") !== "verify-full") {
+      throw new Error("DATABASE_AUTH_URL deve usar TLS verify-full em produção");
+    }
     if (Buffer.byteLength(segredo, "utf8") < 32) {
       throw new Error("JWT_SECRET deve possuir pelo menos 32 bytes em produção");
     }

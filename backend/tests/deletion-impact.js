@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const assert = require("assert/strict");
 const pool = require("../database/pool");
+const { transacao } = require("../database/contextoRls");
 
 async function testarRollbackDaPropriedade() {
   const consultas = [];
@@ -41,7 +42,7 @@ async function testarRollbackDaPropriedade() {
 
   try {
     await assert.rejects(
-      excluirPropriedadeComDados(10, { usuarioId: 7, perfil: "usuario" }),
+      transacao(pool, (cliente) => excluirPropriedadeComDados(10, { usuarioId: 7, perfil: "usuario" }, cliente)),
       /falha simulada/,
     );
     assert.ok(consultas.includes("BEGIN"), "a transação deve iniciar");

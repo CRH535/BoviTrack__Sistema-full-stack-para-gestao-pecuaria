@@ -2,7 +2,8 @@ require("dotenv").config();
 
 const assert = require("assert/strict");
 const bcrypt = require("bcryptjs");
-const { app, pool } = require("../server");
+const { app } = require("../server");
+const pool = require("./helpers/bancoFixture");
 
 const adminEmail = process.env.TEST_ADMIN_EMAIL;
 const adminSenha = process.env.TEST_ADMIN_SENHA;

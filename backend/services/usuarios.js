@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const pool = require("../database/pool");
+const { obterPoolAutenticacao } = require("../database/poolAutenticacao");
 const { excluirUsuarioComDados } = require("./impactoExclusao");
 const { validarCamposPermitidos } = require("../utils/validacoes");
 
@@ -50,24 +50,11 @@ async function criarUsuarioComum(body) {
 
   validarSenha(senha);
 
-  const emailExistente = await pool.query(
-    "SELECT 1 FROM usuarios WHERE email = $1",
-    [email],
-  );
-
-  if (emailExistente.rows.length > 0) {
-    // Mantém custo semelhante ao cadastro válido e reduz enumeração por tempo.
-    await bcrypt.hash(senha, 12);
-    throw criarErroValidacao("Este email já está cadastrado", 409);
-  }
-
   const hash = await bcrypt.hash(senha, 12);
 
   try {
-    const resultado = await pool.query(
-      `INSERT INTO usuarios (nome, email, senha, perfil, ativo)
-       VALUES ($1, $2, $3, 'usuario', TRUE)
-       RETURNING id, nome, email, perfil, ativo, created_at`,
+    const resultado = await obterPoolAutenticacao().query(
+      "SELECT * FROM bovitrack_seg.cadastrar($1,$2,$3)",
       [nome, email, hash],
     );
 
@@ -81,39 +68,15 @@ async function criarUsuarioComum(body) {
   }
 }
 
-async function alterarAtivoUsuario(usuarioId, ativo, banco = pool) {
-  const cliente = await banco.connect();
-  try {
-    await cliente.query("BEGIN");
-    const existente = await cliente.query(
-      "SELECT id, perfil FROM usuarios WHERE id = $1 FOR UPDATE",
-      [usuarioId],
-    );
-    if (!existente.rows[0]) throw criarErroValidacao("Usuário não encontrado", 404);
-    if (existente.rows[0].perfil === "admin") {
-      throw criarErroValidacao("O administrador principal não pode ser ativado ou desativado por esta rota", 403);
-    }
-    const resultado = await cliente.query(
-      `UPDATE usuarios SET ativo = $1 WHERE id = $2
-       RETURNING id, nome, email, perfil, ativo, created_at`,
-      [ativo, usuarioId],
-    );
-    if (!ativo) {
-      await cliente.query(
-        `UPDATE sessoes_refresh
-            SET revoked_at = CURRENT_TIMESTAMP, revoke_reason = 'USUARIO_DESATIVADO'
-          WHERE usuario_id = $1 AND revoked_at IS NULL`,
-        [usuarioId],
-      );
-    }
-    await cliente.query("COMMIT");
-    return resultado.rows[0];
-  } catch (erro) {
-    await cliente.query("ROLLBACK").catch(() => {});
-    throw erro;
-  } finally {
-    cliente.release();
+async function alterarAtivoUsuario(usuarioId, ativo, cliente) {
+  const existente = await cliente.query("SELECT id, perfil FROM usuarios WHERE id = $1", [usuarioId]);
+  if (!existente.rows[0]) throw criarErroValidacao("Usuário não encontrado", 404);
+  if (existente.rows[0].perfil === "admin") {
+    throw criarErroValidacao("O administrador principal não pode ser ativado ou desativado por esta rota", 403);
   }
+  const resultado = await cliente.query("SELECT * FROM bovitrack_seg.alterar_ativo($1,$2)", [usuarioId, ativo]);
+  if (!resultado.rows[0]) throw criarErroValidacao("Usuário não encontrado", 404);
+  return resultado.rows[0];
 }
 
 module.exports = { alterarAtivoUsuario, criarUsuarioComum, excluirUsuarioComDados, validarSenha };

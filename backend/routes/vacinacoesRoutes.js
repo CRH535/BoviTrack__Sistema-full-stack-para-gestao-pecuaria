@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool")
+const { rotaComBanco } = require("../database/contextoRls");
 const { normalizarPaginacao, responderPagina, validarCamposPermitidos, converterId, normalizarDataCalendario, normalizarTextoOpcional } = require("../utils/validacoes");
 const { validarParametroId } = require("../middleware/validacao");
 const { registrarErro } = require("../utils/log");
@@ -21,15 +21,15 @@ function normalizarDadosVacinacao(dados) {
   return { valor: { animal_id: animalId, vacina_id: vacinaId, data_aplicacao: aplicacao.valor, proxima_dose: proxima.valor, observacao: observacao.valor } };
 }
 
-router.post("/vacinacoes", async (req, res) => {
+router.post("/vacinacoes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const campos = validarCamposPermitidos(req.body, ["animal_id", "vacina_id", "data_aplicacao", "proxima_dose", "observacao"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const dados = normalizarDadosVacinacao(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const { animal_id, vacina_id, data_aplicacao, proxima_dose, observacao } = dados.valor;
 
-    const animalExiste = await pool.query(
+    const animalExiste = await cliente.query(
       `SELECT a.*, p.usuario_id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -39,12 +39,12 @@ router.post("/vacinacoes", async (req, res) => {
     );
 
     if (animalExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    const vacinaExiste = await pool.query(
+    const vacinaExiste = await cliente.query(
       `SELECT id, usuario_id
          FROM vacinas
         WHERE id = $1
@@ -53,18 +53,18 @@ router.post("/vacinacoes", async (req, res) => {
     );
 
     if (vacinaExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Vacina não encontrada",
       });
     }
 
     if (animalExiste.rows[0].usuario_id !== vacinaExiste.rows[0].usuario_id) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Animal e vacina pertencem a usuários diferentes",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO vacinacoes
              (animal_id, vacina_id, data_aplicacao, proxima_dose, observacao)
              VALUES ($1, $2, $3, $4, $5)
@@ -78,25 +78,25 @@ router.post("/vacinacoes", async (req, res) => {
       ],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Vacinação registrada com sucesso!",
       vacinacao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao registrar vacinação",
     });
   }
-});
+}));
 
-router.get("/vacinacoes", async (req, res) => {
+router.get("/vacinacoes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
-    const resultado = await pool.query(`
+    const resultado = await cliente.query(`
             SELECT
                 vacinacoes.id,
                 vacinacoes.animal_id,
@@ -121,23 +121,23 @@ router.get("/vacinacoes", async (req, res) => {
             LIMIT $3 OFFSET $4
         `, [req.usuario.perfil, req.usuario.id, limite + 1, offset]);
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar vacinações",
     });
   }
-});
+}));
 
 // IMPORTANTE:
 // esta rota deve ficar ANTES de /vacinacoes/:id
 
-router.get("/vacinacoes/proximas", async (req, res) => {
+router.get("/vacinacoes/proximas", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const { periodo = "todos" } = req.query;
 
@@ -157,12 +157,12 @@ router.get("/vacinacoes/proximas", async (req, res) => {
     const filtro = filtrosPeriodo[periodo];
 
     if (!filtro) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Período inválido. Use hoje, semana, futuro ou todos",
       });
     }
 
-    const resultado = await pool.query(`
+    const resultado = await cliente.query(`
             SELECT
                 vacinacoes.id,
                 vacinacoes.animal_id,
@@ -189,21 +189,21 @@ router.get("/vacinacoes/proximas", async (req, res) => {
             LIMIT $3 OFFSET $4
         `, [req.usuario.perfil, req.usuario.id, limite + 1, offset, process.env.APP_TIMEZONE || "America/Sao_Paulo"]);
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar próximas vacinações",
     });
   }
-});
+}));
 
-router.get("/vacinacoes/:id", async (req, res) => {
+router.get("/vacinacoes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT
                 vacinacoes.id,
                 vacinacoes.animal_id,
@@ -229,24 +229,24 @@ router.get("/vacinacoes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Vacinação não encontrada",
       });
     }
 
-    res.json(resultado.rows[0]);
+    responder(200, resultado.rows[0]);
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar vacinação",
     });
   }
-});
+}));
 
-router.put("/vacinacoes/:id", async (req, res) => {
+router.put("/vacinacoes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
-    const atual = await pool.query(
+    const atual = await cliente.query(
       `SELECT vc.id FROM vacinacoes vc
         JOIN animais a ON a.id = vc.animal_id
         JOIN propriedades p ON p.id = a.propriedade_id
@@ -254,16 +254,16 @@ router.put("/vacinacoes/:id", async (req, res) => {
        WHERE vc.id = $1 AND ($2 = 'admin' OR (p.usuario_id = $3 AND v.usuario_id = $3))`,
       [req.params.id, req.usuario.perfil, req.usuario.id],
     );
-    if (!atual.rows[0]) return res.status(404).json({ mensagem: "Vacinação não encontrada" });
+    if (!atual.rows[0]) return responder(404, { mensagem: "Vacinação não encontrada" });
     const campos = validarCamposPermitidos(req.body, ["animal_id", "vacina_id", "data_aplicacao", "proxima_dose", "observacao"]);
-    if (campos.erro) return res.status(400).json({ mensagem: campos.erro });
+    if (campos.erro) return responder(400, { mensagem: campos.erro });
     const { id } = req.params;
 
     const dados = normalizarDadosVacinacao(req.body);
-    if (dados.erro) return res.status(400).json({ mensagem: dados.erro });
+    if (dados.erro) return responder(400, { mensagem: dados.erro });
     const { animal_id, vacina_id, data_aplicacao, proxima_dose, observacao } = dados.valor;
 
-    const animalExiste = await pool.query(
+    const animalExiste = await cliente.query(
       `SELECT a.*, p.usuario_id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -273,12 +273,12 @@ router.put("/vacinacoes/:id", async (req, res) => {
     );
 
     if (animalExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    const vacinaExiste = await pool.query(
+    const vacinaExiste = await cliente.query(
       `SELECT id, usuario_id
          FROM vacinas
         WHERE id = $1
@@ -287,18 +287,18 @@ router.put("/vacinacoes/:id", async (req, res) => {
     );
 
     if (vacinaExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Vacina não encontrada",
       });
     }
 
     if (animalExiste.rows[0].usuario_id !== vacinaExiste.rows[0].usuario_id) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Animal e vacina pertencem a usuários diferentes",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE vacinacoes
              SET animal_id = $1,
                  vacina_id = $2,
@@ -331,29 +331,29 @@ router.put("/vacinacoes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Vacinação não encontrada",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Vacinação atualizada com sucesso!",
       vacinacao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao atualizar vacinação",
     });
   }
-});
+}));
 
-router.delete("/vacinacoes/:id", async (req, res) => {
+router.delete("/vacinacoes/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const { id } = req.params;
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM vacinacoes vc
              USING animais a, propriedades p
              WHERE vc.id = $1
@@ -365,36 +365,36 @@ router.delete("/vacinacoes/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Vacinação não encontrada",
       });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Vacinação excluída com sucesso!",
       vacinacao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao excluir vacinação",
     });
   }
-});
+}));
 
 // =========================
 // HISTÓRICO DO ANIMAL
 // =========================
 
-router.get("/animais/:id/vacinacoes", async (req, res) => {
+router.get("/animais/:id/vacinacoes", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const { id } = req.params;
 
-    const animalExiste = await pool.query(
+    const animalExiste = await cliente.query(
       `SELECT a.id
          FROM animais a
          JOIN propriedades p ON p.id = a.propriedade_id
@@ -404,12 +404,12 @@ router.get("/animais/:id/vacinacoes", async (req, res) => {
     );
 
     if (animalExiste.rows.length === 0) {
-      return res.status(404).json({
+      return responder(404, {
         mensagem: "Animal não encontrado",
       });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT
                 vacinacoes.id,
                 vacinacoes.vacina_id,
@@ -431,15 +431,15 @@ router.get("/animais/:id/vacinacoes", async (req, res) => {
       [id, limite + 1, offset],
     );
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("vacinacoes_rota_erro", erro, req);
 
-    res.status(500).json({
+    responder(500, {
       mensagem: "Erro ao buscar vacinações do animal",
     });
   }
-});
+}));
 // =========================
 // CONTROLE LEITEIRO
 // =========================

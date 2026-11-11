@@ -26,6 +26,10 @@ async function executar() {
 
   try {
     await cliente.query("BEGIN READ ONLY");
+    const { rows: [{ limitado }] } = await cliente.query(
+      "SELECT row_security_active('public.propriedades') AS limitado",
+    );
+    if (limitado) throw new Error("A checagem global exige credencial administrativa de leitura");
 
     const propriedade = await cliente.query(
       "SELECT id, usuario_id FROM propriedades ORDER BY id LIMIT 1",
@@ -53,6 +57,12 @@ async function executar() {
       const impacto = await obterImpactoExclusaoUsuario(
         cliente,
         usuario.rows[0].id,
+        { contarSessoes: (banco, id) => banco.query(
+          `SELECT (SELECT count(*)::int FROM sessoes_refresh WHERE usuario_id=$1) AS sessoes,
+                  (SELECT count(*)::int FROM sessoes_refresh_usados h
+                    JOIN sessoes_refresh s ON s.id=h.sessao_id WHERE s.usuario_id=$1) AS usados`,
+          [id],
+        ) },
       );
       console.log(
         `OK preview de usuário consultado (${impacto.total_registros} registros relacionados)`,

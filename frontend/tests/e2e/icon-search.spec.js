@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { Pool } = require("../../../backend/node_modules/pg");
-const db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: false });
+const db = new Pool({ connectionString: process.env.BOVITRACK_TEST_ADMIN_URL, ssl: false });
 test.afterAll(() => db.end());
 
 test("buscas de pesagens e desmamas mantêm lupa, texto e filtros", async ({ page }, info) => {

@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const pool = require("../database/pool");
+const { obterPoolAutenticacao } = require("../database/poolAutenticacao");
+const { comAtor, identidadeDaRequisicao } = require("../database/contextoRls");
 const { responderCriacaoUsuario } = require("../controllers/usuariosController");
 const { autenticar } = require("../middleware/autenticacao");
 const { protegerContraCsrf } = require("../middleware/csrf");
@@ -89,10 +90,8 @@ router.post("/auth/login", protegerContraCsrf, limitarLoginIp, limitarLoginConta
       return res.status(400).json({ mensagem: "Email e senha são obrigatórios" });
     }
 
-    const resultado = await pool.query(
-      `SELECT id, nome, email, senha, perfil, ativo, email_verificado
-         FROM usuarios
-        WHERE lower(btrim(email)) = $1`,
+    const resultado = await obterPoolAutenticacao().query(
+      "SELECT * FROM bovitrack_seg.credencial_login($1)",
       [email],
     );
     const usuario = resultado.rows[0];
@@ -138,7 +137,7 @@ router.post("/auth/login", protegerContraCsrf, limitarLoginIp, limitarLoginConta
           envio: envio.estado, retryAfter: envio.retryAfter } });
     }
 
-    const sessaoRefresh = await criarSessaoRefresh(pool, usuario.id);
+    const sessaoRefresh = await criarSessaoRefresh(obterPoolAutenticacao(), usuario.id, usuario.senha);
     const token = criarTokenAcesso(usuario, sessaoRefresh);
     definirCookieRefresh(res, sessaoRefresh.token, sessaoRefresh.expiresAt);
 
@@ -178,7 +177,7 @@ router.post(
         return res.status(400).json({ mensagem: "Cookie de sessão inválido" });
       }
 
-      const sessao = await renovarSessaoRefresh(pool, refreshToken);
+      const sessao = await renovarSessaoRefresh(obterPoolAutenticacao(), refreshToken);
       if (sessao?.emailNaoVerificado) {
         limparCookieRefresh(res);
         return res.status(403).json({ codigo: 'EMAIL_NOT_VERIFIED', mensagem: 'Verifique seu e-mail. Entre novamente para continuar.' });
@@ -220,7 +219,7 @@ router.post(
 router.post("/auth/logout", protegerContraCsrf, async (req, res) => {
   try {
     const refreshToken = lerRefreshToken(req);
-    await encerrarSessaoRefresh(pool, refreshToken);
+    await encerrarSessaoRefresh(obterPoolAutenticacao(), refreshToken);
     limparCookieRefresh(res);
     if (req.refreshCookieInvalido) {
       return res.status(400).json({ mensagem: "Cookie de sessão inválido" });
@@ -239,7 +238,7 @@ router.post(
   autenticar,
   async (req, res) => {
     try {
-      await encerrarTodasSessoes(pool, req.usuario.id);
+      await comAtor(identidadeDaRequisicao(req), encerrarTodasSessoes);
       limparCookieRefresh(res);
       registrarEvento("info", "logout_todos_dispositivos", {
         request_id: req.id,

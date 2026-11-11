@@ -1,5 +1,5 @@
 const express = require("express");
-const pool = require("../database/pool");
+const { rotaComBanco } = require("../database/contextoRls");
 const { buscarAnimalPermitido } = require("../services/acessoAnimais");
 const {
   converterId,
@@ -15,28 +15,28 @@ const router = express.Router();
 router.param("animalId", validarParametroId);
 router.param("id", validarParametroId);
 
-router.post("/animais/:animalId/producoes-leiteiras", async (req, res) => {
+router.post("/animais/:animalId/producoes-leiteiras", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const animalId = converterId(req.params.animalId);
 
     if (!animalId) {
-      return res.status(400).json({ mensagem: "ID do animal inválido" });
+      return responder(400, { mensagem: "ID do animal inválido" });
     }
 
-    const animal = await buscarAnimalPermitido(animalId, req.usuario);
+    const animal = await buscarAnimalPermitido(animalId, req.usuario, cliente);
 
     if (!animal) {
-      return res.status(404).json({ mensagem: "Animal não encontrado" });
+      return responder(404, { mensagem: "Animal não encontrado" });
     }
 
     const producao = normalizarProducaoLeiteira(req.body);
 
     if (producao.erro) {
-      return res.status(400).json({ mensagem: producao.erro });
+      return responder(400, { mensagem: producao.erro });
     }
 
     const { data, turno, quantidadeLitros, observacao } = producao.valor;
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `INSERT INTO producoes_leiteiras
               (animal_id, data, turno, quantidade_litros, observacao)
        VALUES ($1, $2, $3, $4, $5)
@@ -44,39 +44,39 @@ router.post("/animais/:animalId/producoes-leiteiras", async (req, res) => {
       [animalId, data, turno, quantidadeLitros, observacao],
     );
 
-    res.status(201).json({
+    responder(201, {
       mensagem: "Produção leiteira registrada com sucesso!",
       producao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("producoes_leiteiras_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao registrar produção leiteira" });
+    responder(500, { mensagem: "Erro ao registrar produção leiteira" });
   }
-});
+}));
 
-router.get("/animais/:animalId/producoes-leiteiras", async (req, res) => {
+router.get("/animais/:animalId/producoes-leiteiras", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const paginacao = normalizarPaginacao(req.query);
-    if (paginacao.erro) return res.status(400).json({ mensagem: paginacao.erro });
+    if (paginacao.erro) return responder(400, { mensagem: paginacao.erro });
     const { limite, offset } = paginacao.valor;
     const animalId = converterId(req.params.animalId);
     const periodo = req.query.periodo || "todos";
     const periodosPermitidos = ["hoje", "7dias", "30dias", "todos"];
 
     if (!animalId) {
-      return res.status(400).json({ mensagem: "ID do animal inválido" });
+      return responder(400, { mensagem: "ID do animal inválido" });
     }
 
     if (!periodosPermitidos.includes(periodo)) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Período inválido. Use hoje, 7dias, 30dias ou todos",
       });
     }
 
-    const animal = await buscarAnimalPermitido(animalId, req.usuario);
+    const animal = await buscarAnimalPermitido(animalId, req.usuario, cliente);
 
     if (!animal) {
-      return res.status(404).json({ mensagem: "Animal não encontrado" });
+      return responder(404, { mensagem: "Animal não encontrado" });
     }
 
     const dataInicio = req.query.data_inicio
@@ -87,25 +87,25 @@ router.get("/animais/:animalId/producoes-leiteiras", async (req, res) => {
       : { valor: null };
 
     if (dataInicio.erro || dataFim.erro) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: dataInicio.erro || dataFim.erro,
       });
     }
 
     if (dataInicio.valor && dataFim.valor && dataInicio.valor > dataFim.valor) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "A data inicial não pode ser posterior à data final",
       });
     }
 
     if (periodo !== "todos" && (dataInicio.valor || dataFim.valor)) {
-      return res.status(400).json({
+      return responder(400, {
         mensagem: "Use período ou intervalo personalizado, não ambos",
       });
     }
 
     const fusoHorario = process.env.APP_TIMEZONE || "America/Sao_Paulo";
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `SELECT id,
               animal_id,
               data,
@@ -158,83 +158,81 @@ router.get("/animais/:animalId/producoes-leiteiras", async (req, res) => {
       ],
     );
 
-    res.json(responderPagina(res, resultado.rows, paginacao.valor));
+    responder(200, responderPagina(res, resultado.rows, paginacao.valor));
   } catch (erro) {
     registrarErro("producoes_leiteiras_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao buscar produções leiteiras" });
+    responder(500, { mensagem: "Erro ao buscar produções leiteiras" });
   }
-});
+}));
 
-router.get("/animais/:animalId/producoes-leiteiras/resumo", async (req, res) => {
+router.get("/animais/:animalId/producoes-leiteiras/resumo", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const animalId = converterId(req.params.animalId);
 
     if (!animalId) {
-      return res.status(400).json({ mensagem: "ID do animal inválido" });
+      return responder(400, { mensagem: "ID do animal inválido" });
     }
 
-    const animal = await buscarAnimalPermitido(animalId, req.usuario);
+    const animal = await buscarAnimalPermitido(animalId, req.usuario, cliente);
 
     if (!animal) {
-      return res.status(404).json({ mensagem: "Animal não encontrado" });
+      return responder(404, { mensagem: "Animal não encontrado" });
     }
 
     const fusoHorario = process.env.APP_TIMEZONE || "America/Sao_Paulo";
-    const [resumoResultado, evolucaoResultado] = await Promise.all([
-      pool.query(
-        `WITH referencia AS (
-           SELECT (CURRENT_TIMESTAMP AT TIME ZONE $2)::date AS hoje
-         ),
-         totais_diarios AS (
-           SELECT data, SUM(quantidade_litros) AS total
-             FROM producoes_leiteiras
-            WHERE animal_id = $1
-            GROUP BY data
-         )
-         SELECT COALESCE(
-                  SUM(total) FILTER (WHERE data = referencia.hoje),
-                  0
-                ) AS producao_hoje,
-                COALESCE(AVG(total), 0) AS media_diaria,
-                COALESCE(
-                  SUM(total) FILTER (
-                    WHERE data BETWEEN referencia.hoje - 6 AND referencia.hoje
-                  ),
-                  0
-                ) AS producao_7_dias,
-                COALESCE(
-                  AVG(total) FILTER (
-                    WHERE data BETWEEN referencia.hoje - 6 AND referencia.hoje
-                  ),
-                  0
-                ) AS media_7_dias,
-                COALESCE(
-                  SUM(total) FILTER (
-                    WHERE data BETWEEN referencia.hoje - 29 AND referencia.hoje
-                  ),
-                  0
-                ) AS producao_30_dias
-           FROM referencia
-           LEFT JOIN totais_diarios ON TRUE
-          GROUP BY referencia.hoje`,
-        [animalId, fusoHorario],
-      ),
-      pool.query(
-        `SELECT data, SUM(quantidade_litros) AS total_litros
+    const resumoResultado = await cliente.query(
+      `WITH referencia AS (
+         SELECT (CURRENT_TIMESTAMP AT TIME ZONE $2)::date AS hoje
+       ),
+       totais_diarios AS (
+         SELECT data, SUM(quantidade_litros) AS total
            FROM producoes_leiteiras
           WHERE animal_id = $1
-            AND data BETWEEN
-                  (CURRENT_TIMESTAMP AT TIME ZONE $2)::date - 29
-                  AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
           GROUP BY data
-          ORDER BY data`,
-        [animalId, fusoHorario],
-      ),
-    ]);
+       )
+       SELECT COALESCE(
+                SUM(total) FILTER (WHERE data = referencia.hoje),
+                0
+              ) AS producao_hoje,
+              COALESCE(AVG(total), 0) AS media_diaria,
+              COALESCE(
+                SUM(total) FILTER (
+                  WHERE data BETWEEN referencia.hoje - 6 AND referencia.hoje
+                ),
+                0
+              ) AS producao_7_dias,
+              COALESCE(
+                AVG(total) FILTER (
+                  WHERE data BETWEEN referencia.hoje - 6 AND referencia.hoje
+                ),
+                0
+              ) AS media_7_dias,
+              COALESCE(
+                SUM(total) FILTER (
+                  WHERE data BETWEEN referencia.hoje - 29 AND referencia.hoje
+                ),
+                0
+              ) AS producao_30_dias
+         FROM referencia
+         LEFT JOIN totais_diarios ON TRUE
+        GROUP BY referencia.hoje`,
+      [animalId, fusoHorario],
+    );
+    const evolucaoResultado = await cliente.query(
+      `SELECT data, SUM(quantidade_litros) AS total_litros
+         FROM producoes_leiteiras
+        WHERE animal_id = $1
+          AND data BETWEEN
+                (CURRENT_TIMESTAMP AT TIME ZONE $2)::date - 29
+                AND (CURRENT_TIMESTAMP AT TIME ZONE $2)::date
+        GROUP BY data
+        ORDER BY data`,
+      [animalId, fusoHorario],
+    );
 
     const resumo = resumoResultado.rows[0];
 
-    res.json({
+    responder(200, {
       resumo: {
         producao_hoje: Number(resumo.producao_hoje),
         media_diaria: Number(resumo.media_diaria),
@@ -249,26 +247,26 @@ router.get("/animais/:animalId/producoes-leiteiras/resumo", async (req, res) => 
     });
   } catch (erro) {
     registrarErro("producoes_leiteiras_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao calcular resumo leiteiro" });
+    responder(500, { mensagem: "Erro ao calcular resumo leiteiro" });
   }
-});
+}));
 
-router.put("/producoes-leiteiras/:id", async (req, res) => {
+router.put("/producoes-leiteiras/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const id = converterId(req.params.id);
 
     if (!id) {
-      return res.status(400).json({ mensagem: "ID da produção inválido" });
+      return responder(400, { mensagem: "ID da produção inválido" });
     }
 
     const producao = normalizarProducaoLeiteira(req.body);
 
     if (producao.erro) {
-      return res.status(400).json({ mensagem: producao.erro });
+      return responder(400, { mensagem: producao.erro });
     }
 
     const { data, turno, quantidadeLitros, observacao } = producao.valor;
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `UPDATE producoes_leiteiras pl
           SET data = $1,
               turno = $2,
@@ -295,28 +293,28 @@ router.put("/producoes-leiteiras/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ mensagem: "Produção não encontrada" });
+      return responder(404, { mensagem: "Produção não encontrada" });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Produção leiteira atualizada com sucesso!",
       producao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("producoes_leiteiras_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao atualizar produção leiteira" });
+    responder(500, { mensagem: "Erro ao atualizar produção leiteira" });
   }
-});
+}));
 
-router.delete("/producoes-leiteiras/:id", async (req, res) => {
+router.delete("/producoes-leiteiras/:id", rotaComBanco(async (req, res, cliente, responder) => {
   try {
     const id = converterId(req.params.id);
 
     if (!id) {
-      return res.status(400).json({ mensagem: "ID da produção inválido" });
+      return responder(400, { mensagem: "ID da produção inválido" });
     }
 
-    const resultado = await pool.query(
+    const resultado = await cliente.query(
       `DELETE FROM producoes_leiteiras pl
         WHERE pl.id = $1
           AND EXISTS (
@@ -331,18 +329,18 @@ router.delete("/producoes-leiteiras/:id", async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ mensagem: "Produção não encontrada" });
+      return responder(404, { mensagem: "Produção não encontrada" });
     }
 
-    res.json({
+    responder(200, {
       mensagem: "Produção leiteira excluída com sucesso!",
       producao: resultado.rows[0],
     });
   } catch (erro) {
     registrarErro("producoes_leiteiras_rota_erro", erro, req);
-    res.status(500).json({ mensagem: "Erro ao excluir produção leiteira" });
+    responder(500, { mensagem: "Erro ao excluir produção leiteira" });
   }
-});
+}));
 
 // =========================
 // DESPESAS

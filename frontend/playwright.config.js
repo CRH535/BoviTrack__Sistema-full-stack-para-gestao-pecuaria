@@ -7,6 +7,12 @@ const databaseUrl = new URL(process.env.DATABASE_URL);
 if (databaseUrl.search || databaseUrl.hash || !['postgres:', 'postgresql:'].includes(databaseUrl.protocol) || !['127.0.0.1', 'localhost', '[::1]'].includes(databaseUrl.hostname) || !databaseUrl.pathname.startsWith('/bovitrack_test_')) {
   throw new Error("Banco E2E deve ser local e criado pelo runner isolado");
 }
+const fixtureUrl = new URL(process.env.BOVITRACK_TEST_ADMIN_URL || "http://ausente.invalid");
+if (fixtureUrl.protocol !== databaseUrl.protocol || fixtureUrl.search || fixtureUrl.hash ||
+    fixtureUrl.host !== databaseUrl.host || fixtureUrl.pathname !== databaseUrl.pathname ||
+    fixtureUrl.username === databaseUrl.username) {
+  throw new Error("Credencial de fixture E2E deve ser separada e apontar ao mesmo banco isolado");
+}
 
 export default defineConfig({
   testDir: "./tests/e2e",
