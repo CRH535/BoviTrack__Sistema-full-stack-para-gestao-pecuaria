@@ -11,7 +11,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:18
@@ -20,7 +20,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -48,3 +48,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: node scripts/test-isolated.cjs all
+      - run: node scripts/test-isolated.cjs email-flag
+      - run: node scripts/test-isolated.cjs e2e email-optional.spec.js
+        env:
+          BOVITRACK_TEST_EMAIL_REQUIRED: 'false'

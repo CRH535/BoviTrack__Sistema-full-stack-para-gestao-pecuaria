@@ -19,10 +19,14 @@ const databaseUrl = new URL(adminUrl);
 databaseUrl.pathname = `/${database}`;
 const loginDominio = database.replace("bovitrack_test", "rls_dominio");
 const loginAuth = database.replace("bovitrack_test", "rls_auth");
+const senhasLogin = {
+  [loginDominio]: crypto.randomBytes(32).toString("hex"),
+  [loginAuth]: crypto.randomBytes(32).toString("hex"),
+};
 const urlLogin = (usuario) => {
   const url = new URL(databaseUrl);
   url.username = usuario;
-  url.password = "";
+  url.password = senhasLogin[usuario];
   return url.href;
 };
 const env = {
@@ -107,7 +111,8 @@ async function main() {
       await client.query(lerSql('migrations/021_email_verificacao_configuravel.sql'));
       await client.query('UPDATE bovitrack_seg.configuracao_email SET obrigatoria=$1',[env.EMAIL_VERIFICATION_REQUIRED === 'true']);
       await client.query("INSERT INTO bovitrack_seg.chaves_contexto VALUES (decode($1, 'hex'))", [env.DB_RLS_CONTEXT_KEY]);
-      await client.query(`CREATE ROLE "${loginDominio}" LOGIN IN ROLE bovitrack_runtime; CREATE ROLE "${loginAuth}" LOGIN IN ROLE bovitrack_auth_runtime;`);
+      // As senhas hexadecimais são geradas acima e funcionam também com SCRAM.
+      await client.query(`CREATE ROLE "${loginDominio}" LOGIN PASSWORD '${senhasLogin[loginDominio]}' IN ROLE bovitrack_runtime; CREATE ROLE "${loginAuth}" LOGIN PASSWORD '${senhasLogin[loginAuth]}' IN ROLE bovitrack_auth_runtime;`);
       logins = true;
       const hash = await bcrypt.hash(env.TEST_ADMIN_SENHA, 12);
       await client.query("INSERT INTO usuarios(nome,email,senha,perfil) VALUES ('Admin de teste',$1,$2,'admin')", [env.TEST_ADMIN_EMAIL, hash]);
