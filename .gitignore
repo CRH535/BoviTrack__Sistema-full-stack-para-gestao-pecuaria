@@ -7,6 +7,7 @@ build/
 .cache/
 .eslintcache
 coverage/
+*.tsbuildinfo
 
 # Ambientes locais; somente exemplos revisados podem ser compartilhados
 .env
@@ -21,6 +22,11 @@ coverage/
 *.pfx
 *.dump
 *.backup
+*.sql.gz
+*.sql.bz2
+*.sql.xz
+*.dpapi
+backups/
 
 # Logs e arquivos temporários
 logs/
@@ -42,18 +48,29 @@ lerna-debug.log*
 Thumbs.db
 Desktop.ini
 .vercel/
+.vscode/
+.idea/
+*.suo
+*.user
+*.local
 **/supabase/.temp/
 **/supabase/.branches/
 
 # Resultados de testes, evidências, bancos e binários de ensaio
 test-results/
 playwright-report/
+blob-report/
 /outputs/
 
-# Agentes: preservar hooks, skills, grafo atual e documentação compartilhados
+# Arquivos locais de ferramentas e worktrees
 /.codex/ui-*.cjs
 /.codex/*.graphify-bak
 /graphify-out/cache/
 /graphify-out/????-??-??/
 /graphify-out/.graphify_python
 /graphify-out/.graphify_root
+/.worktrees/
+
+# Originais de referência; os assets usados pela aplicação continuam versionados
+/design/fontes-originais/
+/documentos-originais/
