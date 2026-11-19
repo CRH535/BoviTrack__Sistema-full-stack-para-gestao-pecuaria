@@ -172,7 +172,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
         </Card>
         <Card
           titulo="Resultado financeiro"
-          icone="grafico"
+          icone="lucros"
           acao={<Button as={Link} endIcon="seta" to="/lucros">Ver resultados</Button>}
         >
           <span className="card-description">
@@ -267,7 +267,7 @@ export default function DashboardConteudo({ resumo, proximasVacinacoes }) {
             </div>
           ) : (
             <div className="ui-panel-status">
-              <IconeImagem nome="proximas-vacinas" />
+              <IlustracaoModulo nome="vacinacoes" />
               <strong>Nenhuma dose próxima</strong>
               <p>Nenhuma próxima dose prevista para os próximos 7 dias.</p>
               <Link to="/vacinacoes">Consultar vacinações</Link>

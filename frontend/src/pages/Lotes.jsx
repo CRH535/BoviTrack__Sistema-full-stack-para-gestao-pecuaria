@@ -5,6 +5,7 @@ import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../services/api";
 import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import VoltarInicio from "../components/VoltarInicio";
 
 const CAMPOS_BUSCA = ["nome", "descricao", "propriedade"];
@@ -430,9 +431,7 @@ function Lotes() {
               className={`record-card lot-card${loteGerenciado?.id === lote.id ? " expanded" : ""}`}
               key={lote.id}
             >
-              <span className="record-icon" aria-hidden="true">
-                <IconeImagem nome="lotes" className="record-icon-image" />
-              </span>
+              <IlustracaoModulo nome="lotes" className="record-icon" />
               <h3>{lote.nome}</h3>
 
               <p>{lote.descricao || "-"}</p>
@@ -477,8 +476,8 @@ function Lotes() {
               {loteGerenciado?.id === lote.id && (
                 <section className="lot-animals-manager">
                   <h3 className="icon-title">
-                    <IconeImagem
-                      nome="animais-lotes"
+                    <IlustracaoModulo
+                      nome="animais"
                       className="title-icon-image"
                     />
                     Animais do lote: {lote.nome}

@@ -129,7 +129,7 @@ export default function Lancamentos({
         <EstadoVazio
           titulo="Nenhum lançamento encontrado"
           descricao="Ajuste o período ou registre uma receita ou despesa."
-          icone="dinheiro"
+          icone="lucros"
         />
       )}
       <Paginacao

@@ -31,19 +31,37 @@
   object-fit: contain;
   flex-shrink: 0;
 }
-.module-illustration-pair .module-cow {
-  position: absolute;
-  left: 0;
-  top: 2px;
-  width: 72%;
-  height: 78%;
+.record-icon.module-illustration {
+  flex-basis: 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--module-image-paper);
 }
-.module-illustration-pair .module-calf {
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  width: 52%;
-  height: 56%;
+.animal-profile-avatar.module-illustration {
+  flex-basis: 72px;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+}
+.module-illustration.title-icon-image,
+.module-illustration.title-settings-icon {
+  flex-basis: 30px;
+  width: 30px;
+  height: 30px;
+}
+.ui-empty-icon:has(.module-illustration),
+.settings-section-icon:has(.module-illustration) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ui-empty-icon > .module-illustration,
+.settings-section-icon > .module-illustration {
+  flex-basis: 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
 }
 .nav-link:has(.module-illustration) {
   min-height: 42px;
@@ -75,6 +93,11 @@
   border-radius: 9px;
 }
 @media (max-width: 640px) {
+  .animal-profile-avatar.module-illustration {
+    flex-basis: 58px;
+    width: 58px;
+    height: 58px;
+  }
   .ui-kpi-icon > .module-illustration {
     flex-basis: 34px;
     width: 34px;

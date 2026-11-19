@@ -2,7 +2,7 @@ import Button from "../components/ui/Button";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import api from "../services/api";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 const ControlePesagens = lazy(() => import("../components/ControlePesagens"));
 const ControleDesmama = lazy(() => import("../components/ControleDesmama"));
 const ControleLeiteiro = lazy(() => import("../components/ControleLeiteiro"));
@@ -112,12 +112,7 @@ export default function FichaAnimal() {
       </header>
       <section className="panel animal-profile-card">
         <div className="animal-profile-identity">
-          <span className="animal-profile-avatar" aria-hidden="true">
-            <IconeImagem
-              nome="animais"
-              className="animal-profile-avatar-image"
-            />
-          </span>
+          <IlustracaoModulo nome="animais" className="animal-profile-avatar" />
           <div>
             <span className="eyebrow">Identificação do rebanho</span>
             <h2>{animal.nome}</h2>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import GraficoProducaoLeite from "./GraficoProducaoLeite";
 import IconeImagem from "./IconeImagem";
+import IlustracaoModulo from "./IlustracaoModulo";
 import api from "../services/api";
 import { formatarDataSemFuso, obterDataAtualLocal } from "../utils/datas";
 
@@ -333,7 +334,7 @@ function ControleLeiteiro({ animal }) {
           <div>
             <span className="eyebrow">Acompanhamento individual</span>
             <h2 className="icon-title">
-              <IconeImagem nome="producao" className="title-icon-image" />
+              <IlustracaoModulo nome="producao" className="title-icon-image" />
               Controle Leiteiro
             </h2>
           </div>

@@ -38,7 +38,7 @@ test("mini ilustrações mantêm menu, atalhos, temas, estados e permissões de 
     if (response.status() >= 400 && /\.(?:webp|svg|png|jpg)(?:\?|$)/.test(response.url())) failures.push(`${response.status()} ${response.url()}`);
   });
   await page.route(/127\.0\.0\.1:3005\/.*clima/, (route) => route.fulfill({ status: 503, contentType: "application/json", body: "{}" }));
-  const dir = path.resolve("../outputs/navigation-images", process.env.BOVITRACK_NAV_PRODUCTION === "true" ? "production" : "development", info.project.name);
+  const dir = path.resolve(process.env.BOVITRACK_NAV_OUTPUT || "../outputs/navigation-images", process.env.BOVITRACK_NAV_PRODUCTION === "true" ? "production" : "development", info.project.name);
   mkdirSync(dir, { recursive: true });
   const inventories = [];
 
@@ -106,12 +106,16 @@ test("mini ilustrações mantêm menu, atalhos, temas, estados e permissões de 
       await expect(page.locator(".quick-actions .module-illustration")).toHaveCount(4);
       await audit(`${role}-${theme}-dashboard`);
       let menu = await openMenu();
-      const allowed = [...items, role === "admin" ? ["Usuários", "/usuarios", "usuarios"] : ["Minha Conta", "/minha-conta", "usuarios"]];
+      const allowed = [...items, role === "admin" ? ["Usuários", "/usuarios", "usuarios"] : ["Minha Conta", "/minha-conta", "minha-conta"]];
       await expect(menu.locator(".nav-link")).toHaveCount(13);
       for (const [name, href, asset] of allowed) {
         const link = menu.getByRole("link", { name, exact: true });
         await expect(link).toHaveAttribute("href", href);
         await expect(link.locator(".module-illustration")).toHaveAttribute("data-module-image", asset);
+        const arquivo = { inicio: "dashboard", pesagem: "pesagens", desmama: "desmamas" }[asset] || asset;
+        await expect(link.locator(".module-illustration img")).toHaveCount(1);
+        await expect(link.locator(".module-illustration img")).toHaveAttribute("src", new RegExp(`/${arquivo}(?:-[\\w-]+)?\\.webp(?:\\?|$)`));
+        if (href === "/minha-conta") await expect(link).toHaveAttribute("data-tour", "menu-usuarios");
         await link.hover();
         await link.focus();
         await expect(link).toBeFocused();

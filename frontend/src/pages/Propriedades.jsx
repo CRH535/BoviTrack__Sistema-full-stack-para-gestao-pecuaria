@@ -5,7 +5,7 @@ import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import ConfirmacaoExclusao from "../components/ConfirmacaoExclusao";
 import VoltarInicio from "../components/VoltarInicio";
 import ClimaPropriedade from "../components/ClimaPropriedade";
@@ -333,9 +333,7 @@ function Propriedades() {
             className={`record-card property-card${climaAbertoId === propriedade.id ? " property-card-expanded" : ""}`}
             key={propriedade.id}
           >
-            <span className="record-icon" aria-hidden="true">
-              <IconeImagem nome="propriedades" className="record-icon-image" />
-            </span>
+            <IlustracaoModulo nome="propriedades" className="record-icon" />
             <h3>{propriedade.nome}</h3>
 
             <p>

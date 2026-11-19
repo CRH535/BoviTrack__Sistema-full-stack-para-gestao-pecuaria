@@ -234,24 +234,28 @@ export default function ListaAnimais({
           valor={animais.length}
           contexto="Rebanho completo"
           icone="animais"
+          ilustrado
         />
         <Kpi
           rotulo="Fêmeas"
           valor={animais.filter((a) => a.sexo === "F").length}
           contexto="Sexo cadastrado"
           icone="animais"
+          ilustrado
         />
         <Kpi
           rotulo="Machos"
           valor={animais.filter((a) => a.sexo === "M").length}
           contexto="Sexo cadastrado"
           icone="animais"
+          ilustrado
         />
         <Kpi
           rotulo="Sem lote"
           valor={animais.filter((a) => !a.lotes?.length).length}
           contexto="Ainda sem vínculo"
           icone="lotes"
+          ilustrado
           tom="info"
         />
       </section>

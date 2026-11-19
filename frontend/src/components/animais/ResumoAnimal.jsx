@@ -130,7 +130,7 @@ export default function ResumoAnimal({ animal, historico = false, onAbrir }) {
                   : `${Number(peso.resumo.variacao_recente).toLocaleString("pt-BR")} kg`
               }
               contexto="Entre as duas últimas pesagens"
-              icone="grafico"
+              icone="pesagem"
             />
             <Kpi
               rotulo="Produção de hoje"

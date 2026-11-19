@@ -4,7 +4,7 @@ import ColecaoRegistros from "../components/ui/ColecaoRegistros";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import VoltarInicio from "../components/VoltarInicio";
 
 const CAMPOS_BUSCA = ["nome", "descricao"];
@@ -230,9 +230,7 @@ function Vacinas() {
       >
         {(vacina) => (
           <article className="record-card" key={vacina.id}>
-            <span className="record-icon" aria-hidden="true">
-              <IconeImagem nome="vacinas" className="record-icon-image" />
-            </span>
+            <IlustracaoModulo nome="vacinas" className="record-icon" />
             <h3>{vacina.nome}</h3>
             <p>{vacina.descricao || "-"}</p>
 

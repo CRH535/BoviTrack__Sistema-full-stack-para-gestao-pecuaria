@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import { formatarDataSemFuso } from "../utils/datas";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import VoltarInicio from "../components/VoltarInicio";
 
 const CAMPOS_BUSCA = ["animal", "vacina", "observacao"];
@@ -336,9 +336,7 @@ function Vacinacoes() {
       >
         {(vacinacao) => (
           <article className="record-card vaccination-card" key={vacinacao.id}>
-            <span className="record-icon" aria-hidden="true">
-              <IconeImagem nome="vacinacoes" className="record-icon-image" />
-            </span>
+            <IlustracaoModulo nome="vacinacoes" className="record-icon" />
             <h3>{vacinacao.animal || `Animal ${vacinacao.animal_id}`}</h3>
 
             <p>Vacina: {vacinacao.vacina || vacinacao.vacina_id}</p>

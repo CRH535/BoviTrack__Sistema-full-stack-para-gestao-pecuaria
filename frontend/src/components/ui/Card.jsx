@@ -1,4 +1,4 @@
-import IconeImagem from "../IconeImagem";
+import IlustracaoModulo from "../IlustracaoModulo";
 export default function Card({
   titulo,
   icone,
@@ -11,7 +11,7 @@ export default function Card({
       {titulo && (
         <header className="ui-card-heading">
           <h2>
-            {icone && <IconeImagem nome={icone} />}
+            {icone && <IlustracaoModulo nome={icone} />}
             {titulo}
           </h2>
           {acao}

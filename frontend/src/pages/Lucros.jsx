@@ -6,7 +6,7 @@ import { filtrarDespesas } from "../utils/financas";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useEffect, useMemo, useState } from "react";
 import ConfirmacaoExclusao from "../components/ConfirmacaoExclusao";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 
 import api from "../services/api";
 
@@ -251,7 +251,7 @@ function Lucros() {
         <div>
           <span className="eyebrow">Resultado financeiro</span>
           <h1 className="icon-title">
-            <IconeImagem nome="producao" className="title-icon-image" />
+            <IlustracaoModulo nome="lucros" className="title-icon-image" />
             Produção e resultados
           </h1>
           <p>

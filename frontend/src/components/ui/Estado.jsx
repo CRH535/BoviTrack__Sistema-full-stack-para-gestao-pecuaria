@@ -1,9 +1,9 @@
-import IconeImagem from "../IconeImagem";
+import IlustracaoModulo from "../IlustracaoModulo";
 export function EstadoVazio({ titulo, descricao, acao, icone = "animais" }) {
   return (
     <div className="empty-state ui-empty">
       <span className="ui-empty-icon">
-        <IconeImagem nome={icone} />
+        <IlustracaoModulo nome={icone} />
       </span>
       <strong>{titulo}</strong>
       {descricao && <p>{descricao}</p>}

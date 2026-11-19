@@ -38,7 +38,7 @@ function Conteudo({ usuario, sair, fechar }) {
             onClick={fechar}
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
-            <IlustracaoModulo nome={icon === "animais-lotes" ? "desmama" : icon === "identificacao" ? "pesagem" : icon} />
+            <IlustracaoModulo nome={to === "/minha-conta" ? "minha-conta" : icon === "animais-lotes" ? "desmama" : icon === "identificacao" ? "pesagem" : icon} />
             <span>{label}</span>
           </NavLink>
         ))}

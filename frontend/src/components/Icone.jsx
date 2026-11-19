@@ -67,6 +67,7 @@ const caminhos = {
 // Compatibilidade com os nomes usados antes da reformulação.
 const aliases = {
   pesagem: "identificacao",
+  "minha-conta": "usuarios",
   adicionar: "mais",
   buscar: "busca",
   limpar: "atualizar",

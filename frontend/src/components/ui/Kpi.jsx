@@ -6,7 +6,7 @@ export default function Kpi({
   valor,
   contexto,
   icone,
-  ilustrado = false,
+  ilustrado = true,
   tom = "success",
   to,
 }) {

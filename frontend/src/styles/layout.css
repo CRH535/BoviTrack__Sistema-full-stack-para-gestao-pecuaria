@@ -28,20 +28,25 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.5rem;
-  font-weight: 750;
-  letter-spacing: -0.05em;
+  max-width: 100%;
+  line-height: 0;
 }
-.brand strong {
-  color: var(--text);
-}
-.brand-symbol {
+.brand-wordmark {
   display: block;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border-radius: 9px;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+}
+.brand-wordmark-dark {
+  display: none;
+}
+:root[data-theme="dark"] .brand-wordmark-light,
+.auth-visual .brand-wordmark-light {
+  display: none;
+}
+:root[data-theme="dark"] .brand-wordmark-dark,
+.auth-visual .brand-wordmark-dark {
+  display: block;
 }
 .nav-links {
   display: flex;

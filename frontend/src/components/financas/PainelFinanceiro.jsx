@@ -162,7 +162,7 @@ export default function PainelFinanceiro({
               ? `Categoria: ${categoria}`
               : "Entradas no período selecionado"
           }
-          icone="dinheiro"
+          icone="lucros"
         />
         <Kpi
           rotulo="Despesas totais"
@@ -175,12 +175,12 @@ export default function PainelFinanceiro({
           rotulo="Lucro líquido"
           valor={moeda(resumo.lucro_liquido)}
           contexto="Receitas filtradas menos despesas"
-          icone="grafico"
+          icone="lucros"
           tom={Number(resumo.lucro_liquido) < 0 ? "danger" : "success"}
         />
       </section>
       <div className="financial-content-grid">
-        <Card titulo="Receitas, despesas e lucro" icone="grafico">
+        <Card titulo="Receitas, despesas e lucro" icone="lucros">
           <p className="card-description">
             Até seis meses com lançamentos nos filtros selecionados.
             {categoria

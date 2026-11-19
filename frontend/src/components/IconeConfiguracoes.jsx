@@ -1,4 +1,4 @@
-import Icone from "./Icone";
+import IlustracaoModulo from "./IlustracaoModulo";
 export default function IconeConfiguracoes(props) {
-  return <Icone {...props} nome="configuracoes" />;
+  return <IlustracaoModulo {...props} nome="configuracoes" />;
 }

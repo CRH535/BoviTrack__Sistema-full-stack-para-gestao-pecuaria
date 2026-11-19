@@ -4,7 +4,7 @@ import ColecaoRegistros from "../components/ui/ColecaoRegistros";
 import FormularioCadastro from "../components/ui/FormularioCadastro";
 import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import VoltarInicio from "../components/VoltarInicio";
 
 function formatarDataSemFuso(data) {
@@ -341,9 +341,7 @@ function Despesas() {
       >
         {(despesa) => (
           <article className="record-card expense-card" key={despesa.id}>
-            <span className="record-icon" aria-hidden="true">
-              <IconeImagem nome="despesas" className="record-icon-image" />
-            </span>
+            <IlustracaoModulo nome="despesas" className="record-icon" />
             <span className="tag-badge">{despesa.categoria}</span>
             <h3>{despesa.descricao}</h3>
 

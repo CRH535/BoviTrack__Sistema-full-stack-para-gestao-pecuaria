@@ -3,7 +3,7 @@ import Button from "../components/ui/Button";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
-import IconeImagem from "../components/IconeImagem";
+import IlustracaoModulo from "../components/IlustracaoModulo";
 import Card from "../components/ui/Card";
 import { Carregamento, EstadoVazio } from "../components/ui/Estado";
 
@@ -86,12 +86,7 @@ export default function Producao() {
             <div className="record-grid">
               {lista.map((animal) => (
                 <article className="record-card" key={animal.id}>
-                  <span className="record-icon">
-                    <IconeImagem
-                      nome="producao"
-                      className="record-icon-image"
-                    />
-                  </span>
+                  <IlustracaoModulo nome="producao" className="record-icon" />
                   <h3>{animal.nome}</h3>
                   <p>Brinco {animal.numero_brinco || "não informado"}</p>
                   <p>{animal.propriedade}</p>
